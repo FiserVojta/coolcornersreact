@@ -1,0 +1,91 @@
+name: Build and Deploy Frontend
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: fiservojta/coolcornersreact
+  DEPLOYMENT_REPO: FiserVojta/coolcornersdeployment
+  DEPLOYMENT_FILE: frontend/deployment.yaml
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - name: Generate version tag
+        id: version
+        run: |
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          VERSION="0.0.${{ github.run_number }}-${SHORT_SHA}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Generated version: ${VERSION}"
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Checkout deployment repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.DEPLOYMENT_REPO }}
+          token: ${{ secrets.DEPLOYMENT_PAT }}
+          path: deployment-repo
+
+      - name: Update deployment manifest
+        run: |
+          cd deployment-repo
+          # Update the image line in deployment.yaml
+          sed -i "s|image: ${{ env.REGISTRY }}/.*:.*|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}|g" ${{ env.DEPLOYMENT_FILE }}
+          
+          # Show the change
+          echo "Updated deployment.yaml:"
+          cat ${{ env.DEPLOYMENT_FILE }}
+
+      - name: Commit and push changes
+        run: |
+          cd deployment-repo
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add ${{ env.DEPLOYMENT_FILE }}
+          git commit -m "Update frontend image to ${{ steps.version.outputs.version }}" || echo "No changes to commit"
+          git push
+
+      - name: Summary
+        run: |
+          echo "### Deployment Summary :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image:** \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployment repo updated:** ${{ env.DEPLOYMENT_REPO }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **ArgoCD will automatically sync within 3 minutes**" >> $GITHUB_STEP_SUMMARY
+          echo "- **View in ArgoCD:** https://argocd.coolcorners.org" >> $GITHUB_STEP_SUMMARY
