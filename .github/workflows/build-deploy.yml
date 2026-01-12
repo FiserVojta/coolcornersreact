@@ -11,6 +11,7 @@ env:
   IMAGE_NAME: fiservojta/coolcornersreact
   DEPLOYMENT_REPO: FiserVojta/coolcornersdeployment
   DEPLOYMENT_FILE: frontend/deployment.yaml
+  VITE_API_URL: https://coolcorners.org/api
 
 jobs:
   build-and-deploy:
@@ -50,6 +51,8 @@ jobs:
         with:
           context: .
           push: true
+          build-args: |
+            VITE_API_URL=${{ env.VITE_API_URL }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
