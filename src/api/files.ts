@@ -3,6 +3,7 @@ import { apiClient } from './client';
 export interface UploadedFile {
   url?: string;
   id?: string | number;
+  name?: string;
   filename?: string;
   [key: string]: unknown;
 }

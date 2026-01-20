@@ -73,9 +73,6 @@ export const TripDetail = () => {
         </div>
         {canUserEdit && (
           <div className="flex items-center gap-2">
-            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
-              You can edit
-            </span>
             <button
               onClick={() => navigate(`/trips/${tripId}/edit`)}
               className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-900 shadow-sm transition hover:border-slate-400"
@@ -103,6 +100,25 @@ export const TripDetail = () => {
             <div className="mt-4">
               <TagList tags={data.tags} />
             </div>
+          </section>
+
+          <section className="rounded-2xl bg-white p-6 shadow-card">
+            <h3 className="text-lg font-semibold text-slate-900">Photos</h3>
+            {data.files?.length || data.images?.length ? (
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {buildTripPhotos(data).map((photo, idx) => (
+                  <img
+                    key={`${photo.url}-${idx}`}
+                    src={photo.url}
+                    alt={photo.label}
+                    className="h-40 w-full rounded-2xl object-cover shadow-sm"
+                    loading="lazy"
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="mt-2 text-sm text-slate-600">No photos uploaded yet.</p>
+            )}
           </section>
 
           <section className="rounded-2xl bg-white p-6 shadow-card">
@@ -396,4 +412,25 @@ const getCoordsFromGeometry = (geometry?: GeometryPoint | null) => {
   const [lng, lat] = geometry.coordinates;
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
   return { lat, lng };
+};
+
+const buildTripPhotos = (trip: TripModel) => {
+  const fromFiles =
+    trip.files
+      ?.map((file) => {
+        const url = file.url ?? file.name;
+        if (!url) return null;
+        return { url, label: file.name ?? 'Trip photo' };
+      })
+      .filter(Boolean) ?? [];
+  const fromImages =
+    trip.images
+      ?.map((url) => (url ? { url, label: 'Trip photo' } : null))
+      .filter(Boolean) ?? [];
+  const seen = new Set<string>();
+  return [...fromFiles, ...fromImages].filter((photo) => {
+    if (!photo || seen.has(photo.url)) return false;
+    seen.add(photo.url);
+    return true;
+  }) as { url: string; label: string }[];
 };

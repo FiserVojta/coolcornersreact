@@ -5,7 +5,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { createTrip, fetchTrip, updateTrip } from '../../api/trips';
 import { fetchCategories } from '../../api/categories';
 import { fetchTags } from '../../api/tags';
-import type { GooglePlaceInput, TripCreateRequest } from '../../types/trip';
+import { uploadFile } from '../../api/files';
+import type { GooglePlaceInput, TripCreateRequest, TripFileLinkRequest } from '../../types/trip';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { env } from '../../config/env';
@@ -22,6 +23,10 @@ export const TripForm = () => {
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string>('');
+  const [uploadedFiles, setUploadedFiles] = useState<TripFileLinkRequest[]>([]);
 
   const tripQuery = useQuery({
     queryKey: ['trip', tripId],
@@ -44,6 +49,7 @@ export const TripForm = () => {
     handleSubmit,
     reset,
     setValue,
+    watch,
     formState: { errors, isSubmitting }
   } = useForm<TripCreateRequest>({
     defaultValues: {
@@ -79,12 +85,15 @@ export const TripForm = () => {
         tags: tripQuery.data.tags?.map((t) => t.id) ?? [],
         placeIds: tripQuery.data.places?.map((p) => p.id) ?? []
       });
+      setImageUrl(tripQuery.data.images?.[0] ?? '');
       setGooglePlaces(googlePlacesFromTrip);
       if (Number.isFinite(categoryId)) {
         setValue('categoryId', categoryId, { shouldValidate: true });
       }
     }
   }, [tripQuery.data, reset, setValue]);
+
+  const selectedTags = watch('tags') ?? [];
 
   const createMut = useMutation({
     mutationFn: (payload: TripCreateRequest) => createTrip(payload),
@@ -103,18 +112,45 @@ export const TripForm = () => {
     }
   });
 
-  if (isEdit && tripQuery.isLoading) return <LoadingState label="Loading trip..." />;
-  if (isEdit && tripQuery.error) return <ErrorState message="Failed to load trip for editing." />;
+  const uploadMut = useMutation({
+    mutationFn: uploadFile,
+    onSuccess: (res) => {
+      const fileId = typeof res?.id === 'string' ? Number(res.id) : res?.id;
+      const fileName = res?.name ?? res?.filename;
+      if (Number.isFinite(fileId) && fileName) {
+        setUploadedFiles((prev) => {
+          if (prev.some((file) => file.fileId === fileId)) return prev;
+          return [...prev, { fileId: fileId as number, name: fileName }];
+        });
+      }
+      if (res?.url) {
+        setImageUrl(res.url);
+        setUploadMessage(`Uploaded: ${res.url}`);
+      } else {
+        setUploadMessage('File uploaded.');
+      }
+      setSelectedFile(null);
+    },
+    onError: () => setUploadMessage('Upload failed. Please try again.')
+  });
 
   const onSubmit = (values: TripCreateRequest) => {
     const payload: TripCreateRequest = {
       ...values,
       tags: normalizeNumberList(values.tags),
       placeIds: normalizeNumberList(values.placeIds),
-      googlePlaces
+      googlePlaces,
+      images: imageUrl ? [imageUrl] : undefined,
+      files: uploadedFiles.length ? uploadedFiles : undefined
     };
     if (isEdit) return updateMut.mutate(payload);
     return createMut.mutate(payload);
+  };
+
+  const toggleTag = (id: number) => {
+    const normalized = normalizeNumberList(selectedTags);
+    const next = normalized.includes(id) ? normalized.filter((item) => item !== id) : [...normalized, id];
+    setValue('tags', next, { shouldValidate: true, shouldDirty: true });
   };
 
   const hasKey = !!env.googleMapsApiKey;
@@ -131,6 +167,9 @@ export const TripForm = () => {
     if (firstCoords) return firstCoords;
     return { lat: 50.0755, lng: 14.4378 };
   }, [googlePlaces]);
+
+  if (isEdit && tripQuery.isLoading) return <LoadingState label="Loading trip..." />;
+  if (isEdit && tripQuery.error) return <ErrorState message="Failed to load trip for editing." />;
 
   const handlePlaceChanged = () => {
     if (!autocomplete) return;
@@ -194,16 +233,10 @@ export const TripForm = () => {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-6">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4">
           <Field label="Name" error={errors.name}>
             <input
               {...register('name', { required: 'Name is required' })}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-brand-400"
-            />
-          </Field>
-          <Field label="Author" error={errors.author}>
-            <input
-              {...register('author')}
               className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-brand-400"
             />
           </Field>
@@ -217,22 +250,57 @@ export const TripForm = () => {
           />
         </Field>
 
-        <div className="grid gap-4 sm:grid-cols-3">
+        <Field label="Trip photo">
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-3">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(event) => {
+                  const file = event.target.files?.[0] ?? null;
+                  setSelectedFile(file);
+                  setUploadMessage(null);
+                }}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none focus:border-brand-400 sm:w-auto"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (!selectedFile) return;
+                  uploadMut.mutate(selectedFile);
+                }}
+                disabled={!selectedFile || uploadMut.isPending}
+                className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {uploadMut.isPending ? 'Uploading...' : 'Upload'}
+              </button>
+            </div>
+            {selectedFile && <p className="text-xs text-slate-600">Selected: {selectedFile.name}</p>}
+            {uploadMessage && <p className="text-xs text-slate-600">{uploadMessage}</p>}
+            {uploadedFiles.length ? (
+              <ul className="text-xs text-slate-600">
+                {uploadedFiles.map((file) => (
+                  <li key={file.fileId}>{file.name}</li>
+                ))}
+              </ul>
+            ) : null}
+            {imageUrl && (
+              <img
+                src={imageUrl}
+                alt="Trip upload preview"
+                className="h-40 w-full rounded-2xl object-cover shadow-sm sm:h-48"
+                loading="lazy"
+              />
+            )}
+          </div>
+        </Field>
+
+        <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Duration (minutes)" error={errors.duration}>
             <input
               type="number"
               min={0}
               {...register('duration', { valueAsNumber: true, required: 'Duration is required' })}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-brand-400"
-            />
-          </Field>
-          <Field label="Rating" error={errors.rating}>
-            <input
-              type="number"
-              min={0}
-              max={5}
-              step={0.1}
-              {...register('rating', { valueAsNumber: true })}
               className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-brand-400"
             />
           </Field>
@@ -251,21 +319,34 @@ export const TripForm = () => {
           </Field>
         </div>
 
+        <input type="hidden" {...register('author')} />
+        <input type="hidden" {...register('rating', { valueAsNumber: true })} />
+
         <Field label="Tags">
-          <select
-            multiple
-            {...register('tags', {
-              setValueAs: (vals) =>
-                Array.isArray(vals) ? vals.map((v) => Number(v)).filter((n) => !Number.isNaN(n)) : []
-            })}
-            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-brand-400"
-          >
-            {(tagsQuery.data ?? []).map((tag) => (
-              <option key={tag.id} value={tag.id}>
-                {tag.title || tag.name}
-              </option>
-            ))}
-          </select>
+          <details className="group rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm">
+            <summary className="cursor-pointer list-none font-semibold text-slate-700">
+              {selectedTags.length
+                ? (tagsQuery.data ?? [])
+                    .filter((tag) => selectedTags.includes(tag.id))
+                    .map((tag) => tag.title || tag.name)
+                    .join(', ')
+                : 'Select tags'}
+            </summary>
+            <div className="mt-3 max-h-48 space-y-2 overflow-auto pb-1 pr-1">
+              {(tagsQuery.data ?? []).map((tag) => (
+                <label key={tag.id} className="flex items-center gap-2 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-400"
+                    checked={selectedTags.includes(tag.id)}
+                    onChange={() => toggleTag(tag.id)}
+                  />
+                  <span>{tag.title || tag.name}</span>
+                </label>
+              ))}
+              {!(tagsQuery.data ?? []).length && <p className="text-xs text-slate-500">No tags available.</p>}
+            </div>
+          </details>
         </Field>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

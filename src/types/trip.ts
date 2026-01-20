@@ -20,12 +20,24 @@ export interface TripModel {
   tags: Tag[];
   comments?: CommentModel[];
   images?: string[];
+  files?: TripFile[];
 }
 
 export interface TripRatingModel {
   id: number;
   rating: number;
   createdBy: string;
+}
+
+export interface TripFile {
+  id: number;
+  url?: string | null;
+  name?: string | null;
+}
+
+export interface TripFileLinkRequest {
+  fileId: number;
+  name: string;
 }
 
 export interface TripCreateRequest {
@@ -38,6 +50,8 @@ export interface TripCreateRequest {
   tags: number[] | null | undefined;
   placeIds: number[] | null | undefined;
   googlePlaces?: GooglePlaceInput[] | null | undefined;
+  images?: string[] | null | undefined;
+  files?: TripFileLinkRequest[] | null | undefined;
 }
 
 export interface GooglePlaceInput {
