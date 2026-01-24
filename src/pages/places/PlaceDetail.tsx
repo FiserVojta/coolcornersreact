@@ -7,11 +7,12 @@ import { RatingBadge } from '../../components/RatingBadge';
 import { TagList } from '../../components/TagList';
 import { useAuth } from '../../auth/KeycloakProvider';
 import { env } from '../../config/env';
-import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { CommentModel } from '../../types/place';
 import { fetchFiles, uploadFile } from '../../api/files';
+import { CircleMarker, MapContainer } from 'react-leaflet';
+import { MapyTileLayer } from '../../components/MapyTileLayer';
 
 export const PlaceDetail = () => {
   const { id } = useParams();
@@ -326,21 +327,18 @@ const Detail = ({ label, value }: { label: string; value?: string }) => (
 );
 
 const mapContainerStyle = { width: '100%', height: '280px', borderRadius: '16px', overflow: 'hidden' };
-const mapLibraries: ('places')[] = ['places'];
 
 const LocationMap = ({ featureCoords }: { featureCoords?: [number, number] }) => {
-  const hasKey = !!env.googleMapsApiKey;
+  const needsTileKey =
+    env.mapyTilesUrl.includes('{apikey}') ||
+    env.mapyTilesUrl.includes('{API_KEY}') ||
+    env.mapyTilesUrl.includes('${API_KEY}');
+  const hasTiles = !!env.mapyApiKey || !needsTileKey;
   const coords = useMemo(() => {
     if (!featureCoords) return null;
     const [lng, lat] = featureCoords;
     return { lat, lng };
   }, [featureCoords]);
-
-  const { isLoaded } = useJsApiLoader({
-    id: 'coolcorners-map',
-    googleMapsApiKey: env.googleMapsApiKey ?? '',
-    libraries: mapLibraries
-  });
 
   if (!coords) {
     return (
@@ -351,46 +349,28 @@ const LocationMap = ({ featureCoords }: { featureCoords?: [number, number] }) =>
     );
   }
 
-  if (!hasKey) {
+  if (!hasTiles) {
     return (
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
         <h3 className="text-lg font-semibold text-slate-900">Location</h3>
         <p className="mt-2 text-sm text-slate-600">
-          Provide <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">VITE_GOOGLE_MAPS_API_KEY</code> to render
-          the map.
+          Provide <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">VITE_MAPY_API_KEY</code> to render the
+          map.
         </p>
-      </div>
-    );
-  }
-
-  if (!isLoaded) {
-    return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
-        <h3 className="text-lg font-semibold text-slate-900">Location</h3>
-        <p className="mt-2 text-sm text-slate-600">Loading map...</p>
       </div>
     );
   }
 
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
-      <GoogleMap
-        center={coords}
-        zoom={14}
-        options={{
-          disableDefaultUI: true,
-          zoomControl: true,
-          styles: [
-            {
-              elementType: 'geometry',
-              stylers: [{ color: '#f5f5f5' }]
-            }
-          ]
-        }}
-        mapContainerStyle={mapContainerStyle}
-      >
-        <Marker position={coords} />
-      </GoogleMap>
+      <MapContainer center={coords} zoom={14} style={mapContainerStyle} scrollWheelZoom={false}>
+        <MapyTileLayer />
+        <CircleMarker
+          center={coords}
+          radius={7}
+          pathOptions={{ color: '#0f172a', weight: 2, fillColor: '#ffffff', fillOpacity: 1 }}
+        />
+      </MapContainer>
     </div>
   );
 };

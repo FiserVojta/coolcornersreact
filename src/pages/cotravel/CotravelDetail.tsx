@@ -7,10 +7,12 @@ import { ErrorState } from '../../components/ErrorState';
 import { TagList } from '../../components/TagList';
 import { useAuth } from '../../auth/KeycloakProvider';
 import { env } from '../../config/env';
-import { GoogleMap, Marker, Polyline, useJsApiLoader } from '@react-google-maps/api';
+import { CircleMarker, MapContainer, Polyline, Tooltip } from 'react-leaflet';
+import L from 'leaflet';
 import type { Cotravel } from '../../types/cotravel';
 import type { GeometryPoint } from '../../types/trip';
 import type { User } from '../../types/user';
+import { MapyTileLayer } from '../../components/MapyTileLayer';
 
 export const CotravelDetail = () => {
   const { id } = useParams();
@@ -170,7 +172,7 @@ export const CotravelDetail = () => {
             )}
             {data.googlePlaces?.length ? (
               <div className="mt-4">
-                <h4 className="text-sm font-semibold text-slate-900">Google places</h4>
+                <h4 className="text-sm font-semibold text-slate-900">Mapy places</h4>
                 <ol className="mt-2 space-y-2">
                   {data.googlePlaces.map((place, idx) => (
                     <li
@@ -253,16 +255,14 @@ const CotravelMap = ({
   parts?: Cotravel['wanderParts'];
   googlePlaces?: Cotravel['googlePlaces'];
 }) => {
-  const hasKey = !!env.googleMapsApiKey;
+  const needsTileKey =
+    env.mapyTilesUrl.includes('{apikey}') ||
+    env.mapyTilesUrl.includes('{API_KEY}') ||
+    env.mapyTilesUrl.includes('${API_KEY}');
+  const hasTiles = !!env.mapyApiKey || !needsTileKey;
   const coords = useMemo(() => extractCoords(parts), [parts]);
   const googleCoords = useMemo(() => extractGoogleCoords(googlePlaces), [googlePlaces]);
   const allCoords = useMemo(() => [...coords, ...googleCoords], [coords, googleCoords]);
-
-  const { isLoaded } = useJsApiLoader({
-    id: 'coolcorners-map',
-    googleMapsApiKey: env.googleMapsApiKey ?? '',
-    libraries: mapLibraries
-  });
 
   if (!allCoords.length) {
     return (
@@ -273,54 +273,54 @@ const CotravelMap = ({
     );
   }
 
-  if (!hasKey) {
+  if (!hasTiles) {
     return (
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
         <h3 className="text-lg font-semibold text-slate-900">Route</h3>
         <p className="mt-2 text-sm text-slate-600">
-          Provide <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">VITE_GOOGLE_MAPS_API_KEY</code> to render
-          the map.
+          Provide <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">VITE_MAPY_API_KEY</code> to render the
+          map.
         </p>
       </div>
     );
   }
 
-  if (!isLoaded) {
-    return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
-        <h3 className="text-lg font-semibold text-slate-900">Route</h3>
-        <p className="mt-2 text-sm text-slate-600">Loading map...</p>
-      </div>
-    );
-  }
-
   const center = allCoords[0];
+  const bounds = allCoords.length > 1 ? L.latLngBounds(allCoords) : undefined;
 
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
-      <GoogleMap
+      <MapContainer
         center={center}
         zoom={5}
-        options={{
-          disableDefaultUI: true,
-          zoomControl: true,
-          styles: [
-            {
-              elementType: 'geometry',
-              stylers: [{ color: '#f5f5f5' }]
-            }
-          ]
-        }}
-        mapContainerStyle={{ width: '100%', height: '280px', borderRadius: '16px' }}
+        style={{ width: '100%', height: '280px', borderRadius: '16px' }}
+        bounds={bounds}
+        boundsOptions={{ padding: [24, 24] }}
+        scrollWheelZoom={false}
       >
+        <MapyTileLayer />
         {coords.map((pos, idx) => (
-          <Marker key={`${pos.lat}-${pos.lng}-${idx}`} position={pos} label={`${idx + 1}`} />
+          <CircleMarker
+            key={`${pos.lat}-${pos.lng}-${idx}`}
+            center={pos}
+            radius={7}
+            pathOptions={{ color: '#0f172a', weight: 2, fillColor: '#ffffff', fillOpacity: 1 }}
+          >
+            <Tooltip direction="top" offset={[0, -8]}>{`${idx + 1}`}</Tooltip>
+          </CircleMarker>
         ))}
         {googleCoords.map((pos, idx) => (
-          <Marker key={`g-${pos.lat}-${pos.lng}-${idx}`} position={pos} label={`G${idx + 1}`} />
+          <CircleMarker
+            key={`g-${pos.lat}-${pos.lng}-${idx}`}
+            center={pos}
+            radius={7}
+            pathOptions={{ color: '#1d4ed8', weight: 2, fillColor: '#ffffff', fillOpacity: 1 }}
+          >
+            <Tooltip direction="top" offset={[0, -8]}>{`M${idx + 1}`}</Tooltip>
+          </CircleMarker>
         ))}
-        {coords.length > 1 && <Polyline path={coords} options={{ strokeColor: '#2d75f5', strokeWeight: 4 }} />}
-      </GoogleMap>
+        {coords.length > 1 && <Polyline positions={coords} pathOptions={{ color: '#2d75f5', weight: 4 }} />}
+      </MapContainer>
     </div>
   );
 };
@@ -339,8 +339,6 @@ const extractGoogleCoords = (places?: Cotravel['googlePlaces']) =>
   (places ?? [])
     .map((place) => getCoordsFromGeometry(place.geometry))
     .filter(Boolean) as { lat: number; lng: number }[];
-
-const mapLibraries: ('places')[] = ['places'];
 
 const getDisplayName = (user: User) =>
   user.displayName || user.name || [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email || 'Traveler';

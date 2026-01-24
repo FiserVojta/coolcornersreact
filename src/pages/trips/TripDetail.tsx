@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { addTripComment, addTripRating, deleteTrip, fetchTrip } from '../../api/trips';
@@ -8,11 +8,13 @@ import { RatingBadge } from '../../components/RatingBadge';
 import { TagList } from '../../components/TagList';
 import { useAuth } from '../../auth/KeycloakProvider';
 import { env } from '../../config/env';
-import { GoogleMap, Marker, Polyline, useJsApiLoader } from '@react-google-maps/api';
+import { CircleMarker, MapContainer, Polyline, Tooltip } from 'react-leaflet';
+import L from 'leaflet';
 import type { GeometryPoint, TripModel } from '../../types/trip';
 import type { PlaceDetail } from '../../types/place';
 import type { CommentModel } from '../../types/place';
 import { useForm } from 'react-hook-form';
+import { MapyTileLayer } from '../../components/MapyTileLayer';
 
 export const TripDetail = () => {
   const { id } = useParams();
@@ -145,7 +147,7 @@ export const TripDetail = () => {
             )}
             {data.googlePlaces?.length ? (
               <div className="mt-4">
-                <h4 className="text-sm font-semibold text-slate-900">Google places</h4>
+                <h4 className="text-sm font-semibold text-slate-900">Mapy places</h4>
                 <ol className="mt-2 space-y-2">
                   {data.googlePlaces.map((place, idx) => (
                     <li
@@ -254,78 +256,14 @@ const formatDuration = (minutes?: number) => {
 const mapContainerStyle = { width: '100%', height: '280px', borderRadius: '16px', overflow: 'hidden' };
 
 const TripMap = ({ trip }: { trip: TripModel }) => {
-  const hasKey = !!env.googleMapsApiKey;
+  const needsTileKey =
+    env.mapyTilesUrl.includes('{apikey}') ||
+    env.mapyTilesUrl.includes('{API_KEY}') ||
+    env.mapyTilesUrl.includes('${API_KEY}');
+  const hasTiles = !!env.mapyApiKey || !needsTileKey;
   const coords = useMemo(() => extractCoords(trip.places), [trip.places]);
-  const [googleCoords, setGoogleCoords] = useState<{ id: string; name: string; lat: number; lng: number }[]>([]);
-  const mapRef = useRef<google.maps.Map | null>(null);
-
-  const { isLoaded } = useJsApiLoader({
-    id: 'coolcorners-map',
-    googleMapsApiKey: env.googleMapsApiKey ?? '',
-    libraries: mapLibraries
-  });
-
-  const googleCoordsFromGeometry = useMemo(() => {
-    return (trip.googlePlaces ?? [])
-      .map((place) => {
-        const coords = getCoordsFromGeometry(place.geometry);
-        if (!coords) return null;
-        return { id: place.id, name: place.name, ...coords };
-      })
-      .filter(Boolean) as { id: string; name: string; lat: number; lng: number }[];
-  }, [trip.googlePlaces]);
-
-  useEffect(() => {
-    if (!isLoaded || !trip.googlePlaces?.length || !mapRef.current) return;
-    const missing = trip.googlePlaces.filter((place) => !getCoordsFromGeometry(place.geometry));
-    if (!missing.length) return;
-    const service = new google.maps.places.PlacesService(mapRef.current);
-    let cancelled = false;
-
-    const loadPlaces = async () => {
-      const results = await Promise.all(
-        missing.map(
-          (place) =>
-            new Promise<{ id: string; name: string; lat: number; lng: number } | null>((resolve) => {
-              service.getDetails({ placeId: place.id, fields: ['geometry', 'name'] }, (detail, status) => {
-                if (status !== google.maps.places.PlacesServiceStatus.OK || !detail?.geometry?.location) {
-                  resolve(null);
-                  return;
-                }
-                resolve({
-                  id: place.id,
-                  name: detail.name ?? place.name,
-                  lat: detail.geometry.location.lat(),
-                  lng: detail.geometry.location.lng()
-                });
-              });
-            })
-        ) ?? []
-      );
-      if (cancelled) return;
-      setGoogleCoords(results.filter(Boolean) as { id: string; name: string; lat: number; lng: number }[]);
-    };
-
-    loadPlaces();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isLoaded, trip.googlePlaces, googleCoordsFromGeometry]);
-
-  const googleMarkers = useMemo(() => {
-    const byId = new Map<string, { id: string; name: string; lat: number; lng: number }>();
-    googleCoordsFromGeometry.forEach((place) => byId.set(place.id, place));
-    googleCoords.forEach((place) => {
-      if (!byId.has(place.id)) byId.set(place.id, place);
-    });
-    return Array.from(byId.values());
-  }, [googleCoordsFromGeometry, googleCoords]);
-
-  const allCoords = useMemo(() => {
-    const google = googleMarkers.map((place) => ({ lat: place.lat, lng: place.lng }));
-    return [...coords, ...google];
-  }, [coords, googleMarkers]);
+  const mapyCoords = useMemo(() => extractMapyCoords(trip.googlePlaces), [trip.googlePlaces]);
+  const allCoords = useMemo(() => [...coords, ...mapyCoords], [coords, mapyCoords]);
 
   if (!allCoords.length) {
     return (
@@ -336,62 +274,54 @@ const TripMap = ({ trip }: { trip: TripModel }) => {
     );
   }
 
-  if (!hasKey) {
+  if (!hasTiles) {
     return (
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
         <h3 className="text-lg font-semibold text-slate-900">Map</h3>
         <p className="mt-2 text-sm text-slate-600">
-          Provide <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">VITE_GOOGLE_MAPS_API_KEY</code> to render
-          the map.
+          Provide <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">VITE_MAPY_API_KEY</code> to render the
+          map.
         </p>
       </div>
     );
   }
 
-  if (!isLoaded) {
-    return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
-        <h3 className="text-lg font-semibold text-slate-900">Map</h3>
-        <p className="mt-2 text-sm text-slate-600">Loading map...</p>
-      </div>
-    );
-  }
-
   const center = allCoords[0];
+  const bounds = allCoords.length > 1 ? L.latLngBounds(allCoords) : undefined;
 
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
-      <GoogleMap
+      <MapContainer
         center={center}
         zoom={10}
-        options={{
-          disableDefaultUI: true,
-          zoomControl: true,
-          styles: [
-            {
-              elementType: 'geometry',
-              stylers: [{ color: '#f5f5f5' }]
-            }
-          ]
-        }}
-        mapContainerStyle={mapContainerStyle}
-        onLoad={(map) => {
-          mapRef.current = map;
-        }}
+        style={mapContainerStyle}
+        bounds={bounds}
+        boundsOptions={{ padding: [24, 24] }}
+        scrollWheelZoom={false}
       >
+        <MapyTileLayer />
         {coords.map((pos, idx) => (
-          <Marker key={`${pos.lat}-${pos.lng}-${idx}`} position={pos} label={`${idx + 1}`} />
+          <CircleMarker
+            key={`${pos.lat}-${pos.lng}-${idx}`}
+            center={pos}
+            radius={7}
+            pathOptions={{ color: '#0f172a', weight: 2, fillColor: '#ffffff', fillOpacity: 1 }}
+          >
+            <Tooltip direction="top" offset={[0, -8]}>{`${idx + 1}`}</Tooltip>
+          </CircleMarker>
         ))}
-        {googleMarkers.map((place, idx) => (
-          <Marker
-            key={place.id}
-            position={{ lat: place.lat, lng: place.lng }}
-            label={`G${idx + 1}`}
-            title={place.name}
-          />
+        {mapyCoords.map((pos, idx) => (
+          <CircleMarker
+            key={`m-${pos.lat}-${pos.lng}-${idx}`}
+            center={pos}
+            radius={7}
+            pathOptions={{ color: '#1d4ed8', weight: 2, fillColor: '#ffffff', fillOpacity: 1 }}
+          >
+            <Tooltip direction="top" offset={[0, -8]}>{`M${idx + 1}`}</Tooltip>
+          </CircleMarker>
         ))}
-        {coords.length > 1 && <Polyline path={coords} options={{ strokeColor: '#2d75f5', strokeWeight: 4 }} />}
-      </GoogleMap>
+        {coords.length > 1 && <Polyline positions={coords} pathOptions={{ color: '#2d75f5', weight: 4 }} />}
+      </MapContainer>
     </div>
   );
 };
@@ -405,14 +335,21 @@ const extractCoords = (places?: PlaceDetail[]) =>
     })
     .filter(Boolean) as { lat: number; lng: number }[];
 
-const mapLibraries: ('places')[] = ['places'];
-
 const getCoordsFromGeometry = (geometry?: GeometryPoint | null) => {
   if (!geometry || geometry.type !== 'Point' || !geometry.coordinates) return null;
   const [lng, lat] = geometry.coordinates;
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
   return { lat, lng };
 };
+
+const extractMapyCoords = (places?: TripModel['googlePlaces']) =>
+  (places ?? [])
+    .map((place) => {
+      const coords = getCoordsFromGeometry(place.geometry);
+      if (!coords) return null;
+      return { ...coords, name: place.name };
+    })
+    .filter(Boolean) as Array<{ lat: number; lng: number; name: string }>;
 
 const buildTripPhotos = (trip: TripModel) => {
   const fromFiles =

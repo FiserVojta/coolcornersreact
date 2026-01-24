@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -6,12 +6,14 @@ import { createCotravel, fetchCotravel, updateCotravel } from '../../api/cotrave
 import { fetchCategories } from '../../api/categories';
 import { fetchTags } from '../../api/tags';
 import { fetchTrips } from '../../api/trips';
+import { searchMapyPlaces } from '../../api/mapy';
 import type { CotravelCreateRequest } from '../../types/cotravel';
 import type { GooglePlaceInput } from '../../types/trip';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { env } from '../../config/env';
-import { Autocomplete, GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
+import { CircleMarker, MapContainer, Tooltip, useMapEvents } from 'react-leaflet';
+import { MapyTileLayer } from '../../components/MapyTileLayer';
 
 type FormValues = CotravelCreateRequest;
 
@@ -22,10 +24,12 @@ export const CotravelForm = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [googlePlaces, setGooglePlaces] = useState<GooglePlaceInput[]>([]);
-  const [pendingPlace, setPendingPlace] = useState<GooglePlaceInput | null>(null);
-  const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
-  const geocoderRef = useRef<google.maps.Geocoder | null>(null);
-  const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<
+    Array<{ id: string; name: string; lat: number; lng: number }>
+  >([]);
+  const [searchMessage, setSearchMessage] = useState<string | null>(null);
+  const [searching, setSearching] = useState(false);
   const [selectedTripIds, setSelectedTripIds] = useState<number[]>([]);
 
   const detailQuery = useQuery({
@@ -139,12 +143,12 @@ export const CotravelForm = () => {
     return createMut.mutate(payload);
   };
 
-  const hasKey = !!env.googleMapsApiKey;
-  const { isLoaded } = useJsApiLoader({
-    id: 'coolcorners-map',
-    googleMapsApiKey: env.googleMapsApiKey ?? '',
-    libraries: mapLibraries
-  });
+  const needsTileKey =
+    env.mapyTilesUrl.includes('{apikey}') ||
+    env.mapyTilesUrl.includes('{API_KEY}') ||
+    env.mapyTilesUrl.includes('${API_KEY}');
+  const hasTiles = !!env.mapyApiKey || !needsTileKey;
+  const canSearch = !!env.mapyApiKey && !!env.mapySearchUrl;
 
   const mapCenter = useMemo(() => {
     const firstCoords = googlePlaces
@@ -154,55 +158,50 @@ export const CotravelForm = () => {
     return { lat: 50.0755, lng: 14.4378 };
   }, [googlePlaces]);
 
-  const handlePlaceChanged = () => {
-    if (!autocomplete) return;
-    const place = autocomplete.getPlace();
-    if (!place?.place_id) return;
-    const lat = place.geometry?.location?.lat();
-    const lng = place.geometry?.location?.lng();
-    setPendingPlace({
-      placeId: place.place_id,
-      name: place.name ?? place.formatted_address ?? 'Selected place',
-      geometry:
-        typeof lat === 'number' && typeof lng === 'number'
-          ? { type: 'Point', coordinates: [lng, lat] }
-          : null
-    });
-  };
-
-  const addPendingPlace = () => {
-    if (!pendingPlace) return;
-    setGooglePlaces((prev) => {
-      if (prev.some((place) => place.placeId === pendingPlace.placeId)) return prev;
-      return [...prev, pendingPlace];
-    });
-    setPendingPlace(null);
-    if (searchInputRef.current) searchInputRef.current.value = '';
-  };
-
   const removeGooglePlace = (placeId: string) => {
     setGooglePlaces((prev) => prev.filter((place) => place.placeId !== placeId));
   };
 
-  const handleMapClick = (event: google.maps.MapMouseEvent) => {
-    if (!event.latLng) return;
-    if (!geocoderRef.current) {
-      geocoderRef.current = new google.maps.Geocoder();
+  const addSearchResult = (result: { id: string; name: string; lat: number; lng: number }) => {
+    const nextPlace: GooglePlaceInput = {
+      placeId: result.id,
+      name: result.name,
+      geometry: { type: 'Point', coordinates: [result.lng, result.lat] }
+    };
+    setGooglePlaces((prev) => {
+      if (prev.some((place) => place.placeId === nextPlace.placeId)) return prev;
+      return [...prev, nextPlace];
+    });
+    setSearchResults([]);
+    setSearchQuery('');
+  };
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setSearchMessage(null);
+    setSearching(true);
+    try {
+      const results = await searchMapyPlaces(searchQuery);
+      setSearchResults(results);
+      if (!results.length) setSearchMessage('No results found.');
+    } catch (err) {
+      setSearchResults([]);
+      setSearchMessage(err instanceof Error ? err.message : 'Search failed.');
+    } finally {
+      setSearching(false);
     }
-    const latLng = event.latLng;
-    geocoderRef.current.geocode({ location: latLng }, (results, status) => {
-      if (status !== 'OK' || !results?.length) return;
-      const top = results[0];
-      if (!top.place_id) return;
-      const nextPlace: GooglePlaceInput = {
-        placeId: top.place_id,
-        name: top.formatted_address ?? 'Selected location',
-        geometry: { type: 'Point', coordinates: [latLng.lng(), latLng.lat()] }
-      };
-      setGooglePlaces((prev) => {
-        if (prev.some((place) => place.placeId === nextPlace.placeId)) return prev;
-        return [...prev, nextPlace];
-      });
+  };
+
+  const handleMapClick = (coords: { lat: number; lng: number }) => {
+    const id = `map-click-${coords.lat}-${coords.lng}`;
+    const nextPlace: GooglePlaceInput = {
+      placeId: id,
+      name: `Selected location (${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)})`,
+      geometry: { type: 'Point', coordinates: [coords.lng, coords.lat] }
+    };
+    setGooglePlaces((prev) => {
+      if (prev.some((place) => place.placeId === nextPlace.placeId)) return prev;
+      return [...prev, nextPlace];
     });
   };
 
@@ -319,81 +318,96 @@ export const CotravelForm = () => {
 
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-1">
-            <h3 className="text-base font-semibold text-slate-900">Google places</h3>
-            <p className="text-xs text-slate-600">Search and add multiple Google Places to this plan.</p>
+            <h3 className="text-base font-semibold text-slate-900">Mapy places</h3>
+            <p className="text-xs text-slate-600">Search and add multiple places to this plan.</p>
           </div>
 
           <div className="mt-4 space-y-3">
-            {hasKey ? (
-              isLoaded ? (
-                <>
-                  <Autocomplete onLoad={(instance) => setAutocomplete(instance)} onPlaceChanged={handlePlaceChanged}>
-                    <input
-                      ref={searchInputRef}
-                      placeholder="Search for a place"
-                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-brand-400"
-                    />
-                  </Autocomplete>
-                  {pendingPlace ? (
-                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-                      <div>
-                        <p className="font-semibold text-slate-900">{pendingPlace.name}</p>
-                        <p className="text-xs text-slate-500">Place ID: {pendingPlace.placeId}</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={addPendingPlace}
-                        className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"
-                      >
-                        Add place
-                      </button>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-slate-500">Select a result to add it.</p>
-                  )}
-                </>
-              ) : (
-                <p className="text-sm text-slate-600">Loading Google Places...</p>
-              )
+            {canSearch ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Search for a place"
+                  className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-brand-400"
+                />
+                <button
+                  type="button"
+                  onClick={handleSearch}
+                  disabled={searching || !searchQuery.trim()}
+                  className="rounded-full bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {searching ? 'Searching...' : 'Search'}
+                </button>
+              </div>
             ) : (
               <p className="text-sm text-slate-600">
-                Provide <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">VITE_GOOGLE_MAPS_API_KEY</code> to
-                search Google Places.
+                Provide <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">VITE_MAPY_API_KEY</code> to search
+                Mapy places.
               </p>
             )}
 
-            {hasKey && (
-              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                {isLoaded ? (
-                  <GoogleMap
-                    center={mapCenter}
-                    zoom={googlePlaces.length ? 11 : 6}
-                    mapContainerStyle={{ width: '100%', height: '260px' }}
-                    options={{ disableDefaultUI: true, zoomControl: true }}
-                    onClick={handleMapClick}
+            {searchMessage && <p className="text-xs text-slate-500">{searchMessage}</p>}
+            {searchResults.length ? (
+              <ul className="space-y-2">
+                {searchResults.map((result) => (
+                  <li
+                    key={result.id}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm"
                   >
-                    {googlePlaces
-                      .map((place) => ({
-                        place,
-                        coords: getCoordsFromGeometry(place.geometry)
-                      }))
-                      .filter((entry) => !!entry.coords)
-                      .map((place, idx) => (
-                        <Marker
-                          key={place.place.placeId}
-                          position={place.coords as { lat: number; lng: number }}
-                          label={`${idx + 1}`}
-                        />
-                      ))}
-                  </GoogleMap>
-                ) : (
-                  <div className="flex h-[260px] items-center justify-center text-sm text-slate-600">Loading map...</div>
-                )}
+                    <div>
+                      <p className="font-semibold text-slate-900">{result.name}</p>
+                      <p className="text-xs text-slate-500">
+                        {result.lat.toFixed(5)}, {result.lng.toFixed(5)}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => addSearchResult(result)}
+                      className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                    >
+                      Add place
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+
+            {hasTiles ? (
+              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                <MapContainer
+                  center={mapCenter}
+                  zoom={googlePlaces.length ? 11 : 6}
+                  style={{ width: '100%', height: '260px' }}
+                  scrollWheelZoom={false}
+                >
+                  <MapyTileLayer />
+                  <MapClickHandler onClick={handleMapClick} />
+                  {googlePlaces
+                    .map((place) => ({
+                      place,
+                      coords: getCoordsFromGeometry(place.geometry)
+                    }))
+                    .filter((entry) => !!entry.coords)
+                    .map((place, idx) => (
+                      <CircleMarker
+                        key={place.place.placeId}
+                        center={place.coords as { lat: number; lng: number }}
+                        radius={7}
+                        pathOptions={{ color: '#0f172a', weight: 2, fillColor: '#ffffff', fillOpacity: 1 }}
+                      >
+                        <Tooltip direction="top" offset={[0, -8]}>{`${idx + 1}`}</Tooltip>
+                      </CircleMarker>
+                    ))}
+                </MapContainer>
               </div>
+            ) : (
+              <p className="text-sm text-slate-600">
+                Provide <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">VITE_MAPY_API_KEY</code> to render
+                the map.
+              </p>
             )}
-            {hasKey && isLoaded && (
-              <p className="text-xs text-slate-500">Tip: click the map to add the nearest address as a Google place.</p>
-            )}
+            {hasTiles && <p className="text-xs text-slate-500">Tip: click the map to add a location.</p>}
 
             {googlePlaces.length ? (
               <ul className="space-y-2">
@@ -404,7 +418,7 @@ export const CotravelForm = () => {
                   >
                     <div>
                       <p className="font-semibold text-slate-900">
-                        {idx + 1}. {place.name ?? 'Google Place'}
+                        {idx + 1}. {place.name ?? 'Mapy place'}
                       </p>
                       <p className="text-xs text-slate-500">Place ID: {place.placeId}</p>
                     </div>
@@ -419,7 +433,7 @@ export const CotravelForm = () => {
                 ))}
               </ul>
             ) : (
-              <p className="text-xs text-slate-500">No Google places added yet.</p>
+              <p className="text-xs text-slate-500">No places added yet.</p>
             )}
           </div>
         </section>
@@ -473,11 +487,16 @@ const normalizeNumberList = (value: number[] | string | null | undefined) => {
   return [];
 };
 
-const mapLibraries: ('places')[] = ['places'];
-
 const getCoordsFromGeometry = (geometry?: { type?: string; coordinates?: [number, number] } | null) => {
   if (!geometry || geometry.type !== 'Point' || !geometry.coordinates) return null;
   const [lng, lat] = geometry.coordinates;
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
   return { lat, lng };
+};
+
+const MapClickHandler = ({ onClick }: { onClick: (coords: { lat: number; lng: number }) => void }) => {
+  useMapEvents({
+    click: (event) => onClick(event.latlng)
+  });
+  return null;
 };
