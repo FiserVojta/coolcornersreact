@@ -12,6 +12,7 @@ import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { env } from '../../config/env';
 import { CircleMarker, MapContainer, Tooltip, useMapEvents } from 'react-leaflet';
+import type { LeafletMouseEvent } from 'leaflet';
 import { MapyTileLayer } from '../../components/MapyTileLayer';
 
 export const TripForm = () => {
@@ -624,7 +625,7 @@ const getCoordsFromGeometry = (geometry?: { type?: string; coordinates?: [number
 
 const MapClickHandler = ({ onClick }: { onClick: (coords: { lat: number; lng: number }) => void }) => {
   useMapEvents({
-    click: (event) => onClick(event.latlng)
+    click: (event: LeafletMouseEvent) => onClick(event.latlng)
   });
   return null;
 };
