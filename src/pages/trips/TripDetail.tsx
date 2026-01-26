@@ -59,39 +59,54 @@ export const TripDetail = () => {
 
   const owner = data.createdBy;
   const canUserEdit = owner ? canEdit(owner) : false;
+  const backgroundImageUrl = data.backgroundImage?.url ?? '';
+  const heroTitleClass = backgroundImageUrl ? 'text-white' : 'text-slate-900';
+  const heroLabelClass = backgroundImageUrl ? 'text-brand-100' : 'text-brand-700';
+  const heroMetaClass = backgroundImageUrl ? 'text-slate-100' : 'text-slate-600';
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-10">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-700">
-            {data.category?.title ?? 'Trip'}
-          </p>
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-slate-900">{data.name}</h1>
-            <RatingBadge rating={data.rating} />
+      <div className="relative mb-10 overflow-hidden rounded-3xl border border-slate-200">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={backgroundImageUrl ? { backgroundImage: `url(${backgroundImageUrl})` } : undefined}
+        />
+        <div
+          className={`absolute inset-0 ${
+            backgroundImageUrl ? 'bg-slate-900/55' : 'bg-gradient-to-br from-slate-50 to-white'
+          }`}
+        />
+        <div className="relative z-10 flex flex-col gap-4 px-6 py-10 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-2">
+            <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${heroLabelClass}`}>
+              {data.category?.title ?? 'Trip'}
+            </p>
+            <div className="flex items-center gap-3">
+              <h1 className={`text-3xl font-bold ${heroTitleClass}`}>{data.name}</h1>
+              <RatingBadge rating={data.rating} />
+            </div>
+            <p className={heroMetaClass}>{formatDuration(data.duration)}</p>
           </div>
-          <p className="text-slate-600">{formatDuration(data.duration)}</p>
+          {canUserEdit && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => navigate(`/trips/${tripId}/edit`)}
+                className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-900 shadow-sm transition hover:border-slate-400"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => {
+                  if (confirm('Delete this trip?')) deleteMut.mutate();
+                }}
+                className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700"
+                disabled={deleteMut.isPending}
+              >
+                {deleteMut.isPending ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          )}
         </div>
-        {canUserEdit && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => navigate(`/trips/${tripId}/edit`)}
-              className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-900 shadow-sm transition hover:border-slate-400"
-            >
-              Edit
-            </button>
-            <button
-              onClick={() => {
-                if (confirm('Delete this trip?')) deleteMut.mutate();
-              }}
-              className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700"
-              disabled={deleteMut.isPending}
-            >
-              {deleteMut.isPending ? 'Deleting...' : 'Delete'}
-            </button>
-          </div>
-        )}
       </div>
 
       <div className="mt-10 grid gap-10 lg:grid-cols-[2fr,1fr]">

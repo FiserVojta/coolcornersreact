@@ -19,7 +19,7 @@ const formatDuration = (minutes?: number) => {
 };
 
 export const TripCard = ({ trip }: Props) => {
-  const image = trip.images?.[0];
+  const image = trip.backgroundImage?.url ?? trip.images?.[0];
   const clampedRating = Math.max(0, Math.min(5, Number(trip.rating) || 0));
   const fullStars = Math.floor(clampedRating);
   const hasHalfStar = clampedRating - fullStars >= 0.5;

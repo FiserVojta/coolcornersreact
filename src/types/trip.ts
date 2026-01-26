@@ -21,6 +21,7 @@ export interface TripModel {
   comments?: CommentModel[];
   images?: string[];
   files?: TripFile[];
+  backgroundImage?: TripFile;
 }
 
 export interface TripRatingModel {
@@ -52,6 +53,7 @@ export interface TripCreateRequest {
   googlePlaces?: GooglePlaceInput[] | null | undefined;
   images?: string[] | null | undefined;
   files?: TripFileLinkRequest[] | null | undefined;
+  backgroundImage?: TripFileLinkRequest | null | undefined;
 }
 
 export interface GooglePlaceInput {
