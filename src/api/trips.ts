@@ -22,6 +22,10 @@ export const fetchTrips = async (filters?: Partial<TripSearchRequest>) => {
   request.countries.forEach((id) => params.append('countries', String(id)));
   request.durations.forEach((duration) => params.append('durations', String(duration)));
   if (request.minRating) params.append('minRating', String(request.minRating));
+  if (Number.isFinite(request.page)) params.append('page', String(request.page));
+  if (Number.isFinite(request.size)) params.append('size', String(request.size));
+  if (request.orderBy) params.append('orderBy', request.orderBy);
+  if (request.order) params.append('order', request.order);
 
   const { data } = await apiClient.get<PagedResult<TripModel>>('/public/trips', { params });
   return data;

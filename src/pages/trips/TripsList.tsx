@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchTrips } from '../../api/trips';
 import { fetchCategories } from '../../api/categories';
@@ -13,6 +13,8 @@ export const TripsList = () => {
   const { authenticated, login } = useAuth();
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [selectedTags, setSelectedTags] = useState<number[]>([]);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(9);
 
   const categoriesQuery = useQuery({
     queryKey: ['categories', 'TRIP'],
@@ -25,16 +27,16 @@ export const TripsList = () => {
   });
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['trips', selectedCategories, selectedTags],
-    queryFn: () => fetchTrips({ categories: selectedCategories, tags: selectedTags })
+    queryKey: ['trips', selectedCategories, selectedTags, page, pageSize],
+    queryFn: () => fetchTrips({ categories: selectedCategories, tags: selectedTags, page, size: pageSize })
   });
-
-  if (isLoading) return <LoadingState label="Loading trips..." />;
-  if (error) return <ErrorState message="Unable to load trips right now." />;
-
   const trips = data?.data ?? [];
   const categories = categoriesQuery.data ?? [];
   const tags = tagsQuery.data ?? [];
+  const totalItems = data?.totalItems ?? trips.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const canPrevious = page > 0;
+  const canNext = page + 1 < totalPages;
 
   const toggleCategory = (id: number) => {
     setSelectedCategories((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
@@ -47,7 +49,19 @@ export const TripsList = () => {
   const resetFilters = () => {
     setSelectedCategories([]);
     setSelectedTags([]);
+    setPage(0);
   };
+
+  useEffect(() => {
+    setPage(0);
+  }, [selectedCategories, selectedTags, pageSize]);
+
+  useEffect(() => {
+    if (page > totalPages - 1) setPage(totalPages - 1);
+  }, [page, totalPages]);
+
+  if (isLoading) return <LoadingState label="Loading trips..." />;
+  if (error) return <ErrorState message="Unable to load trips right now." />;
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-10">
@@ -55,7 +69,7 @@ export const TripsList = () => {
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-700">Trips</p>
           <h1 className="text-3xl font-bold text-slate-900">Plan your next wander</h1>
-          <p className="mt-2 text-slate-600">Found {data?.totalItems ?? trips.length} trips.</p>
+          <p className="mt-2 text-slate-600">Found {totalItems} trips.</p>
         </div>
         <div className="flex items-center gap-3">
           {authenticated ? (
@@ -143,9 +157,23 @@ export const TripsList = () => {
             Clear filters
           </button>
         </div>
-        <p className="mt-4 text-sm text-slate-500">
-          Select multiple categories or tags to narrow the list.
-        </p>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-500">
+          <p>Select multiple categories or tags to narrow the list.</p>
+          <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+            Page size
+            <select
+              value={pageSize}
+              onChange={(event) => setPageSize(Number(event.target.value))}
+              className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-semibold text-slate-700 shadow-sm"
+            >
+              {[6, 9, 12, 18].map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       </section>
 
       <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -153,6 +181,31 @@ export const TripsList = () => {
           <TripCard key={trip.id} trip={trip} />
         ))}
       </div>
+
+      {totalItems > pageSize && (
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+          <button
+            type="button"
+            disabled={!canPrevious}
+            onClick={() => setPage((prev) => Math.max(0, prev - 1))}
+            className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white">
+            Page {page + 1} of {totalPages}
+          </span>
+          <button
+            type="button"
+            disabled={!canNext}
+            onClick={() => setPage((prev) => Math.min(totalPages - 1, prev + 1))}
+            className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Next
+          </button>
+          <span className="text-sm text-slate-500">Total: {totalItems} trips</span>
+        </div>
+      )}
     </main>
   );
 };

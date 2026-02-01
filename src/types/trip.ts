@@ -80,4 +80,8 @@ export interface TripSearchRequest {
   tags: number[];
   durations: number[];
   minRating: number;
+  page?: number;
+  size?: number;
+  orderBy?: string;
+  order?: string;
 }
