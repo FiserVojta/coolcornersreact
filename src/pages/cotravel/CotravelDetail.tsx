@@ -331,7 +331,9 @@ const CotravelMap = ({
   );
 };
 
-const SegmentMap = ({ part }: { part: Cotravel['wanderParts'][number] }) => {
+type WanderPart = NonNullable<Cotravel['wanderParts']>[number];
+
+const SegmentMap = ({ part }: { part: WanderPart }) => {
   const needsTileKey =
     env.mapyTilesUrl.includes('{apikey}') ||
     env.mapyTilesUrl.includes('{API_KEY}') ||
@@ -386,13 +388,13 @@ const extractCoords = (parts?: Cotravel['wanderParts']) =>
     })
     .filter(Boolean) as { lat: number; lng: number }[];
 
-const extractPartCoords = (part: Cotravel['wanderParts'][number]) => {
+const extractPartCoords = (part: WanderPart) => {
   const placeCoords = extractPlacesCoords(part.places);
   const tripCoords = extractTripCoords(part.trips);
   return [...placeCoords, ...tripCoords];
 };
 
-const extractPlacesCoords = (places?: Cotravel['wanderParts'][number]['places']) =>
+const extractPlacesCoords = (places?: WanderPart['places']) =>
   (places ?? [])
     .map((place) => {
       if (!place.feature?.geometry?.coordinates) return null;
