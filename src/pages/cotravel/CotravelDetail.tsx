@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { deleteCotravel, fetchCotravel, joinCotravel, leaveCotravel } from '../../api/cotravel';
 import { LoadingState } from '../../components/LoadingState';
@@ -10,7 +10,7 @@ import { env } from '../../config/env';
 import { CircleMarker, MapContainer, Polyline, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import type { Cotravel } from '../../types/cotravel';
-import type { GeometryPoint } from '../../types/trip';
+import type { GeometryPoint, TripModel } from '../../types/trip';
 import type { User } from '../../types/user';
 import { MapyTileLayer } from '../../components/MapyTileLayer';
 
@@ -158,12 +158,18 @@ export const CotravelDetail = () => {
                         </div>
                       ))}
                       {part.trips?.map((trip) => (
-                        <div key={`t-${trip.id}`} className="rounded-lg bg-white px-3 py-2 shadow-inner">
+                        <Link
+                          key={`t-${trip.id}`}
+                          to={`/trips/${trip.id}`}
+                          className="rounded-lg bg-white px-3 py-2 shadow-inner transition hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
+                          aria-label={`Open trip ${trip.name ?? 'detail'}`}
+                        >
                           <p className="font-semibold text-slate-900">{trip.name}</p>
                           <p className="text-xs text-slate-600">Trip</p>
-                        </div>
+                        </Link>
                       ))}
                     </div>
+                    <SegmentMap part={part} />
                   </li>
                 ))}
               </ol>
@@ -325,6 +331,51 @@ const CotravelMap = ({
   );
 };
 
+const SegmentMap = ({ part }: { part: Cotravel['wanderParts'][number] }) => {
+  const needsTileKey =
+    env.mapyTilesUrl.includes('{apikey}') ||
+    env.mapyTilesUrl.includes('{API_KEY}') ||
+    env.mapyTilesUrl.includes('${API_KEY}');
+  const hasTiles = !!env.mapyApiKey || !needsTileKey;
+
+  const coords = useMemo(() => extractPartCoords(part), [part]);
+
+  if (!coords.length) return null;
+  if (!hasTiles) return null;
+
+  const center = coords[0];
+  const bounds = coords.length > 1 ? L.latLngBounds(coords) : undefined;
+
+  return (
+    <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <MapContainer
+        center={center}
+        zoom={6}
+        style={{ width: '100%', height: '180px' }}
+        bounds={bounds}
+        boundsOptions={{ padding: [16, 16] }}
+        scrollWheelZoom={false}
+        dragging={false}
+        doubleClickZoom={false}
+        zoomControl={false}
+      >
+        <MapyTileLayer />
+        {coords.map((pos, idx) => (
+          <CircleMarker
+            key={`${pos.lat}-${pos.lng}-${idx}`}
+            center={pos}
+            radius={6}
+            pathOptions={{ color: '#0f172a', weight: 2, fillColor: '#ffffff', fillOpacity: 1 }}
+          >
+            <Tooltip direction="top" offset={[0, -6]}>{`${idx + 1}`}</Tooltip>
+          </CircleMarker>
+        ))}
+        {coords.length > 1 && <Polyline positions={coords} pathOptions={{ color: '#2d75f5', weight: 3 }} />}
+      </MapContainer>
+    </div>
+  );
+};
+
 const extractCoords = (parts?: Cotravel['wanderParts']) =>
   (parts ?? [])
     .flatMap((part) => part.places ?? [])
@@ -333,6 +384,33 @@ const extractCoords = (parts?: Cotravel['wanderParts']) =>
       const [lng, lat] = place.feature.geometry.coordinates;
       return { lat, lng };
     })
+    .filter(Boolean) as { lat: number; lng: number }[];
+
+const extractPartCoords = (part: Cotravel['wanderParts'][number]) => {
+  const placeCoords = extractPlacesCoords(part.places);
+  const tripCoords = extractTripCoords(part.trips);
+  return [...placeCoords, ...tripCoords];
+};
+
+const extractPlacesCoords = (places?: Cotravel['wanderParts'][number]['places']) =>
+  (places ?? [])
+    .map((place) => {
+      if (!place.feature?.geometry?.coordinates) return null;
+      const [lng, lat] = place.feature.geometry.coordinates;
+      return { lat, lng };
+    })
+    .filter(Boolean) as { lat: number; lng: number }[];
+
+const extractTripCoords = (trips?: TripModel[]) =>
+  (trips ?? [])
+    .flatMap((trip) => [
+      ...(trip.places ?? []).map((place) => {
+        if (!place.feature?.geometry?.coordinates) return null;
+        const [lng, lat] = place.feature.geometry.coordinates;
+        return { lat, lng };
+      }),
+      ...(trip.googlePlaces ?? []).map((place) => getCoordsFromGeometry(place.geometry))
+    ])
     .filter(Boolean) as { lat: number; lng: number }[];
 
 const extractGoogleCoords = (places?: Cotravel['googlePlaces']) =>

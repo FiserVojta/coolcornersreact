@@ -4,8 +4,10 @@ import type { User } from './user';
 
 export interface CotravelPart {
   id: number;
+  name?: string;
   places?: PlaceDetail[];
   trips?: TripModel[];
+  googlePlaces?: GooglePlaceSummary[];
   order: number;
 }
 
@@ -34,7 +36,9 @@ export interface CotravelCreateRequest {
 }
 
 export interface CotravelPartCreateRequest {
+  name?: string | null | undefined;
   places: number[];
   trips: number[];
+  googlePlaces?: GooglePlaceInput[] | null | undefined;
   order: number;
 }
