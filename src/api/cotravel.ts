@@ -4,7 +4,7 @@ import type { Cotravel, CotravelCreateRequest, CotravelSearchRequest } from '../
 
 type CotravelListParams = Partial<CotravelSearchRequest>;
 
-const defaultParams: Required<Omit<CotravelListParams, 'search'>> = {
+const defaultParams = {
   page: 0,
   size: 12
 };
