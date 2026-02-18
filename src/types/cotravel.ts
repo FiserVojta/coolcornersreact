@@ -42,3 +42,14 @@ export interface CotravelPartCreateRequest {
   googlePlaces?: GooglePlaceInput[] | null | undefined;
   order: number;
 }
+
+export interface CotravelSearchRequest {
+  startsFrom?: string | null;
+  startsUntil?: string | null;
+  createdBy?: number | null;
+  categories: number[];
+  tags: number[];
+  page?: number;
+  size?: number;
+  search?: string;
+}

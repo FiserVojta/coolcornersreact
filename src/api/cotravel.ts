@@ -1,12 +1,8 @@
 import { apiClient } from './client';
 import type { PagedResult } from '../types/place';
-import type { Cotravel, CotravelCreateRequest } from '../types/cotravel';
+import type { Cotravel, CotravelCreateRequest, CotravelSearchRequest } from '../types/cotravel';
 
-interface CotravelListParams {
-  page?: number;
-  size?: number;
-  search?: string;
-}
+type CotravelListParams = Partial<CotravelSearchRequest>;
 
 const defaultParams: Required<Omit<CotravelListParams, 'search'>> = {
   page: 0,
@@ -15,10 +11,15 @@ const defaultParams: Required<Omit<CotravelListParams, 'search'>> = {
 
 export const fetchCotravelList = async (params?: CotravelListParams) => {
   const query = new URLSearchParams();
-  const { page, size, search } = { ...defaultParams, ...params };
+  const { page, size, search, startsFrom, startsUntil, createdBy, categories, tags } = { ...defaultParams, ...params };
   query.set('page', String(page));
   query.set('size', String(size));
   if (search) query.set('search', search);
+  if (startsFrom) query.set('startsFrom', startsFrom);
+  if (startsUntil) query.set('startsUntil', startsUntil);
+  if (Number.isFinite(createdBy)) query.set('createdBy', String(createdBy));
+  categories?.forEach((id) => query.append('categories', String(id)));
+  tags?.forEach((id) => query.append('tags', String(id)));
 
   const { data } = await apiClient.get<PagedResult<Cotravel>>('/public/wanders', { params: query });
   return data;
