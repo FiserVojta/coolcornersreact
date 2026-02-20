@@ -8,7 +8,7 @@ const formatDate = (value: string | number) => {
 };
 
 export const CotravelCard = ({ cotravel }: { cotravel: Cotravel }) => {
-  const image = pickImage(cotravel.description);
+  const image = cotravel.backgroundImage?.url ?? pickImage(cotravel.description);
   const filled = cotravel.wanderers?.length ?? 0;
   const capacity = cotravel.capacity ?? 0;
 

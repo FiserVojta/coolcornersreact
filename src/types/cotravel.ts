@@ -1,5 +1,5 @@
 import type { Category, Tag, PlaceDetail } from './place';
-import type { GooglePlaceInput, GooglePlaceSummary, TripModel } from './trip';
+import type { GooglePlaceInput, GooglePlaceSummary, TripFile, TripFileLinkRequest, TripModel } from './trip';
 import type { User } from './user';
 
 export interface CotravelPart {
@@ -22,6 +22,7 @@ export interface Cotravel {
   category?: Category;
   wanderParts?: CotravelPart[];
   googlePlaces?: GooglePlaceSummary[];
+  backgroundImage?: TripFile;
 }
 
 export interface CotravelCreateRequest {
@@ -33,6 +34,7 @@ export interface CotravelCreateRequest {
   category: number;
   wanderParts: CotravelPartCreateRequest[];
   googlePlaces?: GooglePlaceInput[] | null | undefined;
+  backgroundImage?: TripFileLinkRequest | null | undefined;
 }
 
 export interface CotravelPartCreateRequest {

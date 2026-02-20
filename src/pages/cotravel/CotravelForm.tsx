@@ -7,9 +7,10 @@ import { fetchCategories } from '../../api/categories';
 import { fetchTags } from '../../api/tags';
 import { fetchTrips } from '../../api/trips';
 import { fetchPlaces } from '../../api/places';
+import { uploadFile } from '../../api/files';
 import { searchMapyPlaces } from '../../api/mapy';
 import type { CotravelCreateRequest } from '../../types/cotravel';
-import type { GooglePlaceInput } from '../../types/trip';
+import type { GooglePlaceInput, TripFileLinkRequest } from '../../types/trip';
 import type { PlaceDetail } from '../../types/place';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
@@ -43,6 +44,10 @@ export const CotravelForm = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [segments, setSegments] = useState<SegmentDraft[]>(() => [createSegment()]);
+  const [selectedBackgroundFile, setSelectedBackgroundFile] = useState<File | null>(null);
+  const [backgroundUploadMessage, setBackgroundUploadMessage] = useState<string | null>(null);
+  const [backgroundImageUrl, setBackgroundImageUrl] = useState<string>('');
+  const [backgroundImageFile, setBackgroundImageFile] = useState<TripFileLinkRequest | null>(null);
 
   const detailQuery = useQuery({
     queryKey: ['cotravel', cotravelId],
@@ -127,6 +132,15 @@ export const CotravelForm = () => {
             })) ?? []
         })) ?? [];
       setSegments(draftSegments.length ? draftSegments : [createSegment()]);
+      if (detailQuery.data.backgroundImage?.url) {
+        setBackgroundImageUrl(detailQuery.data.backgroundImage.url);
+      }
+      if (Number.isFinite(detailQuery.data.backgroundImage?.id)) {
+        setBackgroundImageFile({
+          fileId: detailQuery.data.backgroundImage?.id as number,
+          name: detailQuery.data.backgroundImage?.name ?? 'background-image'
+        });
+      }
     }
   }, [detailQuery.data, reset]);
 
@@ -149,6 +163,25 @@ export const CotravelForm = () => {
     }
   });
 
+  const backgroundUploadMut = useMutation({
+    mutationFn: uploadFile,
+    onSuccess: (res) => {
+      const fileId = typeof res?.id === 'string' ? Number(res.id) : res?.id;
+      const fileName = res?.name ?? res?.filename ?? 'background-image';
+      if (Number.isFinite(fileId)) {
+        setBackgroundImageFile({ fileId: fileId as number, name: fileName });
+      }
+      if (res?.url) {
+        setBackgroundImageUrl(res.url);
+        setBackgroundUploadMessage(`Uploaded: ${res.url}`);
+      } else {
+        setBackgroundUploadMessage('File uploaded.');
+      }
+      setSelectedBackgroundFile(null);
+    },
+    onError: () => setBackgroundUploadMessage('Upload failed. Please try again.')
+  });
+
   if (isEdit && detailQuery.isLoading) return <LoadingState label="Loading co-travel..." />;
   if (isEdit && detailQuery.error) return <ErrorState message="Failed to load co-travel for editing." />;
 
@@ -166,7 +199,8 @@ export const CotravelForm = () => {
         googlePlaces: segment.googlePlaces,
         order: index + 1
       })),
-      googlePlaces: []
+      googlePlaces: [],
+      backgroundImage: backgroundImageFile ?? undefined
     };
     if (isEdit) return updateMut.mutate(payload);
     return createMut.mutate(payload);
@@ -260,14 +294,25 @@ export const CotravelForm = () => {
     setValue('tags', next, { shouldValidate: true, shouldDirty: true });
   };
 
+  const heroTitleClass = backgroundImageUrl ? 'text-white' : 'text-slate-900';
+  const heroLabelClass = backgroundImageUrl ? 'text-brand-100' : 'text-brand-700';
+
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
       <div className="relative mb-8 overflow-hidden rounded-3xl border border-slate-200">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-brand-50" />
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={backgroundImageUrl ? { backgroundImage: `url(${backgroundImageUrl})` } : undefined}
+        />
+        <div
+          className={`absolute inset-0 ${
+            backgroundImageUrl ? 'bg-slate-900/55' : 'bg-gradient-to-br from-slate-50 to-white'
+          }`}
+        />
         <div className="relative z-10 flex items-center justify-between px-6 py-10">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-700">CoTravel</p>
-            <h1 className="text-3xl font-bold text-slate-900">{isEdit ? 'Edit plan' : 'Create plan'}</h1>
+            <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${heroLabelClass}`}>CoTravel</p>
+            <h1 className={`text-3xl font-bold ${heroTitleClass}`}>{isEdit ? 'Edit plan' : 'Create plan'}</h1>
           </div>
         </div>
       </div>
@@ -279,6 +324,46 @@ export const CotravelForm = () => {
             rows={4}
             className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-brand-400"
           />
+        </Field>
+
+        <Field label="Background image">
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-3">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(event) => {
+                  const file = event.target.files?.[0] ?? null;
+                  setSelectedBackgroundFile(file);
+                  setBackgroundUploadMessage(null);
+                }}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none focus:border-brand-400 sm:w-auto"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (!selectedBackgroundFile) return;
+                  backgroundUploadMut.mutate(selectedBackgroundFile);
+                }}
+                disabled={!selectedBackgroundFile || backgroundUploadMut.isPending}
+                className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {backgroundUploadMut.isPending ? 'Uploading...' : 'Upload'}
+              </button>
+            </div>
+            {selectedBackgroundFile && (
+              <p className="text-xs text-slate-600">Selected: {selectedBackgroundFile.name}</p>
+            )}
+            {backgroundUploadMessage && <p className="text-xs text-slate-600">{backgroundUploadMessage}</p>}
+            {backgroundImageUrl && (
+              <img
+                src={backgroundImageUrl}
+                alt="Background upload preview"
+                className="h-40 w-full rounded-2xl object-cover shadow-sm sm:h-48"
+                loading="lazy"
+              />
+            )}
+          </div>
         </Field>
 
         <div className="grid gap-4 sm:grid-cols-2">
