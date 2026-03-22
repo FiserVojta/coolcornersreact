@@ -1,13 +1,18 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchCotravelList } from '../../api/cotravel';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { CotravelCard } from '../../components/CotravelCard';
 import { useAuth } from '../../auth/KeycloakProvider';
-import { Link } from 'react-router-dom';
 import { fetchCategories } from '../../api/categories';
 import { fetchTags } from '../../api/tags';
+import { PageContainer } from '../../components/layout/PageContainer';
+import { PageHeader } from '../../components/layout/PageHeader';
+import { Button } from '../../components/ui/Button';
+import { PaginationControls } from '../../components/ui/PaginationControls';
+import { TextInput } from '../../components/ui/FormField';
+import { SurfaceCard } from '../../components/ui/SurfaceCard';
 
 type FilterDraft = {
   startsFrom: string;
@@ -35,6 +40,7 @@ export const CotravelList = () => {
   const [filters, setFilters] = useState<FilterDraft>(emptyFilters);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(9);
+  const safePage = Math.max(0, page);
 
   const categoriesQuery = useQuery({
     queryKey: ['categories', 'COTRAVEL'],
@@ -54,10 +60,10 @@ export const CotravelList = () => {
       createdBy: Number.isFinite(createdBy ?? NaN) ? createdBy : undefined,
       categories: filters.categories,
       tags: filters.tags,
-      page,
+      page: safePage,
       size: pageSize
     };
-  }, [filters, page, pageSize]);
+  }, [filters, pageSize, safePage]);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['cotravel', queryFilters],
@@ -67,106 +73,93 @@ export const CotravelList = () => {
   const plans = data?.data ?? [];
   const totalItems = data?.totalItems ?? plans.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-  const canPrevious = page > 0;
-  const canNext = page + 1 < totalPages;
-
-  useEffect(() => {
-    setPage(0);
-  }, [filters, pageSize]);
-
-  useEffect(() => {
-    if (page > totalPages - 1) setPage(totalPages - 1);
-  }, [page, totalPages]);
+  const currentPage = Math.min(safePage, totalPages - 1);
+  const canPrevious = currentPage > 0;
+  const canNext = currentPage + 1 < totalPages;
 
   if (isLoading) return <LoadingState label="Loading co-travel plans..." />;
   if (error) return <ErrorState message="Unable to load co-travel plans right now." />;
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-700">CoTravel</p>
-          <h1 className="text-3xl font-bold text-slate-900">Join community-led trips</h1>
-          <p className="mt-2 text-slate-600">Found {totalItems} co-travel plans.</p>
-        </div>
-        <div className="flex items-center gap-3">
+    <PageContainer>
+      <PageHeader
+        eyebrow="CoTravel"
+        title="Join community-led trips"
+        description={`Found ${totalItems} co-travel plans.`}
+        actions={
+          <>
           {authenticated ? (
-            <Link
-              to="/cotravel/create"
-              className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
-            >
+            <Button to="/cotravel/create">
               Create plan
-            </Link>
+            </Button>
           ) : (
-            <button
-              onClick={() => login()}
-              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:border-slate-400"
-            >
+            <Button onClick={() => login()} variant="secondary">
               Login to create
-            </button>
+            </Button>
           )}
           <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700">
             React port
           </span>
-        </div>
-      </div>
+          </>
+        }
+      />
 
-      <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <SurfaceCard className="mt-6 border border-slate-200 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Filters</p>
             <p className="text-sm text-slate-600">Refine the wander list by time, author, category, or tags.</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setFilters(draft)}
-              className="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"
-            >
+            <Button size="sm" onClick={() => {
+              setPage(0);
+              setFilters(draft);
+            }}>
               Apply filters
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
               onClick={() => {
                 setDraft(emptyFilters);
                 setFilters(emptyFilters);
+                setPage(0);
               }}
-              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300"
+              variant="secondary"
+              size="sm"
             >
               Reset
-            </button>
+            </Button>
           </div>
         </div>
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
             Starts From
-            <input
+            <TextInput
               type="date"
               value={draft.startsFrom}
               onChange={(event) => setDraft((prev) => ({ ...prev, startsFrom: event.target.value }))}
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-900 focus:border-slate-400 focus:outline-none"
+              className="font-medium text-slate-900"
             />
           </label>
           <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
             Starts Until
-            <input
+            <TextInput
               type="date"
               value={draft.startsUntil}
               onChange={(event) => setDraft((prev) => ({ ...prev, startsUntil: event.target.value }))}
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-900 focus:border-slate-400 focus:outline-none"
+              className="font-medium text-slate-900"
             />
           </label>
           <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
             Created By (User ID)
-            <input
+            <TextInput
               type="number"
               min="1"
               inputMode="numeric"
               value={draft.createdBy}
               onChange={(event) => setDraft((prev) => ({ ...prev, createdBy: event.target.value }))}
               placeholder="e.g. 42"
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-900 focus:border-slate-400 focus:outline-none"
+              className="font-medium text-slate-900"
             />
           </label>
           <div className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
@@ -184,7 +177,10 @@ export const CotravelList = () => {
             Page size
             <select
               value={pageSize}
-              onChange={(event) => setPageSize(Number(event.target.value))}
+              onChange={(event) => {
+                setPage(0);
+                setPageSize(Number(event.target.value));
+              }}
               className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-semibold text-slate-700 shadow-sm"
             >
               {[6, 9, 12, 18].map((size) => (
@@ -238,7 +234,7 @@ export const CotravelList = () => {
             </div>
           </div>
         </div>
-      </section>
+      </SurfaceCard>
 
       <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {plans.map((wander) => (
@@ -247,29 +243,16 @@ export const CotravelList = () => {
       </div>
 
       {totalItems > pageSize && (
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-          <button
-            type="button"
-            disabled={!canPrevious}
-            onClick={() => setPage((prev) => Math.max(0, prev - 1))}
-            className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <span className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white">
-            Page {page + 1} of {totalPages}
-          </span>
-          <button
-            type="button"
-            disabled={!canNext}
-            onClick={() => setPage((prev) => Math.min(totalPages - 1, prev + 1))}
-            className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Next
-          </button>
-          <span className="text-sm text-slate-500">Total: {totalItems} plans</span>
-        </div>
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalLabel={`Total: ${totalItems} plans`}
+          previousDisabled={!canPrevious}
+          nextDisabled={!canNext}
+          onPrevious={() => setPage(Math.max(0, currentPage - 1))}
+          onNext={() => setPage(Math.min(totalPages - 1, currentPage + 1))}
+        />
       )}
-    </main>
+    </PageContainer>
   );
 };

@@ -5,6 +5,8 @@ import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { TagList } from '../../components/TagList';
 import { useAuth } from '../../auth/KeycloakProvider';
+import { Button } from '../../components/ui/Button';
+import { SurfaceCard } from '../../components/ui/SurfaceCard';
 
 export const EventDetail = () => {
   const { id } = useParams();
@@ -48,21 +50,19 @@ export const EventDetail = () => {
           </div>
           {canUserEdit && (
             <>
-              <button
-                onClick={() => navigate(`/events/${eventId}/edit`)}
-                className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-900 shadow-sm transition hover:border-slate-400"
-              >
+              <Button onClick={() => navigate(`/events/${eventId}/edit`)} variant="secondary" size="sm">
                 Edit
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => {
                   if (confirm('Delete this event?')) deleteMut.mutate();
                 }}
-                className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700"
+                variant="danger"
+                size="sm"
                 disabled={deleteMut.isPending}
               >
                 {deleteMut.isPending ? 'Deleting...' : 'Delete'}
-              </button>
+              </Button>
             </>
           )}
         </div>
@@ -70,7 +70,7 @@ export const EventDetail = () => {
 
       <section className="mt-8 grid gap-6 lg:grid-cols-[2fr,1fr]">
         <div className="space-y-4">
-          <div className="rounded-2xl bg-white p-5 shadow-card">
+          <SurfaceCard>
             <h2 className="text-lg font-semibold text-slate-900">About</h2>
             <p className="mt-2 text-slate-700 leading-relaxed">{data.description}</p>
             <div className="mt-4">
@@ -90,11 +90,11 @@ export const EventDetail = () => {
                 }
               />
             </div>
-          </div>
+          </SurfaceCard>
         </div>
 
         <aside className="space-y-4">
-          <div className="rounded-2xl bg-white p-5 shadow-card">
+          <SurfaceCard as="aside">
             <h3 className="text-lg font-semibold text-slate-900">Details</h3>
             <dl className="mt-3 grid gap-2 text-sm text-slate-700">
               <Detail label="Venue" value={data.venue} />
@@ -103,7 +103,7 @@ export const EventDetail = () => {
               <Detail label="Price" value={formatPrice(data.price)} />
               <Detail label="Created by" value={data.createdBy} />
             </dl>
-          </div>
+          </SurfaceCard>
         </aside>
       </section>
     </main>

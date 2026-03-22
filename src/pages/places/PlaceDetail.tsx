@@ -13,6 +13,9 @@ import type { CommentModel } from '../../types/place';
 import { fetchFiles, uploadFile } from '../../api/files';
 import { CircleMarker, MapContainer } from 'react-leaflet';
 import { MapyTileLayer } from '../../components/MapyTileLayer';
+import { Button } from '../../components/ui/Button';
+import { SurfaceCard } from '../../components/ui/SurfaceCard';
+import { TextArea } from '../../components/ui/FormField';
 
 export const PlaceDetail = () => {
   const { id } = useParams();
@@ -93,21 +96,19 @@ export const PlaceDetail = () => {
             <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
               You can edit
             </span>
-            <button
-              onClick={() => navigate(`/places/${placeId}/edit`)}
-              className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-900 shadow-sm transition hover:border-slate-400"
-            >
+            <Button onClick={() => navigate(`/places/${placeId}/edit`)} variant="secondary" size="sm">
               Edit
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => {
                 if (confirm('Delete this place?')) deleteMut.mutate();
               }}
-              className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700"
+              variant="danger"
+              size="sm"
               disabled={deleteMut.isPending}
             >
               {deleteMut.isPending ? 'Deleting...' : 'Delete'}
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -137,15 +138,15 @@ export const PlaceDetail = () => {
 
       <div className="mt-10 grid gap-10 lg:grid-cols-[2fr,1fr]">
         <div className="space-y-6">
-          <section className="rounded-2xl bg-white p-6 shadow-card">
+          <SurfaceCard padding="lg">
             <h2 className="text-xl font-semibold text-slate-900">Overview</h2>
             <p className="mt-2 text-slate-700 leading-relaxed">{data.description}</p>
             <div className="mt-4">
               <TagList tags={data.tags} />
             </div>
-          </section>
+          </SurfaceCard>
 
-          <section className="rounded-2xl bg-white p-6 shadow-card">
+          <SurfaceCard padding="lg">
             <h3 className="text-lg font-semibold text-slate-900">Details</h3>
             <div className="mt-3 grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
               <Detail label="City" value={data.city?.name} />
@@ -155,12 +156,12 @@ export const PlaceDetail = () => {
               <Detail label="Email" value={data.email} />
               <Detail label="Address" value={data.address} />
             </div>
-          </section>
+          </SurfaceCard>
         </div>
 
         <aside className="space-y-6">
           <LocationMap featureCoords={data.feature?.geometry.coordinates} />
-          <section className="rounded-2xl bg-white p-5 shadow-card">
+          <SurfaceCard>
             <h3 className="text-lg font-semibold text-slate-900">Comments</h3>
             {data.comments?.length ? (
               <ul className="mt-3 space-y-3 text-sm text-slate-700">
@@ -179,34 +180,36 @@ export const PlaceDetail = () => {
                 onSubmit={commentForm.handleSubmit((values) => commentMut.mutate(values))}
                 className="mt-3 space-y-2"
               >
-                <textarea
+                <TextArea
                   {...commentForm.register('value', { required: true })}
                   placeholder="Add a comment"
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-400"
                 />
-                <button
+                <Button
                   type="submit"
                   disabled={commentMut.isPending}
-                  className="rounded-full bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-70"
+                  size="sm"
+                  className="disabled:opacity-70"
                 >
                   {commentMut.isPending ? 'Posting...' : 'Post comment'}
-                </button>
+                </Button>
               </form>
             ) : (
               <p className="mt-3 text-sm text-slate-600">
                 Please login to comment.
-                <button
+                <Button
                   type="button"
                   disabled={initializing}
                   onClick={() => login()}
-                  className="ml-2 inline-flex items-center rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-900 shadow-sm transition hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-70"
+                  variant="secondary"
+                  size="sm"
+                  className="ml-2 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {initializing ? 'Loading...' : 'Login'}
-                </button>
+                </Button>
               </p>
             )}
-          </section>
-          <section className="rounded-2xl bg-white p-5 shadow-card">
+          </SurfaceCard>
+          <SurfaceCard>
             <h3 className="text-lg font-semibold text-slate-900">Rate this place</h3>
             <div className="mt-2 flex items-center gap-2">
               {[1, 2, 3, 4, 5].map((star) => (
@@ -223,8 +226,8 @@ export const PlaceDetail = () => {
               ))}
             </div>
             {ratingMut.isPending && <p className="mt-2 text-xs text-slate-600">Submitting...</p>}
-          </section>
-          <section className="rounded-2xl bg-white p-5 shadow-card">
+          </SurfaceCard>
+          <SurfaceCard>
             <h3 className="text-lg font-semibold text-slate-900">Upload a file</h3>
             {authenticated ? (
               <form
@@ -247,13 +250,14 @@ export const PlaceDetail = () => {
                   className="block w-full text-sm text-slate-700"
                 />
                 {selectedFile && <p className="text-xs text-slate-600">Selected: {selectedFile.name}</p>}
-                <button
+                <Button
                   type="submit"
                   disabled={!selectedFile || uploadMut.isPending}
-                  className="rounded-full bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+                  size="sm"
+                  className="disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {uploadMut.isPending ? 'Uploading...' : 'Upload'}
-                </button>
+                </Button>
                 {uploadMessage && (
                   <p className="text-xs text-slate-600">
                     {uploadMessage}
@@ -273,18 +277,20 @@ export const PlaceDetail = () => {
             ) : (
               <p className="mt-3 text-sm text-slate-600">
                 Please login to upload files.
-                <button
+                <Button
                   type="button"
                   disabled={initializing}
                   onClick={() => login()}
-                  className="ml-2 inline-flex items-center rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-900 shadow-sm transition hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-70"
+                  variant="secondary"
+                  size="sm"
+                  className="ml-2 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {initializing ? 'Loading...' : 'Login'}
-                </button>
+                </Button>
               </p>
             )}
-          </section>
-          <section className="rounded-2xl bg-white p-5 shadow-card">
+          </SurfaceCard>
+          <SurfaceCard>
             <h3 className="text-lg font-semibold text-slate-900">Uploaded files</h3>
             {filesLoading ? (
               <p className="mt-3 text-sm text-slate-600">Loading files...</p>
@@ -312,7 +318,7 @@ export const PlaceDetail = () => {
             ) : (
               <p className="mt-3 text-sm text-slate-600">No files uploaded yet.</p>
             )}
-          </section>
+          </SurfaceCard>
         </aside>
       </div>
     </main>
@@ -342,22 +348,22 @@ const LocationMap = ({ featureCoords }: { featureCoords?: [number, number] }) =>
 
   if (!coords) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
+      <SurfaceCard className="border border-slate-200">
         <h3 className="text-lg font-semibold text-slate-900">Location</h3>
         <p className="mt-2 text-sm text-slate-600">No coordinates available.</p>
-      </div>
+      </SurfaceCard>
     );
   }
 
   if (!hasTiles) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
+      <SurfaceCard className="border border-slate-200">
         <h3 className="text-lg font-semibold text-slate-900">Location</h3>
         <p className="mt-2 text-sm text-slate-600">
           Provide <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">VITE_MAPY_API_KEY</code> to render the
           map.
         </p>
-      </div>
+      </SurfaceCard>
     );
   }
 

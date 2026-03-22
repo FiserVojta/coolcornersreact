@@ -15,6 +15,9 @@ import type { PlaceDetail } from '../../types/place';
 import type { CommentModel } from '../../types/place';
 import { useForm } from 'react-hook-form';
 import { MapyTileLayer } from '../../components/MapyTileLayer';
+import { Button } from '../../components/ui/Button';
+import { SurfaceCard } from '../../components/ui/SurfaceCard';
+import { TextArea } from '../../components/ui/FormField';
 
 export const TripDetail = () => {
   const { id } = useParams();
@@ -89,21 +92,19 @@ export const TripDetail = () => {
           </div>
           {canUserEdit && (
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => navigate(`/trips/${tripId}/edit`)}
-                className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-900 shadow-sm transition hover:border-slate-400"
-              >
+              <Button onClick={() => navigate(`/trips/${tripId}/edit`)} variant="secondary" size="sm">
                 Edit
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => {
                   if (confirm('Delete this trip?')) deleteMut.mutate();
                 }}
-                className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700"
+                variant="danger"
+                size="sm"
                 disabled={deleteMut.isPending}
               >
                 {deleteMut.isPending ? 'Deleting...' : 'Delete'}
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -111,15 +112,15 @@ export const TripDetail = () => {
 
       <div className="mt-10 grid gap-10 lg:grid-cols-[2fr,1fr]">
         <div className="space-y-6">
-          <section className="rounded-2xl bg-white p-6 shadow-card">
+          <SurfaceCard padding="lg">
             <h2 className="text-xl font-semibold text-slate-900">Overview</h2>
             <p className="mt-2 text-slate-700 leading-relaxed">{data.description}</p>
             <div className="mt-4">
               <TagList tags={data.tags} />
             </div>
-          </section>
+          </SurfaceCard>
 
-          <section className="rounded-2xl bg-white p-6 shadow-card">
+          <SurfaceCard padding="lg">
             <h3 className="text-lg font-semibold text-slate-900">Photos</h3>
             {data.files?.length || data.images?.length ? (
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -136,9 +137,9 @@ export const TripDetail = () => {
             ) : (
               <p className="mt-2 text-sm text-slate-600">No photos uploaded yet.</p>
             )}
-          </section>
+          </SurfaceCard>
 
-          <section className="rounded-2xl bg-white p-6 shadow-card">
+          <SurfaceCard padding="lg">
             <h3 className="text-lg font-semibold text-slate-900">Itinerary</h3>
             {data.places?.length ? (
               <ol className="mt-3 space-y-3">
@@ -181,12 +182,12 @@ export const TripDetail = () => {
                 </ol>
               </div>
             ) : null}
-          </section>
+          </SurfaceCard>
         </div>
 
         <aside className="space-y-6">
           <TripMap trip={data} />
-          <section className="rounded-2xl bg-white p-5 shadow-card">
+          <SurfaceCard>
             <h3 className="text-lg font-semibold text-slate-900">Comments</h3>
             {data.comments?.length ? (
               <ul className="mt-3 space-y-3 text-sm text-slate-700">
@@ -205,34 +206,36 @@ export const TripDetail = () => {
                 onSubmit={commentForm.handleSubmit((values) => commentMut.mutate(values))}
                 className="mt-3 space-y-2"
               >
-                <textarea
+                <TextArea
                   {...commentForm.register('value', { required: true })}
                   placeholder="Add a comment"
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-400"
                 />
-                <button
+                <Button
                   type="submit"
                   disabled={commentMut.isPending}
-                  className="rounded-full bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-70"
+                  size="sm"
+                  className="disabled:opacity-70"
                 >
                   {commentMut.isPending ? 'Posting...' : 'Post comment'}
-                </button>
+                </Button>
               </form>
             ) : (
               <p className="mt-3 text-sm text-slate-600">
                 Please login to comment.
-                <button
+                <Button
                   type="button"
                   disabled={initializing}
                   onClick={() => login()}
-                  className="ml-2 inline-flex items-center rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-900 shadow-sm transition hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-70"
+                  variant="secondary"
+                  size="sm"
+                  className="ml-2 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {initializing ? 'Loading...' : 'Login'}
-                </button>
+                </Button>
               </p>
             )}
-          </section>
-          <section className="rounded-2xl bg-white p-5 shadow-card">
+          </SurfaceCard>
+          <SurfaceCard>
             <h3 className="text-lg font-semibold text-slate-900">Rate this trip</h3>
             <div className="mt-2 flex items-center gap-2">
               {[1, 2, 3, 4, 5].map((star) => (
@@ -249,7 +252,7 @@ export const TripDetail = () => {
               ))}
             </div>
             {ratingMut.isPending && <p className="mt-2 text-xs text-slate-600">Submitting...</p>}
-          </section>
+          </SurfaceCard>
         </aside>
       </div>
     </main>

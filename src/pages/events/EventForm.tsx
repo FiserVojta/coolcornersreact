@@ -7,6 +7,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import type { EventCreateRequest } from '../../types/event';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
+import { Button } from '../../components/ui/Button';
+import { FormField, SelectInput, TextArea, TextInput } from '../../components/ui/FormField';
 
 type FormValues = EventCreateRequest;
 
@@ -102,68 +104,50 @@ export const EventForm = () => {
 
       <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-6">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Name" error={errors.name}>
-            <input
-              {...register('name', { required: 'Name is required' })}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-brand-400"
-            />
-          </Field>
-          <Field label="Venue" error={errors.venue}>
-            <input
-              {...register('venue', { required: 'Venue is required' })}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-brand-400"
-            />
-          </Field>
+          <FormField label="Name" error={errors.name}>
+            <TextInput {...register('name', { required: 'Name is required' })} />
+          </FormField>
+          <FormField label="Venue" error={errors.venue}>
+            <TextInput {...register('venue', { required: 'Venue is required' })} />
+          </FormField>
         </div>
 
-        <Field label="Description" error={errors.description}>
-          <textarea
-            {...register('description', { required: 'Description is required' })}
-            rows={4}
-            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-brand-400"
-          />
-        </Field>
+        <FormField label="Description" error={errors.description}>
+          <TextArea {...register('description', { required: 'Description is required' })} rows={4} />
+        </FormField>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Start time" error={errors.startTime}>
-            <input
-              type="datetime-local"
-              {...register('startTime', { required: 'Start time is required' })}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-brand-400"
-            />
-          </Field>
-          <Field label="Duration (minutes)" error={errors.duration}>
-            <input
+          <FormField label="Start time" error={errors.startTime}>
+            <TextInput type="datetime-local" {...register('startTime', { required: 'Start time is required' })} />
+          </FormField>
+          <FormField label="Duration (minutes)" error={errors.duration}>
+            <TextInput
               type="number"
               min={0}
               {...register('duration', { required: 'Duration is required', valueAsNumber: true })}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-brand-400"
             />
-          </Field>
+          </FormField>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="Price" error={errors.price}>
-            <input
+          <FormField label="Price" error={errors.price}>
+            <TextInput
               type="number"
               min={0}
               step="0.01"
               {...register('price', { required: 'Price is required', valueAsNumber: true })}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-brand-400"
             />
-          </Field>
-          <Field label="Capacity" error={errors.capacity}>
-            <input
+          </FormField>
+          <FormField label="Capacity" error={errors.capacity}>
+            <TextInput
               type="number"
               min={1}
               {...register('capacity', { required: 'Capacity is required', valueAsNumber: true })}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-brand-400"
             />
-          </Field>
-          <Field label="Category" error={errors.categoryId}>
-            <select
+          </FormField>
+          <FormField label="Category" error={errors.categoryId}>
+            <SelectInput
               {...register('categoryId', { required: 'Category is required', valueAsNumber: true })}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-brand-400"
             >
               <option value="">Select category</option>
               {(categoriesQuery.data ?? []).map((cat) => (
@@ -171,43 +155,27 @@ export const EventForm = () => {
                   {cat.title || cat.name}
                 </option>
               ))}
-            </select>
-          </Field>
+            </SelectInput>
+          </FormField>
         </div>
 
         <div className="flex gap-3">
-          <button
+          <Button
             type="submit"
             disabled={isSubmitting || createMut.isPending || updateMut.isPending}
-            className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+            className="disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isEdit ? (updateMut.isPending ? 'Saving...' : 'Save') : createMut.isPending ? 'Creating...' : 'Create'}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={() => navigate(-1)}
-            className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:border-slate-400"
+            variant="secondary"
           >
             Cancel
-          </button>
+          </Button>
         </div>
       </form>
     </main>
   );
 };
-
-const Field = ({
-  label,
-  error,
-  children
-}: {
-  label: string;
-  error?: { message?: string };
-  children: React.ReactNode;
-}) => (
-  <label className="space-y-1 text-sm text-slate-700">
-    <span className="block font-semibold text-slate-900">{label}</span>
-    {children}
-    {error?.message && <p className="text-xs font-semibold text-rose-600">{error.message}</p>}
-  </label>
-);

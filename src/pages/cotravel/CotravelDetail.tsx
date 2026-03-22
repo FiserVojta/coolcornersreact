@@ -13,6 +13,8 @@ import type { Cotravel } from '../../types/cotravel';
 import type { GeometryPoint, TripModel } from '../../types/trip';
 import type { User } from '../../types/user';
 import { MapyTileLayer } from '../../components/MapyTileLayer';
+import { Button } from '../../components/ui/Button';
+import { SurfaceCard } from '../../components/ui/SurfaceCard';
 
 export const CotravelDetail = () => {
   const { id } = useParams();
@@ -93,48 +95,42 @@ export const CotravelDetail = () => {
                 <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
                   You can edit
                 </span>
-                <button
-                  onClick={() => navigate(`/cotravel/${cotravelId}/edit`)}
-                  className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-900 shadow-sm transition hover:border-slate-400"
-                >
+                <Button onClick={() => navigate(`/cotravel/${cotravelId}/edit`)} variant="secondary" size="sm">
                   Edit
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => {
                     if (confirm('Delete this plan?')) deleteMutation.mutate();
                   }}
-                  className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700"
+                  variant="danger"
+                  size="sm"
                   disabled={deleteMutation.isPending}
                 >
                   {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
-                </button>
+                </Button>
               </div>
             )}
             {authenticated ? (
               userJoined ? (
-                <button
+                <Button
                   onClick={() => leaveMutation.mutate()}
-                  className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:border-slate-400"
+                  variant="secondary"
                   disabled={leaveMutation.isPending}
                 >
                   {leaveMutation.isPending ? 'Leaving...' : 'Leave'}
-                </button>
+                </Button>
               ) : (
-                <button
+                <Button
                   onClick={() => joinMutation.mutate()}
-                  className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
                   disabled={joinMutation.isPending}
                 >
                   {joinMutation.isPending ? 'Joining...' : 'Join'}
-                </button>
+                </Button>
               )
             ) : (
-              <button
-                onClick={() => login()}
-                className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
-              >
+              <Button onClick={() => login()}>
                 Login to join
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -142,15 +138,15 @@ export const CotravelDetail = () => {
 
       <div className="mt-10 grid gap-10 lg:grid-cols-[2fr,1fr]">
         <div className="space-y-6">
-          <section className="rounded-2xl bg-white p-6 shadow-card">
+          <SurfaceCard padding="lg">
             <h2 className="text-xl font-semibold text-slate-900">Overview</h2>
             <p className="mt-2 text-slate-700 leading-relaxed">{summarize(data.description)}</p>
             <div className="mt-4">
               <TagList tags={data.tags} />
             </div>
-          </section>
+          </SurfaceCard>
 
-          <section className="rounded-2xl bg-white p-6 shadow-card">
+          <SurfaceCard padding="lg">
             <h3 className="text-lg font-semibold text-slate-900">Itinerary</h3>
             {data.wanderParts?.length ? (
               <ol className="mt-3 space-y-3">
@@ -212,12 +208,12 @@ export const CotravelDetail = () => {
                 </ol>
               </div>
             ) : null}
-          </section>
+          </SurfaceCard>
         </div>
 
         <aside className="space-y-6">
           <CotravelMap parts={data.wanderParts} googlePlaces={data.googlePlaces} />
-          <section className="rounded-2xl bg-white p-5 shadow-card">
+          <SurfaceCard>
             <h3 className="text-lg font-semibold text-slate-900">Travelers</h3>
             {data.wanderers?.length ? (
               <ul className="mt-3 space-y-3">
@@ -236,7 +232,7 @@ export const CotravelDetail = () => {
             ) : (
               <p className="mt-3 text-sm text-slate-600">No one has joined yet.</p>
             )}
-          </section>
+          </SurfaceCard>
         </aside>
       </div>
     </main>

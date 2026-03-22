@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
 import { fetchEvents } from '../../api/events';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { EventCard } from '../../components/EventCard';
 import { useAuth } from '../../auth/KeycloakProvider';
+import { PageContainer } from '../../components/layout/PageContainer';
+import { PageHeader } from '../../components/layout/PageHeader';
+import { Button } from '../../components/ui/Button';
 
 type PriceFilter = 'free' | 'low' | 'medium' | 'high' | '';
 type Timeframe = 'today' | 'tomorrow' | 'this_week' | 'this_month' | 'next_month' | '';
@@ -36,28 +38,26 @@ export const EventsList = () => {
   if (error) return <ErrorState message="Unable to load events right now." />;
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-700">Events</p>
-          <h1 className="text-3xl font-bold text-slate-900">Discover what’s happening</h1>
-          <p className="mt-2 text-slate-600">Showing {filtered.length} events</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
+    <PageContainer>
+      <PageHeader
+        eyebrow="Events"
+        title="Discover what’s happening"
+        description={`Showing ${filtered.length} events`}
+        actions={
+          <>
           {authenticated ? (
-            <Link
+            <Button
               to="/events/create"
-              className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
             >
               Create event
-            </Link>
+            </Button>
           ) : (
-            <button
+            <Button
               onClick={() => login()}
-              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:border-slate-400"
+              variant="secondary"
             >
               Login to create
-            </button>
+            </Button>
           )}
           <input
             value={searchTerm}
@@ -88,15 +88,16 @@ export const EventsList = () => {
             <option value="this_month">This month</option>
             <option value="next_month">Next month</option>
           </select>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {filtered.map((event) => (
           <EventCard key={event.id} event={event} />
         ))}
       </div>
-    </main>
+    </PageContainer>
   );
 };
 
