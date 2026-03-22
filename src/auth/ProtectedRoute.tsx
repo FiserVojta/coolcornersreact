@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router-dom';
-import { useAuth } from './KeycloakProvider';
+import { useAuth } from './AuthContext';
 import type { ReactElement } from 'react';
 
 interface Props {

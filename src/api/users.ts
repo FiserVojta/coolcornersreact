@@ -1,6 +1,8 @@
 import { apiClient } from './client';
-import type { PagedResult } from '../types/place';
+import type { PagedResult, Place } from '../types/place';
+import type { Trip } from '../types/trip';
 import type { User, UserFollowRequest } from '../types/user';
+import type { Cotravel } from '../types/cotravel';
 
 export const fetchUsers = async (params?: { page?: number; size?: number; search?: string }) => {
   const query = new URLSearchParams();
@@ -35,16 +37,16 @@ export const unfollowUsers = async (payload: UserFollowRequest) => {
 };
 
 export const fetchUserWanders = async (email: string) => {
-  const { data } = await apiClient.get(`/public/users/${encodeURIComponent(email)}/wanders`);
+  const { data } = await apiClient.get<Cotravel[]>(`/public/users/${encodeURIComponent(email)}/wanders`);
   return data;
 };
 
 export const fetchUserPlaces = async (email: string) => {
-  const { data } = await apiClient.get(`/public/users/${encodeURIComponent(email)}/places`);
+  const { data } = await apiClient.get<Place[]>(`/public/users/${encodeURIComponent(email)}/places`);
   return data;
 };
 
 export const fetchUserTrips = async (email: string) => {
-  const { data } = await apiClient.get(`/public/users/${encodeURIComponent(email)}/trips`);
+  const { data } = await apiClient.get<Trip[]>(`/public/users/${encodeURIComponent(email)}/trips`);
   return data;
 };

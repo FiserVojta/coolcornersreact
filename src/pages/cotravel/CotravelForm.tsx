@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import { createCotravel, fetchCotravel, updateCotravel } from '../../api/cotravel';
@@ -43,11 +43,13 @@ export const CotravelForm = () => {
   const cotravelId = Number(id);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [segments, setSegments] = useState<SegmentDraft[]>(() => [createSegment()]);
+  const [segmentsOverride, setSegmentsOverride] = useState<SegmentDraft[] | undefined>(undefined);
   const [selectedBackgroundFile, setSelectedBackgroundFile] = useState<File | null>(null);
   const [backgroundUploadMessage, setBackgroundUploadMessage] = useState<string | null>(null);
-  const [backgroundImageUrl, setBackgroundImageUrl] = useState<string>('');
-  const [backgroundImageFile, setBackgroundImageFile] = useState<TripFileLinkRequest | null>(null);
+  const [backgroundImageUrlOverride, setBackgroundImageUrlOverride] = useState<string | undefined>(undefined);
+  const [backgroundImageFileOverride, setBackgroundImageFileOverride] = useState<TripFileLinkRequest | null | undefined>(
+    undefined
+  );
 
   const detailQuery = useQuery({
     queryKey: ['cotravel', cotravelId],
@@ -80,7 +82,7 @@ export const CotravelForm = () => {
     handleSubmit,
     reset,
     setValue,
-    watch,
+    control,
     formState: { errors, isSubmitting }
   } = useForm<FormValues>({
     defaultValues: {
@@ -94,6 +96,36 @@ export const CotravelForm = () => {
       googlePlaces: []
     }
   });
+
+  const initialSegments = useMemo(() => {
+    const draftSegments =
+      detailQuery.data?.wanderParts?.map((part) => ({
+        id: createSegmentId(),
+        name: part.name ?? '',
+        tripIds: part.trips?.map((trip) => trip.id) ?? [],
+        placeIds: part.places?.map((place) => place.id) ?? [],
+        googlePlaces:
+          part.googlePlaces?.map((place) => ({
+            placeId: place.id,
+            name: place.name,
+            geometry: place.geometry ?? null
+          })) ?? []
+      })) ?? [];
+
+    return draftSegments.length ? draftSegments : [createSegment()];
+  }, [detailQuery.data]);
+
+  const initialBackgroundImageUrl = detailQuery.data?.backgroundImage?.url ?? '';
+  const initialBackgroundImageFile = Number.isFinite(detailQuery.data?.backgroundImage?.id)
+    ? {
+        fileId: detailQuery.data?.backgroundImage?.id as number,
+        name: detailQuery.data?.backgroundImage?.name ?? 'background-image'
+      }
+    : null;
+
+  const segments = segmentsOverride ?? initialSegments;
+  const backgroundImageUrl = backgroundImageUrlOverride ?? initialBackgroundImageUrl;
+  const backgroundImageFile = backgroundImageFileOverride ?? initialBackgroundImageFile;
 
   useEffect(() => {
     if (detailQuery.data) {
@@ -118,33 +150,10 @@ export const CotravelForm = () => {
             order: part.order
           })) ?? []
       });
-      const draftSegments =
-        detailQuery.data.wanderParts?.map((part) => ({
-          id: createSegmentId(),
-          name: part.name ?? '',
-          tripIds: part.trips?.map((trip) => trip.id) ?? [],
-          placeIds: part.places?.map((place) => place.id) ?? [],
-          googlePlaces:
-            part.googlePlaces?.map((place) => ({
-              placeId: place.id,
-              name: place.name,
-              geometry: place.geometry ?? null
-            })) ?? []
-        })) ?? [];
-      setSegments(draftSegments.length ? draftSegments : [createSegment()]);
-      if (detailQuery.data.backgroundImage?.url) {
-        setBackgroundImageUrl(detailQuery.data.backgroundImage.url);
-      }
-      if (Number.isFinite(detailQuery.data.backgroundImage?.id)) {
-        setBackgroundImageFile({
-          fileId: detailQuery.data.backgroundImage?.id as number,
-          name: detailQuery.data.backgroundImage?.name ?? 'background-image'
-        });
-      }
     }
   }, [detailQuery.data, reset]);
 
-  const selectedTags = watch('tags') ?? [];
+  const selectedTags = useWatch({ control, name: 'tags' }) ?? [];
 
   const createMut = useMutation({
     mutationFn: (payload: FormValues) => createCotravel(payload),
@@ -169,10 +178,10 @@ export const CotravelForm = () => {
       const fileId = typeof res?.id === 'string' ? Number(res.id) : res?.id;
       const fileName = res?.name ?? res?.filename ?? 'background-image';
       if (Number.isFinite(fileId)) {
-        setBackgroundImageFile({ fileId: fileId as number, name: fileName });
+        setBackgroundImageFileOverride({ fileId: fileId as number, name: fileName });
       }
       if (res?.url) {
-        setBackgroundImageUrl(res.url);
+        setBackgroundImageUrlOverride(res.url);
         setBackgroundUploadMessage(`Uploaded: ${res.url}`);
       } else {
         setBackgroundUploadMessage('File uploaded.');
@@ -216,17 +225,21 @@ export const CotravelForm = () => {
   const trips = tripsQuery.data?.data ?? [];
   const places = placesQuery.data?.data ?? [];
 
+  const updateSegments = (updater: (current: SegmentDraft[]) => SegmentDraft[]) => {
+    setSegmentsOverride((current) => updater(current ?? initialSegments));
+  };
+
   const addSegment = () => {
-    setSegments((prev) => [...prev, createSegment()]);
+    updateSegments((current) => [...current, createSegment()]);
   };
 
   const removeSegment = (segmentId: string) => {
-    setSegments((prev) => (prev.length > 1 ? prev.filter((segment) => segment.id !== segmentId) : prev));
+    updateSegments((current) => (current.length > 1 ? current.filter((segment) => segment.id !== segmentId) : current));
   };
 
   const toggleSegmentTrip = (segmentId: string, tripId: number) => {
-    setSegments((prev) =>
-      prev.map((segment) =>
+    updateSegments((current) =>
+      current.map((segment) =>
         segment.id === segmentId
           ? {
               ...segment,
@@ -240,8 +253,8 @@ export const CotravelForm = () => {
   };
 
   const toggleSegmentPlace = (segmentId: string, placeId: number) => {
-    setSegments((prev) =>
-      prev.map((segment) =>
+    updateSegments((current) =>
+      current.map((segment) =>
         segment.id === segmentId
           ? {
               ...segment,
@@ -255,14 +268,12 @@ export const CotravelForm = () => {
   };
 
   const updateSegmentName = (segmentId: string, name: string) => {
-    setSegments((prev) =>
-      prev.map((segment) => (segment.id === segmentId ? { ...segment, name } : segment))
-    );
+    updateSegments((current) => current.map((segment) => (segment.id === segmentId ? { ...segment, name } : segment)));
   };
 
   const addSegmentGooglePlace = (segmentId: string, place: GooglePlaceInput) => {
-    setSegments((prev) =>
-      prev.map((segment) =>
+    updateSegments((current) =>
+      current.map((segment) =>
         segment.id === segmentId
           ? {
               ...segment,
@@ -276,8 +287,8 @@ export const CotravelForm = () => {
   };
 
   const removeSegmentGooglePlace = (segmentId: string, placeId: string) => {
-    setSegments((prev) =>
-      prev.map((segment) =>
+    updateSegments((current) =>
+      current.map((segment) =>
         segment.id === segmentId
           ? {
               ...segment,

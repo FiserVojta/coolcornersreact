@@ -3,7 +3,7 @@ import { fetchPlaces } from '../../api/places';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { PlaceCard } from '../../components/PlaceCard';
-import { useAuth } from '../../auth/KeycloakProvider';
+import { useAuth } from '../../auth/AuthContext';
 import { PageContainer } from '../../components/layout/PageContainer';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/ui/Button';

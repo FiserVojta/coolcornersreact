@@ -6,7 +6,7 @@ import { fetchTags } from '../../api/tags';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { TripCard } from '../../components/TripCard';
-import { useAuth } from '../../auth/KeycloakProvider';
+import { useAuth } from '../../auth/AuthContext';
 import { PageContainer } from '../../components/layout/PageContainer';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/ui/Button';

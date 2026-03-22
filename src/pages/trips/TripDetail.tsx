@@ -6,7 +6,7 @@ import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { RatingBadge } from '../../components/RatingBadge';
 import { TagList } from '../../components/TagList';
-import { useAuth } from '../../auth/KeycloakProvider';
+import { useAuth } from '../../auth/AuthContext';
 import { env } from '../../config/env';
 import { CircleMarker, MapContainer, Polyline, Tooltip } from 'react-leaflet';
 import L from 'leaflet';

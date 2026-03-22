@@ -3,9 +3,11 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchUser, fetchUserPlaces, fetchUserTrips, fetchUserWanders, followUsers, unfollowUsers } from '../../api/users';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
-import { useAuth } from '../../auth/KeycloakProvider';
+import { useAuth } from '../../auth/AuthContext';
 import type { User } from '../../types/user';
 import type { Cotravel } from '../../types/cotravel';
+import type { Place } from '../../types/place';
+import type { Trip } from '../../types/trip';
 import { TagList } from '../../components/TagList';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -125,7 +127,7 @@ export const UserDetail = () => {
               <p className="text-sm text-slate-600">Loading...</p>
             ) : places.length ? (
               <ul className="mt-3 space-y-2 text-sm text-slate-700">
-                {places.map((p: any) => (
+                {places.map((p: Place) => (
                   <li key={p.id} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
                     {p.name}
                   </li>
@@ -141,7 +143,7 @@ export const UserDetail = () => {
               <p className="text-sm text-slate-600">Loading...</p>
             ) : trips.length ? (
               <ul className="mt-3 space-y-2 text-sm text-slate-700">
-                {trips.map((t: any) => (
+                {trips.map((t: Trip) => (
                   <li key={t.id} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
                     <Link
                       to={`/trips/${t.id}`}

@@ -4,7 +4,7 @@ import { fetchCotravelList } from '../../api/cotravel';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { CotravelCard } from '../../components/CotravelCard';
-import { useAuth } from '../../auth/KeycloakProvider';
+import { useAuth } from '../../auth/AuthContext';
 import { fetchCategories } from '../../api/categories';
 import { fetchTags } from '../../api/tags';
 import { PageContainer } from '../../components/layout/PageContainer';

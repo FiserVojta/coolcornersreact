@@ -5,7 +5,7 @@ import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { RatingBadge } from '../../components/RatingBadge';
 import { TagList } from '../../components/TagList';
-import { useAuth } from '../../auth/KeycloakProvider';
+import { useAuth } from '../../auth/AuthContext';
 import { env } from '../../config/env';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
