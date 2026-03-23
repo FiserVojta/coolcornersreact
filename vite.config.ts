@@ -10,10 +10,6 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes('node_modules')) return
 
-          if (id.includes('react-leaflet') || id.includes('/leaflet/')) {
-            return 'leaflet'
-          }
-
           if (id.includes('@tanstack/react-query')) {
             return 'react-query'
           }
