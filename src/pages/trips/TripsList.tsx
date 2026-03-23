@@ -89,9 +89,6 @@ export const TripsList = () => {
               Login to create
             </Button>
           )}
-          <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700">
-            React port
-          </span>
           </>
         }
       />
