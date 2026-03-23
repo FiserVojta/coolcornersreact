@@ -14,6 +14,15 @@ describe('CotravelList', () => {
           { id: 32, name: 'hiking', main: false, title: 'Hiking' }
         ])
       ),
+      http.get('http://localhost:8080/api/public/users', () =>
+        HttpResponse.json({
+          totalItems: 2,
+          data: [
+            { id: 1, keycloakId: 'kc-1', email: 'guide@example.com', username: 'guide', firstName: 'Guide', lastName: 'One', displayName: 'Guide One', createdAt: '2024-01-15T08:00:00Z' },
+            { id: 2, keycloakId: 'kc-2', email: 'host@example.com', username: 'host', firstName: 'Host', lastName: 'Two', displayName: 'Host Two', createdAt: '2024-01-16T08:00:00Z' }
+          ]
+        })
+      ),
       http.get('http://localhost:8080/api/public/tags', () =>
         HttpResponse.json([
           { id: 11, name: 'quiet', title: 'Quiet', value: 'quiet', creator: 'test' },
@@ -44,6 +53,7 @@ describe('CotravelList', () => {
     expect((await screen.findAllByText('Weekend riverside wander')).length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: /select categories/i })).toHaveAttribute('aria-expanded', 'false');
     expect(screen.getByRole('button', { name: /select tags/i })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByLabelText('Created By')).toBeInTheDocument();
   });
 
   it('applies highlighted category and tag selections from overlay dropdowns', async () => {
@@ -53,6 +63,15 @@ describe('CotravelList', () => {
           { id: 31, name: 'cotravel', main: true, title: 'CoTravel' },
           { id: 32, name: 'hiking', main: false, title: 'Hiking' }
         ])
+      ),
+      http.get('http://localhost:8080/api/public/users', () =>
+        HttpResponse.json({
+          totalItems: 2,
+          data: [
+            { id: 1, keycloakId: 'kc-1', email: 'guide@example.com', username: 'guide', firstName: 'Guide', lastName: 'One', displayName: 'Guide One', createdAt: '2024-01-15T08:00:00Z' },
+            { id: 2, keycloakId: 'kc-2', email: 'host@example.com', username: 'host', firstName: 'Host', lastName: 'Two', displayName: 'Host Two', createdAt: '2024-01-16T08:00:00Z' }
+          ]
+        })
       ),
       http.get('http://localhost:8080/api/public/tags', () =>
         HttpResponse.json([
@@ -64,7 +83,8 @@ describe('CotravelList', () => {
         const url = new URL(request.url);
         const categories = url.searchParams.getAll('categories');
         const tags = url.searchParams.getAll('tags');
-        const filtered = categories.includes('32') && tags.includes('12')
+        const createdBy = url.searchParams.get('createdBy');
+        const filtered = categories.includes('32') && tags.includes('12') && createdBy === '2'
           ? [
               {
                 id: 402,
@@ -114,6 +134,7 @@ describe('CotravelList', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Hiking' }));
     fireEvent.click(screen.getByRole('button', { name: /select tags/i }));
     fireEvent.click(screen.getByRole('button', { name: 'Group' }));
+    fireEvent.change(screen.getByLabelText('Created By'), { target: { value: '2' } });
     fireEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
 
     await waitFor(() => {
@@ -121,6 +142,7 @@ describe('CotravelList', () => {
       expect(screen.getAllByText('Mountain hiking weekend').length).toBeGreaterThan(0);
       expect(screen.getByRole('button', { name: /hiking/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /group/i })).toBeInTheDocument();
+      expect(screen.getByLabelText('Created By')).toHaveValue('2');
     });
   });
 });

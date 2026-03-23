@@ -7,6 +7,7 @@ import { CotravelCard } from '../../components/CotravelCard';
 import { useAuth } from '../../auth/AuthContext';
 import { fetchCategories } from '../../api/categories';
 import { fetchTags } from '../../api/tags';
+import { fetchUsers } from '../../api/users';
 import { PageContainer } from '../../components/layout/PageContainer';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/ui/Button';
@@ -33,6 +34,8 @@ const emptyFilters: FilterDraft = {
 const toStartOfDay = (date: string) => (date ? `${date}T00:00:00` : undefined);
 const toEndOfDay = (date: string) => (date ? `${date}T23:59:59` : undefined);
 const toggleId = (list: number[], id: number) => (list.includes(id) ? list.filter((item) => item !== id) : [...list, id]);
+const getUserLabel = (user: { displayName?: string; name?: string; firstName?: string; lastName?: string; email: string }) =>
+  user.displayName || user.name || [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email;
 
 export const CotravelList = () => {
   const { authenticated, login } = useAuth();
@@ -52,6 +55,11 @@ export const CotravelList = () => {
   const tagsQuery = useQuery({
     queryKey: ['tags'],
     queryFn: fetchTags
+  });
+
+  const usersQuery = useQuery({
+    queryKey: ['users', 'cotravel-filter'],
+    queryFn: () => fetchUsers({ size: 100 })
   });
 
   const queryFilters = useMemo(() => {
@@ -107,37 +115,7 @@ export const CotravelList = () => {
       />
 
       <SurfaceCard className="mt-6 border border-slate-200 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Filters</p>
-            <p className="text-sm text-slate-600">Refine the wander list by time, author, category, or tags.</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" onClick={() => {
-              setPage(0);
-              setIsCategoriesOpen(false);
-              setIsTagsOpen(false);
-              setFilters(draft);
-            }}>
-              Apply filters
-            </Button>
-            <Button
-              onClick={() => {
-                setIsCategoriesOpen(false);
-                setIsTagsOpen(false);
-                setDraft(emptyFilters);
-                setFilters(emptyFilters);
-                setPage(0);
-              }}
-              variant="secondary"
-              size="sm"
-            >
-              Reset
-            </Button>
-          </div>
-        </div>
-
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
             Starts From
             <TextInput
@@ -157,45 +135,23 @@ export const CotravelList = () => {
             />
           </label>
           <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-            Created By (User ID)
-            <TextInput
-              type="number"
-              min="1"
-              inputMode="numeric"
+            Created By
+            <select
               value={draft.createdBy}
               onChange={(event) => setDraft((prev) => ({ ...prev, createdBy: event.target.value }))}
-              placeholder="e.g. 42"
-              className="font-medium text-slate-900"
-            />
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-900 shadow-sm outline-none focus:border-brand-400"
+            >
+              <option value="">Any organizer</option>
+              {(usersQuery.data?.data ?? []).map((user) => (
+                <option key={user.id} value={String(user.id)}>
+                  {getUserLabel(user)}
+                </option>
+                ))}
+            </select>
           </label>
-          <div className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-            Active Filters
-            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
-              {filters.categories.length + filters.tags.length + Number(!!filters.createdBy) + Number(!!filters.startsFrom) + Number(!!filters.startsUntil) || 0}{' '}
-              applied
-            </div>
-          </div>
         </div>
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-500">
-          <p>Filter by time, author, categories, or tags.</p>
-          <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-            Page size
-            <select
-              value={pageSize}
-              onChange={(event) => {
-                setPage(0);
-                setPageSize(Number(event.target.value));
-              }}
-              className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-semibold text-slate-700 shadow-sm"
-            >
-              {[6, 9, 12, 18].map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
-          </label>
         </div>
 
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
@@ -283,6 +239,53 @@ export const CotravelList = () => {
               </div>
             )}
           </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              onClick={() => {
+                setPage(0);
+                setIsCategoriesOpen(false);
+                setIsTagsOpen(false);
+                setFilters(draft);
+              }}
+            >
+              Apply filters
+            </Button>
+            <Button
+              onClick={() => {
+                setIsCategoriesOpen(false);
+                setIsTagsOpen(false);
+                setDraft(emptyFilters);
+                setFilters(emptyFilters);
+                setPage(0);
+              }}
+              variant="secondary"
+              size="sm"
+            >
+              Reset
+            </Button>
+          </div>
+
+          <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+            Page size
+            <select
+              value={pageSize}
+              onChange={(event) => {
+                setPage(0);
+                setPageSize(Number(event.target.value));
+              }}
+              className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-semibold text-slate-700 shadow-sm"
+            >
+              {[6, 9, 12, 18].map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </SurfaceCard>
 
