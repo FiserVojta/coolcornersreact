@@ -6,7 +6,8 @@ export const handlers = [
   http.get(`${apiUrl}/public/categories`, () =>
     HttpResponse.json([
       { id: 1, name: 'place', main: true, title: 'Place' },
-      { id: 2, name: 'trip', main: true, title: 'Trip' }
+      { id: 2, name: 'trip', main: true, title: 'Trip' },
+      { id: 21, name: 'event', main: true, title: 'Event' }
     ])
   ),
   http.get(`${apiUrl}/public/tags`, () =>

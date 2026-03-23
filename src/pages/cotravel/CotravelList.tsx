@@ -36,6 +36,8 @@ const toggleId = (list: number[], id: number) => (list.includes(id) ? list.filte
 
 export const CotravelList = () => {
   const { authenticated, login } = useAuth();
+  const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
+  const [isTagsOpen, setIsTagsOpen] = useState(false);
   const [draft, setDraft] = useState<FilterDraft>(emptyFilters);
   const [filters, setFilters] = useState<FilterDraft>(emptyFilters);
   const [page, setPage] = useState(0);
@@ -113,12 +115,16 @@ export const CotravelList = () => {
           <div className="flex flex-wrap gap-2">
             <Button size="sm" onClick={() => {
               setPage(0);
+              setIsCategoriesOpen(false);
+              setIsTagsOpen(false);
               setFilters(draft);
             }}>
               Apply filters
             </Button>
             <Button
               onClick={() => {
+                setIsCategoriesOpen(false);
+                setIsTagsOpen(false);
                 setDraft(emptyFilters);
                 setFilters(emptyFilters);
                 setPage(0);
@@ -193,45 +199,89 @@ export const CotravelList = () => {
         </div>
 
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
-          <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+          <div className="relative rounded-2xl border border-slate-100 bg-slate-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Categories</p>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              {(categoriesQuery.data ?? []).map((category) => (
-                <label key={category.id} className="flex items-center gap-2 text-sm text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={draft.categories.includes(category.id)}
-                    onChange={() =>
+            <button
+              type="button"
+              aria-expanded={isCategoriesOpen}
+              onClick={() => setIsCategoriesOpen((prev) => !prev)}
+              className="mt-3 flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-3 py-2 text-left text-sm font-semibold text-slate-700 shadow-sm"
+            >
+              <span className="truncate pr-3">
+                {draft.categories.length
+                  ? (categoriesQuery.data ?? [])
+                      .filter((category) => draft.categories.includes(category.id))
+                      .map((category) => category.title || category.name)
+                      .join(', ')
+                  : 'Select categories'}
+              </span>
+              <span className={`text-xs text-slate-500 transition ${isCategoriesOpen ? 'rotate-180' : ''}`}>▼</span>
+            </button>
+            {isCategoriesOpen && (
+              <div className="absolute left-4 right-4 z-20 mt-2 max-h-60 overflow-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-lg">
+                {(categoriesQuery.data ?? []).map((category) => (
+                  <button
+                    key={category.id}
+                    type="button"
+                    aria-pressed={draft.categories.includes(category.id)}
+                    onClick={() =>
                       setDraft((prev) => ({ ...prev, categories: toggleId(prev.categories, category.id) }))
                     }
-                    className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-400"
-                  />
-                  <span>{category.title || category.name}</span>
-                </label>
-              ))}
-              {!categoriesQuery.isLoading && !(categoriesQuery.data ?? []).length && (
-                <p className="text-xs text-slate-500">No categories available.</p>
-              )}
-            </div>
+                    className={`flex w-full items-center rounded-xl px-3 py-2 text-left text-sm transition ${
+                      draft.categories.includes(category.id)
+                        ? 'bg-slate-900 text-white'
+                        : 'text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    {category.title || category.name}
+                  </button>
+                ))}
+                {!categoriesQuery.isLoading && !(categoriesQuery.data ?? []).length && (
+                  <p className="px-3 py-2 text-xs text-slate-500">No categories available.</p>
+                )}
+              </div>
+            )}
           </div>
-          <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+          <div className="relative rounded-2xl border border-slate-100 bg-slate-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Tags</p>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              {(tagsQuery.data ?? []).map((tag) => (
-                <label key={tag.id} className="flex items-center gap-2 text-sm text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={draft.tags.includes(tag.id)}
-                    onChange={() => setDraft((prev) => ({ ...prev, tags: toggleId(prev.tags, tag.id) }))}
-                    className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-400"
-                  />
-                  <span>{tag.title || tag.name}</span>
-                </label>
-              ))}
-              {!tagsQuery.isLoading && !(tagsQuery.data ?? []).length && (
-                <p className="text-xs text-slate-500">No tags available.</p>
-              )}
-            </div>
+            <button
+              type="button"
+              aria-expanded={isTagsOpen}
+              onClick={() => setIsTagsOpen((prev) => !prev)}
+              className="mt-3 flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-3 py-2 text-left text-sm font-semibold text-slate-700 shadow-sm"
+            >
+              <span className="truncate pr-3">
+                {draft.tags.length
+                  ? (tagsQuery.data ?? [])
+                      .filter((tag) => draft.tags.includes(tag.id))
+                      .map((tag) => tag.title || tag.name)
+                      .join(', ')
+                  : 'Select tags'}
+              </span>
+              <span className={`text-xs text-slate-500 transition ${isTagsOpen ? 'rotate-180' : ''}`}>▼</span>
+            </button>
+            {isTagsOpen && (
+              <div className="absolute left-4 right-4 z-20 mt-2 max-h-60 overflow-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-lg">
+                {(tagsQuery.data ?? []).map((tag) => (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    aria-pressed={draft.tags.includes(tag.id)}
+                    onClick={() => setDraft((prev) => ({ ...prev, tags: toggleId(prev.tags, tag.id) }))}
+                    className={`flex w-full items-center rounded-xl px-3 py-2 text-left text-sm transition ${
+                      draft.tags.includes(tag.id)
+                        ? 'bg-slate-900 text-white'
+                        : 'text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    {tag.title || tag.name}
+                  </button>
+                ))}
+                {!tagsQuery.isLoading && !(tagsQuery.data ?? []).length && (
+                  <p className="px-3 py-2 text-xs text-slate-500">No tags available.</p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </SurfaceCard>

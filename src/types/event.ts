@@ -25,3 +25,11 @@ export interface EventCreateRequest {
   price: number;
   categoryId: number;
 }
+
+export interface EventSearchRequest {
+  categories: number[];
+  page?: number;
+  size?: number;
+  orderBy?: string;
+  order?: string;
+}

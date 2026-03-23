@@ -4,4 +4,27 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return
+
+          if (id.includes('react-leaflet') || id.includes('/leaflet/')) {
+            return 'leaflet'
+          }
+
+          if (id.includes('@tanstack/react-query')) {
+            return 'react-query'
+          }
+
+          if (id.includes('react-router') || id.includes('@remix-run/router')) {
+            return 'router'
+          }
+
+          return 'vendor'
+        }
+      }
+    }
+  }
 })
