@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { addTripComment, addTripRating, deleteTrip, fetchTrip } from '../../api/trips';
+import { addTripComment, addTripRating, deleteTrip, fetchTrip, markTripDone } from '../../api/trips';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { RatingBadge } from '../../components/RatingBadge';
@@ -18,6 +18,7 @@ import { MapyTileLayer } from '../../components/MapyTileLayer';
 import { Button } from '../../components/ui/Button';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { TextArea } from '../../components/ui/FormField';
+import type { User } from '../../types/user';
 
 export const TripDetail = () => {
   const { id } = useParams();
@@ -29,7 +30,7 @@ export const TripDetail = () => {
     queryFn: () => fetchTrip(tripId),
     enabled: Number.isFinite(tripId)
   });
-  const { authenticated, initializing, login, canEdit } = useAuth();
+  const { authenticated, initializing, login, canEdit, username, name, email } = useAuth();
   const commentForm = useForm<CommentModel>({ defaultValues: { value: '' } });
 
   const commentMut = useMutation({
@@ -56,12 +57,22 @@ export const TripDetail = () => {
     }
   });
 
+  const markDoneMut = useMutation({
+    mutationFn: () => markTripDone(tripId),
+    onSuccess: (updatedTrip) => {
+      queryClient.setQueryData(['trip', tripId], updatedTrip);
+      queryClient.invalidateQueries({ queryKey: ['user-trips'] });
+    }
+  });
+
   if (!Number.isFinite(tripId)) return <ErrorState message="Invalid trip id" />;
   if (isLoading) return <LoadingState label="Loading trip..." />;
   if (error || !data) return <ErrorState message="Unable to load this trip right now." />;
 
   const owner = data.createdBy;
   const canUserEdit = owner ? canEdit(owner) : false;
+  const completedByUsers = data.completedByUsers ?? [];
+  const userMarkedDone = hasUserMarkedDone(completedByUsers, [username, name, email]);
   const backgroundImageUrl = data.backgroundImage?.url ?? '';
   const heroTitleClass = backgroundImageUrl ? 'text-white' : 'text-slate-900';
   const heroLabelClass = backgroundImageUrl ? 'text-brand-100' : 'text-brand-700';
@@ -187,6 +198,35 @@ export const TripDetail = () => {
 
         <aside className="space-y-6">
           <TripMap trip={data} />
+          <SurfaceCard>
+            <h3 className="text-lg font-semibold text-slate-900">Completed this trip</h3>
+            <p className="mt-2 text-sm text-slate-600">{formatDoneCount(completedByUsers.length)}</p>
+            {authenticated ? (
+              <Button
+                type="button"
+                onClick={() => markDoneMut.mutate()}
+                disabled={userMarkedDone || markDoneMut.isPending}
+                size="sm"
+                className="mt-3 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {userMarkedDone ? 'Marked as done' : markDoneMut.isPending ? 'Saving...' : 'Mark as done'}
+              </Button>
+            ) : (
+              <p className="mt-3 text-sm text-slate-600">
+                Login to mark this trip as done.
+                <Button
+                  type="button"
+                  disabled={initializing}
+                  onClick={() => login()}
+                  variant="secondary"
+                  size="sm"
+                  className="ml-2 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {initializing ? 'Loading...' : 'Login'}
+                </Button>
+              </p>
+            )}
+          </SurfaceCard>
           <SurfaceCard>
             <h3 className="text-lg font-semibold text-slate-900">Comments</h3>
             {data.comments?.length ? (
@@ -388,4 +428,22 @@ const buildTripPhotos = (trip: TripModel) => {
     seen.add(photo.url);
     return true;
   }) as { url: string; label: string }[];
+};
+
+const hasUserMarkedDone = (users: User[] | undefined, identifiers: Array<string | undefined>) => {
+  const normalizedIds = identifiers
+    .filter((value): value is string => Boolean(value))
+    .map((value) => value.trim().toLowerCase());
+
+  return (users ?? []).some((user) =>
+    [user.email, user.username, user.name, user.displayName]
+      .filter((value): value is string => Boolean(value))
+      .some((value) => normalizedIds.includes(value.trim().toLowerCase()))
+  );
+};
+
+const formatDoneCount = (count: number) => {
+  if (count === 0) return 'No one has marked this trip as done yet.';
+  if (count === 1) return '1 traveler has marked this trip as done.';
+  return `${count} travelers have marked this trip as done.`;
 };

@@ -158,6 +158,50 @@ export const handlers = [
       ]
     })
   ),
+  http.get(`${apiUrl}/public/trips/:id`, () =>
+    HttpResponse.json({
+      id: 301,
+      name: 'Prague Dawn Walk',
+      description: 'Early morning walk through the old city.',
+      duration: 180,
+      rating: 4.2,
+      category: { id: 2, name: 'trip', main: true, title: 'Trip' },
+      creator: 'Ada',
+      createdBy: 'ada@example.com',
+      tags: [{ id: 11, name: 'quiet', title: 'Quiet', value: 'quiet', creator: 'test' }],
+      places: [],
+      googlePlaces: [],
+      comments: [],
+      files: [],
+      completedByUsers: []
+    })
+  ),
+  http.post(`${apiUrl}/trips/:id/done`, () =>
+    HttpResponse.json({
+      id: 301,
+      name: 'Prague Dawn Walk',
+      description: 'Early morning walk through the old city.',
+      duration: 180,
+      rating: 4.2,
+      category: { id: 2, name: 'trip', main: true, title: 'Trip' },
+      creator: 'Ada',
+      createdBy: 'ada@example.com',
+      tags: [{ id: 11, name: 'quiet', title: 'Quiet', value: 'quiet', creator: 'test' }],
+      places: [],
+      googlePlaces: [],
+      comments: [],
+      files: [],
+      completedByUsers: [
+        {
+          id: 1,
+          email: 'ada@example.com',
+          name: 'Ada Lovelace',
+          displayName: 'Ada Lovelace',
+          rating: null
+        }
+      ]
+    })
+  ),
   http.post(`${apiUrl}/places`, async ({ request }) => {
     const payload = (await request.json()) as Record<string, unknown>;
 

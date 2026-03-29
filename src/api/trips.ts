@@ -46,6 +46,11 @@ export const addTripRating = async (tripId: number, payload: TripRatingModel) =>
   return data;
 };
 
+export const markTripDone = async (tripId: number) => {
+  const { data } = await apiClient.post<TripModel>(`/trips/${tripId}/done`, {});
+  return data;
+};
+
 export const createTrip = async (payload: TripCreateRequest) => {
   const { data } = await apiClient.post<TripModel>('/trips', payload);
   return data;

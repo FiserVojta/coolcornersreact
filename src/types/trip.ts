@@ -1,4 +1,5 @@
 import type { Category, CommentModel, PlaceDetail, Tag } from './place';
+import type { User } from './user';
 
 export interface Trip {
   id: number;
@@ -22,6 +23,7 @@ export interface TripModel {
   images?: string[];
   files?: TripFile[];
   backgroundImage?: TripFile;
+  completedByUsers?: User[];
 }
 
 export interface TripRatingModel {
