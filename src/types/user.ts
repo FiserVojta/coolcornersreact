@@ -1,3 +1,5 @@
+import type { Cotravel } from './cotravel';
+
 export interface User {
   id: number;
   keycloakId: string;
@@ -11,6 +13,11 @@ export interface User {
   createdAt: string | number;
   followers?: User[];
   following?: User[];
+}
+
+export interface UserDetail extends User {
+  wandersOrganized?: Cotravel[];
+  wandersAttended?: Cotravel[];
 }
 
 export interface UserFollowRequest {

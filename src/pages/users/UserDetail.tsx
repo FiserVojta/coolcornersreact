@@ -1,11 +1,10 @@
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { fetchUser, fetchUserPlaces, fetchUserTrips, fetchUserWanders, followUsers, unfollowUsers } from '../../api/users';
+import { fetchUser, fetchUserPlaces, fetchUserTrips, followUsers, unfollowUsers } from '../../api/users';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { useAuth } from '../../auth/AuthContext';
-import type { User } from '../../types/user';
-import type { Cotravel } from '../../types/cotravel';
+import type { UserDetail as UserDetailModel } from '../../types/user';
 import type { Place } from '../../types/place';
 import type { Trip } from '../../types/trip';
 import { TagList } from '../../components/TagList';
@@ -20,12 +19,6 @@ export const UserDetail = () => {
   const userQuery = useQuery({
     queryKey: ['user', email],
     queryFn: () => fetchUser(email),
-    enabled: !!email
-  });
-
-  const wanderQuery = useQuery({
-    queryKey: ['user-wanders', email],
-    queryFn: () => fetchUserWanders(email) as Promise<Cotravel[]>,
     enabled: !!email
   });
 
@@ -60,7 +53,7 @@ export const UserDetail = () => {
   if (userQuery.error || !userQuery.data) return <ErrorState message="Unable to load this user right now." />;
 
   const user = userQuery.data;
-  const wanders = wanderQuery.data ?? [];
+  const attendedWanders = user.wandersAttended ?? [];
   const places = placesQuery.data ?? [];
   const trips = tripsQuery.data ?? [];
   const isCurrent = authenticated && (user.email === username || user.username === username || user.name === username);
@@ -162,12 +155,10 @@ export const UserDetail = () => {
 
         <aside className="space-y-4">
           <div className="rounded-2xl bg-white p-5 shadow-card">
-            <h3 className="text-lg font-semibold text-slate-900">CoTravels</h3>
-            {wanderQuery.isLoading ? (
-              <p className="text-sm text-slate-600">Loading...</p>
-            ) : wanders.length ? (
+            <h3 className="text-lg font-semibold text-slate-900">Signed-up CoTravels</h3>
+            {attendedWanders.length ? (
               <ul className="mt-3 space-y-2">
-                {wanders.map((wander) => (
+                {attendedWanders.map((wander) => (
                   <li key={wander.id} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
                     <p className="text-sm font-semibold text-slate-900">{wander.description}</p>
                     <p className="text-xs text-slate-600">{wander.startTime}</p>
@@ -175,7 +166,7 @@ export const UserDetail = () => {
                 ))}
               </ul>
             ) : (
-              <p className="mt-2 text-sm text-slate-600">No co-travel plans yet.</p>
+              <p className="mt-2 text-sm text-slate-600">No signed-up co-travel plans yet.</p>
             )}
           </div>
         </aside>
@@ -184,10 +175,10 @@ export const UserDetail = () => {
   );
 };
 
-const getDisplayName = (user: User) =>
+const getDisplayName = (user: UserDetailModel) =>
   user.displayName || user.name || [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email || 'User';
 
-const getInitials = (user: User) => {
+const getInitials = (user: UserDetailModel) => {
   const name = getDisplayName(user);
   const parts = name.split(' ');
   if (parts.length >= 2) return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();

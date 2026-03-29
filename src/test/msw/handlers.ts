@@ -66,6 +66,14 @@ export const handlers = [
       lastName: 'Lovelace',
       displayName: 'Ada Lovelace',
       createdAt: '2024-01-15T08:00:00Z',
+      wandersOrganized: [],
+      wandersAttended: [
+        {
+          id: 401,
+          description: 'Weekend riverside wander',
+          startTime: '2099-06-20T09:00:00Z'
+        }
+      ],
       followers: [],
       following: []
     })
@@ -83,15 +91,6 @@ export const handlers = [
       {
         id: 301,
         name: 'Prague Dawn Walk'
-      }
-    ])
-  ),
-  http.get(`${apiUrl}/public/users/:email/wanders`, () =>
-    HttpResponse.json([
-      {
-        id: 401,
-        description: 'Weekend riverside wander',
-        startTime: '2099-06-20T09:00:00Z'
       }
     ])
   ),

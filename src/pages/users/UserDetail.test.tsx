@@ -23,6 +23,27 @@ describe('UserDetail', () => {
     expect(screen.getByText('Hidden Courtyard')).toBeInTheDocument();
     expect(screen.getByText('Prague Dawn Walk')).toBeInTheDocument();
     expect(screen.getByText('Weekend riverside wander')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Signed-up CoTravels' })).toBeInTheDocument();
+  });
+
+  it('renders signed-up cotravels from the user detail payload without a separate wanders request', async () => {
+    server.use(
+      http.get('http://localhost:8080/api/public/users/:email/wanders', () =>
+        HttpResponse.json({ message: 'unused endpoint' }, { status: 500 })
+      )
+    );
+
+    renderWithProviders(
+      <Routes>
+        <Route path="/users/:id" element={<UserDetail />} />
+      </Routes>,
+      {
+        route: '/users/ada%40example.com'
+      }
+    );
+
+    expect(await screen.findByText('Weekend riverside wander')).toBeInTheDocument();
+    expect(screen.getByText('Signed-up CoTravels')).toBeInTheDocument();
   });
 
   it('shows self badge for the current user', async () => {
