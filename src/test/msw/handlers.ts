@@ -48,6 +48,7 @@ export const handlers = [
           firstName: 'Ada',
           lastName: 'Lovelace',
           displayName: 'Ada Lovelace',
+          rating: 5,
           createdAt: '2024-01-15T08:00:00Z',
           followers: [],
           following: []

@@ -7,6 +7,7 @@ export interface User {
   lastName?: string;
   name?: string;
   displayName?: string;
+  rating?: number | null;
   createdAt: string | number;
   followers?: User[];
   following?: User[];
