@@ -15,18 +15,18 @@ export const UserCard = ({ user }: { user: User }) => {
   return (
     <Link
       to={`/users/${encodeURIComponent(user.email)}`}
-      className="group flex flex-col gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-card transition hover:-translate-y-1 hover:shadow-xl"
+      className="group flex flex-col gap-3 rounded-2xl bg-white border border-brand-50 p-4 shadow-card transition hover:-translate-y-1 hover:shadow-card-hover"
     >
       <div className="flex items-center gap-3">
         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-sm font-semibold text-brand-700">
           {getInitials(user)}
         </div>
         <div className="flex flex-col">
-          <span className="text-sm font-semibold text-slate-900">{getDisplayName(user)}</span>
-          <span className="text-xs text-slate-500">{user.email}</span>
+          <span className="text-sm font-semibold text-ink-strong">{getDisplayName(user)}</span>
+          <span className="text-xs text-ink-subtle">{user.email}</span>
         </div>
       </div>
-      <div className="flex items-center justify-between text-xs text-slate-600">
+      <div className="flex items-center justify-between text-xs text-ink-muted">
         <span>Followers: {user.followers?.length ?? 0}</span>
         <span>Following: {user.following?.length ?? 0}</span>
         <span>Joined: {formatDate(user.createdAt)}</span>

@@ -15,9 +15,9 @@ export const PlaceCard = ({ place }: Props) => {
   return (
     <Link
       to={`/places/${place.id}`}
-      className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card transition hover:-translate-y-1 hover:shadow-xl"
+      className="group flex flex-col overflow-hidden rounded-xl bg-white shadow-card transition hover:-translate-y-1 hover:shadow-card-hover"
     >
-      <div className="relative h-52 w-full overflow-hidden bg-slate-100">
+      <div className="relative h-52 w-full overflow-hidden bg-brand-50">
         {image ? (
           <img
             src={image}
@@ -27,11 +27,11 @@ export const PlaceCard = ({ place }: Props) => {
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-slate-400">
-            <span className="text-sm font-semibold">No image</span>
+            <span className="text-sm font-semibold font-label">No image</span>
           </div>
         )}
         <div className="absolute right-3 top-3">
-          <div className="inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 text-xs font-semibold text-slate-900 shadow-sm">
+          <div className="inline-flex items-center gap-1 rounded-lg bg-white/90 px-2 py-1 text-xs font-semibold font-label text-ink-default shadow-sm backdrop-blur-sm">
             <span className="inline-flex items-center" aria-label={`Rating ${clampedRating} out of 5`}>
               {Array.from({ length: 5 }).map((_, idx) => {
                 const isFull = idx < fullStars;
@@ -43,30 +43,30 @@ export const PlaceCard = ({ place }: Props) => {
                       <defs>
                         <linearGradient id={gradientId} x1="0" x2="1" y1="0" y2="0">
                           <stop offset="50%" stopColor="#f59e0b" />
-                          <stop offset="50%" stopColor="#cbd5f5" />
+                          <stop offset="50%" stopColor="#cbd5e1" />
                         </linearGradient>
                       </defs>
                     ) : null}
                     <path
                       d="M10 1.5l2.6 5.3 5.9.9-4.2 4.1 1 5.9L10 14.7 4.7 17.7l1-5.9L1.5 7.7l5.9-.9L10 1.5z"
-                      fill={isHalf ? `url(#${gradientId})` : isFull ? '#f59e0b' : '#cbd5f5'}
+                      fill={isHalf ? `url(#${gradientId})` : isFull ? '#f59e0b' : '#cbd5e1'}
                     />
                   </svg>
                 );
               })}
             </span>
-            <span className="text-slate-700">{clampedRating.toFixed(1)} / 5</span>
+            <span className="text-ink-muted">{clampedRating.toFixed(1)} / 5</span>
           </div>
         </div>
       </div>
       <div className="flex flex-1 flex-col gap-3 px-4 pb-4 pt-3">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="text-lg font-semibold text-slate-900">{place.name}</h3>
-          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+          <h3 className="font-display text-lg font-semibold text-ink-strong">{place.name}</h3>
+          <span className="rounded-lg bg-brand-50 px-2.5 py-1 text-xs font-semibold font-label text-ink-default">
             {place.city?.name ?? '—'}
           </span>
         </div>
-        <p className="line-clamp-2 text-sm text-slate-600">{place.description}</p>
+        <p className="line-clamp-2 text-sm font-label text-ink-muted">{place.description}</p>
         <TagList tags={place.tags} />
       </div>
     </Link>

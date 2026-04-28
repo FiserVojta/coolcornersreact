@@ -27,9 +27,9 @@ export const EventCard = ({ event }: { event: EventModel }) => {
   return (
     <Link
       to={`/events/${event.id}`}
-      className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card transition hover:-translate-y-1 hover:shadow-xl"
+      className="group flex flex-col overflow-hidden rounded-xl bg-white shadow-card transition hover:-translate-y-1 hover:shadow-card-hover"
     >
-      <div className="relative h-48 w-full overflow-hidden bg-slate-100">
+      <div className="relative h-48 w-full overflow-hidden bg-brand-50">
         {image ? (
           <img
             src={image}
@@ -42,18 +42,18 @@ export const EventCard = ({ event }: { event: EventModel }) => {
             <span className="text-sm font-semibold">No image</span>
           </div>
         )}
-        <div className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-sm">
+        <div className="absolute left-3 top-3 rounded-lg bg-white/90 px-2.5 py-1 text-xs font-semibold font-label text-ink-default shadow-sm backdrop-blur-sm">
           {formatDate(event.startTime)}
         </div>
       </div>
       <div className="flex flex-1 flex-col gap-3 px-4 pb-4 pt-3">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="text-lg font-semibold text-slate-900 line-clamp-1">{event.name}</h3>
-          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+          <h3 className="text-lg font-display font-semibold text-ink-strong line-clamp-1">{event.name}</h3>
+          <span className="rounded-lg bg-brand-50 px-2.5 py-1 text-xs font-semibold font-label text-ink-default">
             {formatDuration(event.duration)}
           </span>
         </div>
-        <p className="line-clamp-2 text-sm text-slate-600">{event.description}</p>
+        <p className="line-clamp-2 text-sm font-label text-ink-muted">{event.description}</p>
         <TagList
           tags={
             event.category

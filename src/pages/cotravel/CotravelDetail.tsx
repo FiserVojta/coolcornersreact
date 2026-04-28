@@ -62,20 +62,20 @@ export const CotravelDetail = () => {
   const canUserEdit = canEdit(data.createdBy?.email || data.createdBy?.username || data.createdBy?.name);
   const userJoined = hasJoined(data.wanderers, [username, name, email]);
   const backgroundImageUrl = data.backgroundImage?.url ?? '';
-  const heroTitleClass = backgroundImageUrl ? 'text-white' : 'text-slate-900';
-  const heroLabelClass = backgroundImageUrl ? 'text-brand-100' : 'text-brand-700';
-  const heroMetaClass = backgroundImageUrl ? 'text-slate-100' : 'text-slate-600';
+  const heroTitleClass = 'text-white';
+  const heroLabelClass = 'text-brand-200';
+  const heroMetaClass = backgroundImageUrl ? 'text-white/80' : 'text-brand-100';
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-10">
-      <div className="relative mb-10 overflow-hidden rounded-3xl border border-slate-200">
+      <div className="relative mb-10 overflow-hidden rounded-3xl border border-brand-100">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={backgroundImageUrl ? { backgroundImage: `url(${backgroundImageUrl})` } : undefined}
         />
         <div
           className={`absolute inset-0 ${
-            backgroundImageUrl ? 'bg-slate-900/55' : 'bg-gradient-to-br from-slate-50 to-white'
+            backgroundImageUrl ? 'bg-slate-900/55' : 'bg-gradient-to-br from-brand-900 via-brand-700 to-accent-700'
           }`}
         />
         <div className="relative z-10 flex flex-col gap-4 px-6 py-10 md:flex-row md:items-center md:justify-between">
@@ -83,11 +83,11 @@ export const CotravelDetail = () => {
             <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${heroLabelClass}`}>
               {data.category?.title ?? 'CoTravel'}
             </p>
-            <h1 className={`text-3xl font-bold ${heroTitleClass}`}>{deriveTitle(data.description)}</h1>
+            <h1 className={`text-3xl font-semibold font-display ${heroTitleClass}`}>{deriveTitle(data.description)}</h1>
             <p className={heroMetaClass}>{formatDateFull(data.startTime)}</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+            <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold font-label text-ink-muted">
               {filled}/{capacity} joined
             </span>
             {canUserEdit && (
@@ -139,44 +139,44 @@ export const CotravelDetail = () => {
       <div className="mt-10 grid gap-10 lg:grid-cols-[2fr,1fr]">
         <div className="space-y-6">
           <SurfaceCard padding="lg">
-            <h2 className="text-xl font-semibold text-slate-900">Overview</h2>
-            <p className="mt-2 text-slate-700 leading-relaxed">{summarize(data.description)}</p>
+            <h2 className="text-xl font-semibold font-display text-ink-strong">Overview</h2>
+            <p className="mt-2 text-ink-default font-label leading-relaxed">{summarize(data.description)}</p>
             <div className="mt-4">
               <TagList tags={data.tags} />
             </div>
           </SurfaceCard>
 
           <SurfaceCard padding="lg">
-            <h3 className="text-lg font-semibold text-slate-900">Itinerary</h3>
+            <h3 className="text-lg font-semibold font-display text-ink-strong">Itinerary</h3>
             {data.wanderParts?.length ? (
               <ol className="mt-3 space-y-3">
                 {data.wanderParts.map((part, idx) => (
-                  <li key={part.id} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
+                  <li key={part.id} className="rounded-xl bg-brand-50 border border-brand-50 px-3 py-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">
                           {idx + 1}
                         </span>
-                        <p className="text-sm font-semibold text-slate-900">Segment {idx + 1}</p>
+                        <p className="text-sm font-semibold font-label text-ink-strong">Segment {idx + 1}</p>
                       </div>
-                      <p className="text-xs text-slate-600">Order {part.order}</p>
+                      <p className="text-xs font-label text-ink-muted">Order {part.order}</p>
                     </div>
-                    <div className="mt-2 grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
+                    <div className="mt-2 grid gap-2 text-sm text-ink-strong sm:grid-cols-2">
                       {part.places?.map((place) => (
-                        <div key={`p-${place.id}`} className="rounded-lg bg-white px-3 py-2 shadow-inner">
-                          <p className="font-semibold text-slate-900">{place.name}</p>
-                          <p className="text-xs text-slate-600">{place.city?.name}</p>
+                        <div key={`p-${place.id}`} className="rounded-lg bg-brand-50 px-3 py-2">
+                          <p className="font-semibold text-ink-strong">{place.name}</p>
+                          <p className="text-xs text-ink-muted">{place.city?.name}</p>
                         </div>
                       ))}
                       {part.trips?.map((trip) => (
                         <Link
                           key={`t-${trip.id}`}
                           to={`/trips/${trip.id}`}
-                          className="rounded-lg bg-white px-3 py-2 shadow-inner transition hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
+                          className="rounded-lg bg-brand-50 px-3 py-2 transition hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
                           aria-label={`Open trip ${trip.name ?? 'detail'}`}
                         >
-                          <p className="font-semibold text-slate-900">{trip.name}</p>
-                          <p className="text-xs text-slate-600">Trip</p>
+                          <p className="font-semibold text-ink-strong">{trip.name}</p>
+                          <p className="text-xs text-ink-muted">Trip</p>
                         </Link>
                       ))}
                     </div>
@@ -185,23 +185,23 @@ export const CotravelDetail = () => {
                 ))}
               </ol>
             ) : (
-              <p className="mt-2 text-sm text-slate-600">No segments added yet.</p>
+              <p className="mt-2 text-sm text-ink-muted">No segments added yet.</p>
             )}
             {data.googlePlaces?.length ? (
               <div className="mt-4">
-                <h4 className="text-sm font-semibold text-slate-900">Mapy places</h4>
+                <h4 className="text-sm font-semibold font-label text-ink-strong">Mapy places</h4>
                 <ol className="mt-2 space-y-2">
                   {data.googlePlaces.map((place, idx) => (
                     <li
                       key={place.id}
-                      className="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2"
+                      className="flex items-start gap-3 rounded-xl bg-brand-50 border border-brand-50 px-3 py-2"
                     >
                       <div className="mt-1 h-6 w-6 flex-none rounded-full bg-brand-100 text-center text-xs font-semibold text-brand-700">
                         {idx + 1}
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-slate-900">{place.name}</p>
-                        <p className="text-xs text-slate-600">Place ID: {place.id}</p>
+                        <p className="text-sm font-semibold font-label text-ink-strong">{place.name}</p>
+                        <p className="text-xs font-label text-ink-muted">Place ID: {place.id}</p>
                       </div>
                     </li>
                   ))}
@@ -214,23 +214,23 @@ export const CotravelDetail = () => {
         <aside className="space-y-6">
           <CotravelMap parts={data.wanderParts} googlePlaces={data.googlePlaces} />
           <SurfaceCard>
-            <h3 className="text-lg font-semibold text-slate-900">Travelers</h3>
+            <h3 className="text-lg font-semibold font-display text-ink-strong">Travelers</h3>
             {data.wanderers?.length ? (
               <ul className="mt-3 space-y-3">
                 {data.wanderers.map((user) => (
-                  <li key={user.id} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
+                  <li key={user.id} className="flex items-center gap-3 rounded-xl bg-brand-50 border border-brand-50 px-3 py-2">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 text-sm font-semibold text-brand-700">
                       {getInitials(user)}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">{getDisplayName(user)}</p>
-                      <p className="text-xs text-slate-600">{user.email}</p>
+                      <p className="text-sm font-semibold font-label text-ink-strong">{getDisplayName(user)}</p>
+                      <p className="text-xs font-label text-ink-muted">{user.email}</p>
                     </div>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="mt-3 text-sm text-slate-600">No one has joined yet.</p>
+              <p className="mt-3 text-sm text-ink-muted">No one has joined yet.</p>
             )}
           </SurfaceCard>
         </aside>
@@ -283,19 +283,19 @@ const CotravelMap = ({
 
   if (!allCoords.length) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
-        <h3 className="text-lg font-semibold text-slate-900">Route</h3>
-        <p className="mt-2 text-sm text-slate-600">No coordinates available.</p>
+      <div className="rounded-2xl bg-white p-5 shadow-card">
+        <h3 className="text-lg font-semibold font-display text-ink-strong">Route</h3>
+        <p className="mt-2 text-sm text-ink-muted">No coordinates available.</p>
       </div>
     );
   }
 
   if (!hasTiles) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
-        <h3 className="text-lg font-semibold text-slate-900">Route</h3>
-        <p className="mt-2 text-sm text-slate-600">
-          Provide <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">VITE_MAPY_API_KEY</code> to render the
+      <div className="rounded-2xl bg-white p-5 shadow-card">
+        <h3 className="text-lg font-semibold font-display text-ink-strong">Route</h3>
+        <p className="mt-2 text-sm text-ink-muted">
+          Provide <code className="rounded bg-brand-50 px-1.5 py-0.5 text-xs">VITE_MAPY_API_KEY</code> to render the
           map.
         </p>
       </div>
@@ -306,7 +306,7 @@ const CotravelMap = ({
   const bounds = allCoords.length > 1 ? L.latLngBounds(allCoords) : undefined;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
+    <div className="overflow-hidden rounded-2xl bg-white shadow-card">
       <MapContainer
         center={center}
         zoom={5}
@@ -360,7 +360,7 @@ const SegmentMap = ({ part }: { part: WanderPart }) => {
   const bounds = coords.length > 1 ? L.latLngBounds(coords) : undefined;
 
   return (
-    <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-white">
+    <div className="mt-3 overflow-hidden rounded-xl bg-white">
       <MapContainer
         center={center}
         zoom={6}

@@ -19,7 +19,7 @@ import { ProtectedRoute } from './auth/ProtectedRoute';
 
 function App() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen text-ink-strong">
       <Header />
       <Routes>
         <Route path="/" element={<Home />} />
@@ -106,8 +106,8 @@ function App() {
 
 const NotFound = () => (
   <main className="mx-auto flex max-w-4xl flex-col items-start gap-4 px-4 py-16">
-    <h1 className="text-3xl font-bold text-slate-900">Page not found</h1>
-    <p className="text-slate-600">Try navigating to Places to start exploring.</p>
+    <h1 className="font-display text-3xl font-semibold text-ink-strong">Page not found</h1>
+    <p className="font-label text-ink-muted">Try navigating to Places to start exploring.</p>
   </main>
 );
 

@@ -209,8 +209,8 @@ export const TripForm = () => {
   if (isEdit && tripQuery.isLoading) return <LoadingState label="Loading trip..." />;
   if (isEdit && tripQuery.error) return <ErrorState message="Failed to load trip for editing." />;
 
-  const heroTitleClass = backgroundImageUrl ? 'text-white' : 'text-slate-900';
-  const heroLabelClass = backgroundImageUrl ? 'text-brand-100' : 'text-brand-700';
+  const heroTitleClass = 'text-white';
+  const heroLabelClass = 'text-brand-200';
 
   const removeGooglePlace = (placeId: string) => {
     setGooglePlaces((prev) => prev.filter((place) => place.placeId !== placeId));
@@ -261,20 +261,20 @@ export const TripForm = () => {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
-      <div className="relative mb-8 overflow-hidden rounded-3xl border border-slate-200">
+      <div className="relative mb-8 overflow-hidden rounded-3xl">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={backgroundImageUrl ? { backgroundImage: `url(${backgroundImageUrl})` } : undefined}
         />
         <div
           className={`absolute inset-0 ${
-            backgroundImageUrl ? 'bg-slate-900/55' : 'bg-gradient-to-br from-slate-50 to-white'
+            backgroundImageUrl ? 'bg-slate-900/55' : 'bg-gradient-to-br from-brand-900 via-brand-700 to-accent-700'
           }`}
         />
         <div className="relative z-10 flex items-center justify-between px-6 py-10">
           <div>
             <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${heroLabelClass}`}>Trips</p>
-            <h1 className={`text-3xl font-bold ${heroTitleClass}`}>{isEdit ? 'Edit trip' : 'Create trip'}</h1>
+            <h1 className={`text-3xl font-semibold font-display ${heroTitleClass}`}>{isEdit ? 'Edit trip' : 'Create trip'}</h1>
           </div>
         </div>
       </div>
@@ -284,7 +284,7 @@ export const TripForm = () => {
           <Field label="Name" error={errors.name}>
             <input
               {...register('name', { required: 'Name is required' })}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-brand-400"
+              className="w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm outline-none focus:border-brand-400"
             />
           </Field>
         </div>
@@ -293,7 +293,7 @@ export const TripForm = () => {
           <textarea
             {...register('description', { required: 'Description is required' })}
             rows={4}
-            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-brand-400"
+            className="w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm outline-none focus:border-brand-400"
           />
         </Field>
 
@@ -308,7 +308,7 @@ export const TripForm = () => {
                   setSelectedBackgroundFile(file);
                   setBackgroundUploadMessage(null);
                 }}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none focus:border-brand-400 sm:w-auto"
+                className="w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm outline-none focus:border-brand-400 sm:w-auto"
               />
               <button
                 type="button"
@@ -317,15 +317,15 @@ export const TripForm = () => {
                   backgroundUploadMut.mutate(selectedBackgroundFile);
                 }}
                 disabled={!selectedBackgroundFile || backgroundUploadMut.isPending}
-                className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+                className="rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {backgroundUploadMut.isPending ? 'Uploading...' : 'Upload'}
               </button>
             </div>
             {selectedBackgroundFile && (
-              <p className="text-xs text-slate-600">Selected: {selectedBackgroundFile.name}</p>
+              <p className="text-xs font-label text-ink-muted">Selected: {selectedBackgroundFile.name}</p>
             )}
-            {backgroundUploadMessage && <p className="text-xs text-slate-600">{backgroundUploadMessage}</p>}
+            {backgroundUploadMessage && <p className="text-xs font-label text-ink-muted">{backgroundUploadMessage}</p>}
             {backgroundImageUrl && (
               <img
                 src={backgroundImageUrl}
@@ -348,7 +348,7 @@ export const TripForm = () => {
                   setSelectedFile(file);
                   setUploadMessage(null);
                 }}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none focus:border-brand-400 sm:w-auto"
+                className="w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm outline-none focus:border-brand-400 sm:w-auto"
               />
               <button
                 type="button"
@@ -357,15 +357,15 @@ export const TripForm = () => {
                   uploadMut.mutate(selectedFile);
                 }}
                 disabled={!selectedFile || uploadMut.isPending}
-                className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+                className="rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {uploadMut.isPending ? 'Uploading...' : 'Upload'}
               </button>
             </div>
-            {selectedFile && <p className="text-xs text-slate-600">Selected: {selectedFile.name}</p>}
-            {uploadMessage && <p className="text-xs text-slate-600">{uploadMessage}</p>}
+            {selectedFile && <p className="text-xs font-label text-ink-muted">Selected: {selectedFile.name}</p>}
+            {uploadMessage && <p className="text-xs font-label text-ink-muted">{uploadMessage}</p>}
             {uploadedFiles.length ? (
-              <ul className="text-xs text-slate-600">
+              <ul className="text-xs font-label text-ink-muted">
                 {uploadedFiles.map((file) => (
                   <li key={file.fileId}>{file.name}</li>
                 ))}
@@ -388,13 +388,13 @@ export const TripForm = () => {
               type="number"
               min={0}
               {...register('duration', { valueAsNumber: true, required: 'Duration is required' })}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-brand-400"
+              className="w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm outline-none focus:border-brand-400"
             />
           </Field>
           <Field label="Category ID" error={errors.categoryId}>
             <select
               {...register('categoryId', { valueAsNumber: true, required: 'Category is required' })}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-brand-400"
+              className="w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm outline-none focus:border-brand-400"
             >
               <option value="">Select category</option>
               {(categoriesQuery.data ?? []).map((cat) => (
@@ -410,8 +410,8 @@ export const TripForm = () => {
         <input type="hidden" {...register('rating', { valueAsNumber: true })} />
 
         <Field label="Tags">
-          <details className="group rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm">
-            <summary className="cursor-pointer list-none font-semibold text-slate-700">
+          <details className="group rounded-2xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm">
+            <summary className="cursor-pointer list-none font-semibold text-ink-strong">
               {selectedTags.length
                 ? (tagsQuery.data ?? [])
                     .filter((tag) => selectedTags.includes(tag.id))
@@ -421,25 +421,25 @@ export const TripForm = () => {
             </summary>
             <div className="mt-3 max-h-48 space-y-2 overflow-auto pb-1 pr-1">
               {(tagsQuery.data ?? []).map((tag) => (
-                <label key={tag.id} className="flex items-center gap-2 text-sm text-slate-700">
+                <label key={tag.id} className="flex items-center gap-2 text-sm text-ink-strong">
                   <input
                     type="checkbox"
-                    className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-400"
+                    className="h-4 w-4 rounded border-brand-100 text-ink-strong focus:ring-brand-400"
                     checked={selectedTags.includes(tag.id)}
                     onChange={() => toggleTag(tag.id)}
                   />
                   <span>{tag.title || tag.name}</span>
                 </label>
               ))}
-              {!(tagsQuery.data ?? []).length && <p className="text-xs text-slate-500">No tags available.</p>}
+              {!(tagsQuery.data ?? []).length && <p className="text-xs text-ink-muted">No tags available.</p>}
             </div>
           </details>
         </Field>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="rounded-2xl border border-brand-100 bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-1">
-            <h3 className="text-base font-semibold text-slate-900">Mapy places</h3>
-            <p className="text-xs text-slate-600">Search and add multiple places to this trip.</p>
+            <h3 className="text-base font-semibold font-display text-ink-strong">Mapy places</h3>
+            <p className="text-xs font-label text-ink-muted">Search and add multiple places to this trip.</p>
           </div>
 
           <div className="mt-4 space-y-3">
@@ -449,42 +449,42 @@ export const TripForm = () => {
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
                   placeholder="Search for a place"
-                  className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-brand-400"
+                  className="flex-1 rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm outline-none focus:border-brand-400"
                 />
                 <button
                   type="button"
                   onClick={handleSearch}
                   disabled={searching || !searchQuery.trim()}
-                  className="rounded-full bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="rounded-full bg-brand-700 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {searching ? 'Searching...' : 'Search'}
                 </button>
               </div>
             ) : (
-              <p className="text-sm text-slate-600">
-                Provide <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">VITE_MAPY_API_KEY</code> to search
+              <p className="text-sm font-label text-ink-muted">
+                Provide <code className="rounded bg-brand-50 px-1.5 py-0.5 text-xs">VITE_MAPY_API_KEY</code> to search
                 Mapy places.
               </p>
             )}
 
-            {searchMessage && <p className="text-xs text-slate-500">{searchMessage}</p>}
+            {searchMessage && <p className="text-xs text-ink-muted">{searchMessage}</p>}
             {searchResults.length ? (
               <ul className="space-y-2">
                 {searchResults.map((result) => (
                   <li
                     key={result.id}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm"
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-brand-50 px-3 py-2 text-sm"
                   >
                     <div>
-                      <p className="font-semibold text-slate-900">{result.name}</p>
-                      <p className="text-xs text-slate-500">
+                      <p className="font-semibold text-ink-strong">{result.name}</p>
+                      <p className="text-xs text-ink-muted">
                         {result.lat.toFixed(5)}, {result.lng.toFixed(5)}
                       </p>
                     </div>
                     <button
                       type="button"
                       onClick={() => addSearchResult(result)}
-                      className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                      className="rounded-full bg-brand-700 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-600"
                     >
                       Add place
                     </button>
@@ -494,7 +494,7 @@ export const TripForm = () => {
             ) : null}
 
             {hasTiles ? (
-              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+              <div className="overflow-hidden rounded-2xl bg-white">
                 <MapContainer
                   center={mapCenter}
                   zoom={googlePlaces.length ? 11 : 6}
@@ -522,31 +522,31 @@ export const TripForm = () => {
                 </MapContainer>
               </div>
             ) : (
-              <p className="text-sm text-slate-600">
-                Provide <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">VITE_MAPY_API_KEY</code> to render
+              <p className="text-sm font-label text-ink-muted">
+                Provide <code className="rounded bg-brand-50 px-1.5 py-0.5 text-xs">VITE_MAPY_API_KEY</code> to render
                 the map.
               </p>
             )}
 
-            {hasTiles && <p className="text-xs text-slate-500">Tip: click the map to add a location.</p>}
+            {hasTiles && <p className="text-xs text-ink-muted">Tip: click the map to add a location.</p>}
 
             {googlePlaces.length ? (
               <ul className="space-y-2">
                 {googlePlaces.map((place, idx) => (
                   <li
                     key={place.placeId}
-                    className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm"
+                    className="flex items-center justify-between rounded-xl bg-brand-50 px-3 py-2 text-sm"
                   >
                     <div>
-                      <p className="font-semibold text-slate-900">
+                      <p className="font-semibold text-ink-strong">
                         {idx + 1}. {place.name ?? 'Mapy place'}
                       </p>
-                      <p className="text-xs text-slate-500">Place ID: {place.placeId}</p>
+                      <p className="text-xs text-ink-muted">Place ID: {place.placeId}</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => removeGooglePlace(place.placeId)}
-                      className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700"
+                      className="rounded-full border border-brand-100 bg-white px-3 py-1 text-xs font-semibold text-ink-strong"
                     >
                       Remove
                     </button>
@@ -554,7 +554,7 @@ export const TripForm = () => {
                 ))}
               </ul>
             ) : (
-              <p className="text-xs text-slate-500">No places added yet.</p>
+              <p className="text-xs text-ink-muted">No places added yet.</p>
             )}
           </div>
         </section>
@@ -563,7 +563,7 @@ export const TripForm = () => {
           <input
             {...register('placeIds')}
             placeholder="e.g. 10,11"
-            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-brand-400"
+            className="w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm outline-none focus:border-brand-400"
           />
         </Field>
 
@@ -571,14 +571,14 @@ export const TripForm = () => {
           <button
             type="submit"
             disabled={isSubmitting || createMut.isPending || updateMut.isPending}
-            className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+            className="rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isEdit ? (updateMut.isPending ? 'Saving...' : 'Save') : createMut.isPending ? 'Creating...' : 'Create'}
           </button>
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:border-slate-400"
+            className="rounded-full border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700 shadow-sm transition hover:border-brand-300"
           >
             Cancel
           </button>
@@ -597,8 +597,8 @@ const Field = ({
   error?: { message?: string };
   children: React.ReactNode;
 }) => (
-  <label className="space-y-1 text-sm text-slate-700">
-    <span className="block font-semibold text-slate-900">{label}</span>
+  <label className="space-y-1 text-sm text-ink-strong">
+    <span className="block font-semibold font-label text-ink-strong">{label}</span>
     {children}
     {error?.message && <p className="text-xs font-semibold text-rose-600">{error.message}</p>}
   </label>

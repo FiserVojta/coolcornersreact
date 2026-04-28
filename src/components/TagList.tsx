@@ -8,7 +8,7 @@ export const TagList = ({ tags }: { tags?: Tag[] }) => {
       {tags.map((tag) => (
         <span
           key={tag.id}
-          className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700"
+          className="rounded-full border border-brand-100 bg-white px-2.5 py-1 text-xs font-semibold text-ink-default"
         >
           {tag.title || tag.name}
         </span>

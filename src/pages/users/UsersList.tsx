@@ -41,10 +41,10 @@ export const UsersList = () => {
         description={`Found ${filteredUsers.length} users.`}
       />
 
-      <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="mt-8 rounded-3xl border border-brand-100 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-end gap-4">
           <div className="flex-1 min-w-[220px]">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Search</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink-subtle">Search</p>
             <TextInput
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
@@ -53,12 +53,12 @@ export const UsersList = () => {
             />
           </div>
           <div className="flex-1 min-w-[220px]">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Rating</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink-subtle">Rating</p>
             <select
               aria-label="Filter by rating"
               value={ratingFilter}
               onChange={(event) => setRatingFilter(event.target.value as RatingFilter)}
-              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-brand-400"
+              className="mt-2 w-full rounded-2xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-default shadow-sm outline-none focus:border-brand-400"
             >
               <option value="">Any rating</option>
               <option value="1">1+ rating</option>
@@ -76,7 +76,7 @@ export const UsersList = () => {
             Clear filters
           </button>
         </div>
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-500">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-ink-muted">
           <p>Search by name or narrow the list by rating.</p>
         </div>
       </section>

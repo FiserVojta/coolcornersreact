@@ -305,25 +305,25 @@ export const CotravelForm = () => {
     setValue('tags', next, { shouldValidate: true, shouldDirty: true });
   };
 
-  const heroTitleClass = backgroundImageUrl ? 'text-white' : 'text-slate-900';
-  const heroLabelClass = backgroundImageUrl ? 'text-brand-100' : 'text-brand-700';
+  const heroTitleClass = 'text-white';
+  const heroLabelClass = 'text-brand-200';
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
-      <div className="relative mb-8 overflow-hidden rounded-3xl border border-slate-200">
+      <div className="relative mb-8 overflow-hidden rounded-3xl">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={backgroundImageUrl ? { backgroundImage: `url(${backgroundImageUrl})` } : undefined}
         />
         <div
           className={`absolute inset-0 ${
-            backgroundImageUrl ? 'bg-slate-900/55' : 'bg-gradient-to-br from-slate-50 to-white'
+            backgroundImageUrl ? 'bg-slate-900/55' : 'bg-gradient-to-br from-brand-900 via-brand-700 to-accent-700'
           }`}
         />
         <div className="relative z-10 flex items-center justify-between px-6 py-10">
           <div>
             <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${heroLabelClass}`}>CoTravel</p>
-            <h1 className={`text-3xl font-bold ${heroTitleClass}`}>{isEdit ? 'Edit plan' : 'Create plan'}</h1>
+            <h1 className={`text-3xl font-semibold font-display ${heroTitleClass}`}>{isEdit ? 'Edit plan' : 'Create plan'}</h1>
           </div>
         </div>
       </div>
@@ -333,7 +333,7 @@ export const CotravelForm = () => {
           <textarea
             {...register('description', { required: 'Description is required' })}
             rows={4}
-            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-brand-400"
+            className="w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm outline-none focus:border-brand-400"
           />
         </Field>
 
@@ -348,7 +348,7 @@ export const CotravelForm = () => {
                   setSelectedBackgroundFile(file);
                   setBackgroundUploadMessage(null);
                 }}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none focus:border-brand-400 sm:w-auto"
+                className="w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm outline-none focus:border-brand-400 sm:w-auto"
               />
               <button
                 type="button"
@@ -357,15 +357,15 @@ export const CotravelForm = () => {
                   backgroundUploadMut.mutate(selectedBackgroundFile);
                 }}
                 disabled={!selectedBackgroundFile || backgroundUploadMut.isPending}
-                className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+                className="rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {backgroundUploadMut.isPending ? 'Uploading...' : 'Upload'}
               </button>
             </div>
             {selectedBackgroundFile && (
-              <p className="text-xs text-slate-600">Selected: {selectedBackgroundFile.name}</p>
+              <p className="text-xs font-label text-ink-muted">Selected: {selectedBackgroundFile.name}</p>
             )}
-            {backgroundUploadMessage && <p className="text-xs text-slate-600">{backgroundUploadMessage}</p>}
+            {backgroundUploadMessage && <p className="text-xs font-label text-ink-muted">{backgroundUploadMessage}</p>}
             {backgroundImageUrl && (
               <img
                 src={backgroundImageUrl}
@@ -382,7 +382,7 @@ export const CotravelForm = () => {
             <input
               type="datetime-local"
               {...register('startTime', { required: 'Start time is required' })}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-brand-400"
+              className="w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm outline-none focus:border-brand-400"
             />
           </Field>
           <Field label="Capacity" error={errors.capacity}>
@@ -390,7 +390,7 @@ export const CotravelForm = () => {
               type="number"
               min={1}
               {...register('capacity', { valueAsNumber: true, required: 'Capacity is required' })}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-brand-400"
+              className="w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm outline-none focus:border-brand-400"
             />
           </Field>
         </div>
@@ -399,7 +399,7 @@ export const CotravelForm = () => {
           <Field label="Category" error={errors.category}>
             <select
               {...register('category', { valueAsNumber: true, required: 'Category is required' })}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-brand-400"
+              className="w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm outline-none focus:border-brand-400"
             >
               <option value="">Select category</option>
               {(categoriesQuery.data ?? []).map((cat) => (
@@ -410,8 +410,8 @@ export const CotravelForm = () => {
             </select>
           </Field>
           <Field label="Tags">
-            <details className="group rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm">
-              <summary className="cursor-pointer list-none font-semibold text-slate-700">
+            <details className="group rounded-2xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm">
+              <summary className="cursor-pointer list-none font-semibold text-ink-strong">
                 {selectedTags.length
                   ? (tagsQuery.data ?? [])
                       .filter((tag) => selectedTags.includes(tag.id))
@@ -421,32 +421,32 @@ export const CotravelForm = () => {
               </summary>
               <div className="mt-3 max-h-48 space-y-2 overflow-auto pb-1 pr-1">
                 {(tagsQuery.data ?? []).map((tag) => (
-                  <label key={tag.id} className="flex items-center gap-2 text-sm text-slate-700">
+                  <label key={tag.id} className="flex items-center gap-2 text-sm text-ink-strong">
                     <input
                       type="checkbox"
-                      className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-400"
+                      className="h-4 w-4 rounded border-brand-100 text-ink-strong focus:ring-brand-400"
                       checked={selectedTags.includes(tag.id)}
                       onChange={() => toggleTag(tag.id)}
                     />
                     <span>{tag.title || tag.name}</span>
                   </label>
                 ))}
-                {!(tagsQuery.data ?? []).length && <p className="text-xs text-slate-500">No tags available.</p>}
+                {!(tagsQuery.data ?? []).length && <p className="text-xs text-ink-muted">No tags available.</p>}
               </div>
             </details>
           </Field>
         </div>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="rounded-2xl border border-brand-100 bg-white p-5 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h3 className="text-base font-semibold text-slate-900">Segments</h3>
-              <p className="text-xs text-slate-600">Group trips and places into separate sections.</p>
+              <h3 className="text-base font-semibold font-display text-ink-strong">Segments</h3>
+              <p className="text-xs font-label text-ink-muted">Group trips and places into separate sections.</p>
             </div>
             <button
               type="button"
               onClick={addSegment}
-              className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-300"
+              className="rounded-full border border-brand-100 bg-white px-3 py-1.5 text-xs font-semibold text-ink-strong transition hover:border-brand-300"
             >
               Add segment
             </button>
@@ -480,14 +480,14 @@ export const CotravelForm = () => {
           <button
             type="submit"
             disabled={isSubmitting || createMut.isPending || updateMut.isPending}
-            className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+            className="rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isEdit ? (updateMut.isPending ? 'Saving...' : 'Save') : createMut.isPending ? 'Creating...' : 'Create'}
           </button>
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:border-slate-400"
+            className="rounded-full border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700 shadow-sm transition hover:border-brand-300"
           >
             Cancel
           </button>
@@ -506,8 +506,8 @@ const Field = ({
   error?: { message?: string };
   children: React.ReactNode;
 }) => (
-  <label className="space-y-1 text-sm text-slate-700">
-    <span className="block font-semibold text-slate-900">{label}</span>
+  <label className="space-y-1 text-sm text-ink-strong">
+    <span className="block font-semibold font-label text-ink-strong">{label}</span>
     {children}
     {error?.message && <p className="text-xs font-semibold text-rose-600">{error.message}</p>}
   </label>
@@ -614,60 +614,60 @@ const SegmentEditor = ({
   };
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+    <div className="rounded-xl bg-brand-50 p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex flex-1 items-center gap-3">
           <input
             value={segment.name}
             onChange={(event) => onRename(segment.id, event.target.value)}
             placeholder={`Segment ${index + 1}`}
-            className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-900 shadow-sm outline-none focus:border-brand-400"
+            className="flex-1 rounded-lg border border-brand-100 bg-white px-3 py-1.5 text-sm font-semibold text-ink-strong shadow-sm outline-none focus:border-brand-400"
           />
         </div>
         <button
           type="button"
           onClick={() => onRemove(segment.id)}
           disabled={!canRemove}
-          className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
+          className="rounded-full border border-brand-100 bg-white px-3 py-1 text-xs font-semibold text-ink-strong transition hover:border-brand-300 disabled:cursor-not-allowed disabled:opacity-60"
         >
           Remove
         </button>
       </div>
 
       <div className="mt-3 grid gap-3 lg:grid-cols-2">
-        <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
+        <div className="space-y-2 rounded-xl bg-white p-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-slate-900">Trips</p>
-            <span className="text-xs text-slate-500">{segment.tripIds.length} selected</span>
+            <p className="text-sm font-semibold text-ink-strong">Trips</p>
+            <span className="text-xs text-ink-muted">{segment.tripIds.length} selected</span>
           </div>
           <input
             value={tripQuery}
             onChange={(event) => setTripQuery(event.target.value)}
             placeholder="Search trips"
-            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 shadow-sm outline-none focus:border-brand-400"
+            className="w-full rounded-lg border border-brand-100 bg-white px-3 py-2 text-xs text-ink-strong shadow-sm outline-none focus:border-brand-400"
           />
           <div className="max-h-48 space-y-2 overflow-auto">
             {tripsLoading ? (
-              <p className="text-xs text-slate-500">Loading trips...</p>
+              <p className="text-xs text-ink-muted">Loading trips...</p>
             ) : filteredTrips.length ? (
               filteredTrips.map((trip) => {
                 const isSelected = segment.tripIds.includes(trip.id);
                 return (
                   <div
                     key={trip.id}
-                    className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-xs"
+                    className="flex items-center justify-between gap-3 rounded-lg bg-brand-50 px-3 py-2 text-xs"
                   >
                     <div>
-                      <p className="font-semibold text-slate-900">{trip.name}</p>
-                      {trip.category?.title && <p className="text-[10px] text-slate-500">{trip.category.title}</p>}
+                      <p className="font-semibold text-ink-strong">{trip.name}</p>
+                      {trip.category?.title && <p className="text-[10px] text-ink-muted">{trip.category.title}</p>}
                     </div>
                     <button
                       type="button"
                       onClick={() => onToggleTrip(segment.id, trip.id)}
                       className={`rounded-full px-2.5 py-1 text-[10px] font-semibold shadow-sm transition ${
                         isSelected
-                          ? 'bg-slate-900 text-white'
-                          : 'border border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                          ? 'bg-brand-100 text-brand-700'
+                          : 'border border-brand-100 bg-white text-ink-strong hover:border-brand-300'
                       }`}
                     >
                       {isSelected ? 'Selected' : 'Add'}
@@ -676,44 +676,44 @@ const SegmentEditor = ({
                 );
               })
             ) : (
-              <p className="text-xs text-slate-500">No trips found.</p>
+              <p className="text-xs text-ink-muted">No trips found.</p>
             )}
           </div>
         </div>
 
-        <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
+        <div className="space-y-2 rounded-xl bg-white p-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-slate-900">Places</p>
-            <span className="text-xs text-slate-500">{segment.placeIds.length} selected</span>
+            <p className="text-sm font-semibold text-ink-strong">Places</p>
+            <span className="text-xs text-ink-muted">{segment.placeIds.length} selected</span>
           </div>
           <input
             value={placeQuery}
             onChange={(event) => setPlaceQuery(event.target.value)}
             placeholder="Search places"
-            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 shadow-sm outline-none focus:border-brand-400"
+            className="w-full rounded-lg border border-brand-100 bg-white px-3 py-2 text-xs text-ink-strong shadow-sm outline-none focus:border-brand-400"
           />
           <div className="max-h-48 space-y-2 overflow-auto">
             {placesLoading ? (
-              <p className="text-xs text-slate-500">Loading places...</p>
+              <p className="text-xs text-ink-muted">Loading places...</p>
             ) : filteredPlaces.length ? (
               filteredPlaces.map((place) => {
                 const isSelected = segment.placeIds.includes(place.id);
                 return (
                   <div
                     key={place.id}
-                    className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-xs"
+                    className="flex items-center justify-between gap-3 rounded-lg bg-brand-50 px-3 py-2 text-xs"
                   >
                     <div>
-                      <p className="font-semibold text-slate-900">{place.name}</p>
-                      {place.city?.name && <p className="text-[10px] text-slate-500">{place.city.name}</p>}
+                      <p className="font-semibold text-ink-strong">{place.name}</p>
+                      {place.city?.name && <p className="text-[10px] text-ink-muted">{place.city.name}</p>}
                     </div>
                     <button
                       type="button"
                       onClick={() => onTogglePlace(segment.id, place.id)}
                       className={`rounded-full px-2.5 py-1 text-[10px] font-semibold shadow-sm transition ${
                         isSelected
-                          ? 'bg-slate-900 text-white'
-                          : 'border border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                          ? 'bg-brand-100 text-brand-700'
+                          : 'border border-brand-100 bg-white text-ink-strong hover:border-brand-300'
                       }`}
                     >
                       {isSelected ? 'Selected' : 'Add'}
@@ -722,16 +722,16 @@ const SegmentEditor = ({
                 );
               })
             ) : (
-              <p className="text-xs text-slate-500">No places found.</p>
+              <p className="text-xs text-ink-muted">No places found.</p>
             )}
           </div>
         </div>
       </div>
 
-      <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
+      <div className="mt-3 rounded-xl bg-white p-3">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold text-slate-900">Mapy places</p>
-          <span className="text-xs text-slate-500">{segment.googlePlaces.length} selected</span>
+          <p className="text-sm font-semibold text-ink-strong">Mapy places</p>
+          <span className="text-xs text-ink-muted">{segment.googlePlaces.length} selected</span>
         </div>
 
         <div className="mt-2 space-y-2">
@@ -741,42 +741,42 @@ const SegmentEditor = ({
                 value={mapyQuery}
                 onChange={(event) => setMapyQuery(event.target.value)}
                 placeholder="Search Mapy places"
-                className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 shadow-sm outline-none focus:border-brand-400"
+                className="flex-1 rounded-lg border border-brand-100 bg-white px-3 py-2 text-xs text-ink-strong shadow-sm outline-none focus:border-brand-400"
               />
               <button
                 type="button"
                 onClick={handleMapySearch}
                 disabled={mapySearching || !mapyQuery.trim()}
-                className="rounded-full bg-slate-900 px-3 py-2 text-[10px] font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+                className="rounded-full bg-brand-700 px-3 py-2 text-[10px] font-semibold text-white shadow-sm transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {mapySearching ? 'Searching...' : 'Search'}
               </button>
             </div>
           ) : (
-            <p className="text-xs text-slate-500">
-              Provide <code className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px]">VITE_MAPY_API_KEY</code> to
+            <p className="text-xs text-ink-muted">
+              Provide <code className="rounded bg-brand-50 px-1.5 py-0.5 text-[10px]">VITE_MAPY_API_KEY</code> to
               search Mapy places.
             </p>
           )}
 
-          {mapyMessage && <p className="text-xs text-slate-500">{mapyMessage}</p>}
+          {mapyMessage && <p className="text-xs text-ink-muted">{mapyMessage}</p>}
           {mapyResults.length ? (
             <ul className="space-y-2">
               {mapyResults.map((result) => (
                 <li
                   key={result.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-xs"
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-brand-50 px-3 py-2 text-xs"
                 >
                   <div>
-                    <p className="font-semibold text-slate-900">{result.name}</p>
-                    <p className="text-[10px] text-slate-500">
+                    <p className="font-semibold text-ink-strong">{result.name}</p>
+                    <p className="text-[10px] text-ink-muted">
                       {result.lat.toFixed(5)}, {result.lng.toFixed(5)}
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => handleAddMapy(result)}
-                    className="rounded-full bg-slate-900 px-3 py-1 text-[10px] font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                    className="rounded-full bg-brand-700 px-3 py-1 text-[10px] font-semibold text-white shadow-sm transition hover:bg-brand-600"
                   >
                     Add place
                   </button>
@@ -786,7 +786,7 @@ const SegmentEditor = ({
           ) : null}
 
           {hasMapTiles ? (
-            <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+            <div className="overflow-hidden rounded-lg bg-white">
               <MapContainer
                 center={mapyCenter}
                 zoom={mapyCoords.length ? 11 : 6}
@@ -808,30 +808,30 @@ const SegmentEditor = ({
               </MapContainer>
             </div>
           ) : (
-            <p className="text-xs text-slate-500">
-              Provide <code className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px]">VITE_MAPY_API_KEY</code> to render
+            <p className="text-xs text-ink-muted">
+              Provide <code className="rounded bg-brand-50 px-1.5 py-0.5 text-[10px]">VITE_MAPY_API_KEY</code> to render
               the map.
             </p>
           )}
-          {hasMapTiles && <p className="text-xs text-slate-500">Tip: click the map to add a location.</p>}
+          {hasMapTiles && <p className="text-xs text-ink-muted">Tip: click the map to add a location.</p>}
 
           {segment.googlePlaces.length ? (
             <ul className="space-y-2">
               {segment.googlePlaces.map((place, idx) => (
                 <li
                   key={place.placeId}
-                  className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-xs"
+                  className="flex items-center justify-between rounded-lg bg-brand-50 px-3 py-2 text-xs"
                 >
                   <div>
-                    <p className="font-semibold text-slate-900">
+                    <p className="font-semibold text-ink-strong">
                       {idx + 1}. {place.name ?? 'Mapy place'}
                     </p>
-                    <p className="text-[10px] text-slate-500">Place ID: {place.placeId}</p>
+                    <p className="text-[10px] text-ink-muted">Place ID: {place.placeId}</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => onRemoveMapyPlace(segment.id, place.placeId)}
-                    className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-semibold text-slate-700"
+                    className="rounded-full border border-brand-100 bg-white px-3 py-1 text-[10px] font-semibold text-ink-strong"
                   >
                     Remove
                   </button>
@@ -839,7 +839,7 @@ const SegmentEditor = ({
               ))}
             </ul>
           ) : (
-            <p className="text-xs text-slate-500">No Mapy places added yet.</p>
+            <p className="text-xs text-ink-muted">No Mapy places added yet.</p>
           )}
         </div>
       </div>

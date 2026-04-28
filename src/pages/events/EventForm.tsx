@@ -98,7 +98,7 @@ export const EventForm = () => {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-700">Events</p>
-          <h1 className="text-3xl font-bold text-slate-900">{isEdit ? 'Edit event' : 'Create event'}</h1>
+          <h1 className="text-3xl font-semibold font-display text-ink-strong">{isEdit ? 'Edit event' : 'Create event'}</h1>
         </div>
       </div>
 

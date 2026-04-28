@@ -18,9 +18,9 @@ export const PageHeader = ({ eyebrow, title, description, actions, className }: 
       .join(' ')}
   >
     <div>
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-700">{eyebrow}</p>
-      <h1 className="text-3xl font-bold text-slate-900">{title}</h1>
-      {description ? <p className="mt-2 text-slate-600">{description}</p> : null}
+      <p className="text-xs font-semibold font-label uppercase tracking-[0.2em] text-brand-700">{eyebrow}</p>
+      <h1 className="font-display text-3xl font-semibold text-ink-strong">{title}</h1>
+      {description ? <p className="mt-2 font-label text-ink-muted">{description}</p> : null}
     </div>
     {actions ? <div className="flex flex-wrap items-center gap-3">{actions}</div> : null}
   </div>

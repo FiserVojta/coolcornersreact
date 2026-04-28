@@ -15,9 +15,9 @@ export const CotravelCard = ({ cotravel }: { cotravel: Cotravel }) => {
   return (
     <Link
       to={`/cotravel/${cotravel.id}`}
-      className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card transition hover:-translate-y-1 hover:shadow-xl"
+      className="group flex flex-col overflow-hidden rounded-xl bg-white shadow-card transition hover:-translate-y-1 hover:shadow-card-hover"
     >
-      <div className="relative h-48 w-full overflow-hidden bg-slate-100">
+      <div className="relative h-48 w-full overflow-hidden bg-brand-50">
         {image ? (
           <img
             src={image}
@@ -30,20 +30,20 @@ export const CotravelCard = ({ cotravel }: { cotravel: Cotravel }) => {
             <span className="text-sm font-semibold">No image</span>
           </div>
         )}
-        <div className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-sm">
+        <div className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-ink-default shadow-sm">
           {filled}/{capacity} joined
         </div>
       </div>
       <div className="flex flex-1 flex-col gap-3 px-4 pb-4 pt-3">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="text-lg font-semibold text-slate-900 line-clamp-1">
+          <h3 className="text-lg font-semibold text-ink-strong line-clamp-1">
             {deriveTitle(cotravel.description)}
           </h3>
-          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+          <span className="rounded-lg bg-brand-50 px-2.5 py-1 text-xs font-semibold font-label text-ink-default">
             {formatDate(cotravel.startTime)}
           </span>
         </div>
-        <p className="line-clamp-2 text-sm text-slate-600">{summarize(cotravel.description)}</p>
+        <p className="line-clamp-2 text-sm font-label text-ink-muted">{summarize(cotravel.description)}</p>
         <TagList tags={cotravel.tags} />
       </div>
     </Link>

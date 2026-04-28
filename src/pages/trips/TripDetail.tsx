@@ -74,20 +74,20 @@ export const TripDetail = () => {
   const completedByUsers = data.completedByUsers ?? [];
   const userMarkedDone = hasUserMarkedDone(completedByUsers, [username, name, email]);
   const backgroundImageUrl = data.backgroundImage?.url ?? '';
-  const heroTitleClass = backgroundImageUrl ? 'text-white' : 'text-slate-900';
-  const heroLabelClass = backgroundImageUrl ? 'text-brand-100' : 'text-brand-700';
-  const heroMetaClass = backgroundImageUrl ? 'text-slate-100' : 'text-slate-600';
+  const heroTitleClass = 'text-white';
+  const heroLabelClass = 'text-brand-200';
+  const heroMetaClass = backgroundImageUrl ? 'text-white/80' : 'text-brand-100';
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-10">
-      <div className="relative mb-10 overflow-hidden rounded-3xl border border-slate-200">
+      <div className="relative mb-10 overflow-hidden rounded-3xl border border-brand-100">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={backgroundImageUrl ? { backgroundImage: `url(${backgroundImageUrl})` } : undefined}
         />
         <div
           className={`absolute inset-0 ${
-            backgroundImageUrl ? 'bg-slate-900/55' : 'bg-gradient-to-br from-slate-50 to-white'
+            backgroundImageUrl ? 'bg-slate-900/55' : 'bg-gradient-to-br from-brand-900 via-brand-700 to-accent-700'
           }`}
         />
         <div className="relative z-10 flex flex-col gap-4 px-6 py-10 md:flex-row md:items-center md:justify-between">
@@ -96,7 +96,7 @@ export const TripDetail = () => {
               {data.category?.title ?? 'Trip'}
             </p>
             <div className="flex items-center gap-3">
-              <h1 className={`text-3xl font-bold ${heroTitleClass}`}>{data.name}</h1>
+              <h1 className={`text-3xl font-semibold font-display ${heroTitleClass}`}>{data.name}</h1>
               <RatingBadge rating={data.rating} />
             </div>
             <p className={heroMetaClass}>{formatDuration(data.duration)}</p>
@@ -124,15 +124,15 @@ export const TripDetail = () => {
       <div className="mt-10 grid gap-10 lg:grid-cols-[2fr,1fr]">
         <div className="space-y-6">
           <SurfaceCard padding="lg">
-            <h2 className="text-xl font-semibold text-slate-900">Overview</h2>
-            <p className="mt-2 text-slate-700 leading-relaxed">{data.description}</p>
+            <h2 className="text-xl font-semibold font-display text-ink-strong">Overview</h2>
+            <p className="mt-2 text-ink-default font-label leading-relaxed">{data.description}</p>
             <div className="mt-4">
               <TagList tags={data.tags} />
             </div>
           </SurfaceCard>
 
           <SurfaceCard padding="lg">
-            <h3 className="text-lg font-semibold text-slate-900">Photos</h3>
+            <h3 className="text-lg font-semibold font-display text-ink-strong">Photos</h3>
             {data.files?.length || data.images?.length ? (
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {buildTripPhotos(data).map((photo, idx) => (
@@ -146,47 +146,47 @@ export const TripDetail = () => {
                 ))}
               </div>
             ) : (
-              <p className="mt-2 text-sm text-slate-600">No photos uploaded yet.</p>
+              <p className="mt-2 text-sm text-ink-muted">No photos uploaded yet.</p>
             )}
           </SurfaceCard>
 
           <SurfaceCard padding="lg">
-            <h3 className="text-lg font-semibold text-slate-900">Itinerary</h3>
+            <h3 className="text-lg font-semibold font-display text-ink-strong">Itinerary</h3>
             {data.places?.length ? (
               <ol className="mt-3 space-y-3">
                 {data.places.map((place, idx) => (
                   <li
                     key={place.id}
-                    className="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2"
+                    className="flex items-start gap-3 rounded-xl bg-brand-50 border border-brand-50 px-3 py-2"
                   >
                     <div className="mt-1 h-6 w-6 flex-none rounded-full bg-brand-100 text-center text-xs font-semibold text-brand-700">
                       {idx + 1}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">{place.name}</p>
-                      <p className="text-xs text-slate-600">{place.city?.name}</p>
+                      <p className="text-sm font-semibold font-label text-ink-strong">{place.name}</p>
+                      <p className="text-xs font-label text-ink-muted">{place.city?.name}</p>
                     </div>
                   </li>
                 ))}
               </ol>
             ) : (
-              <p className="mt-2 text-sm text-slate-600">No places linked yet.</p>
+              <p className="mt-2 text-sm text-ink-muted">No places linked yet.</p>
             )}
             {data.googlePlaces?.length ? (
               <div className="mt-4">
-                <h4 className="text-sm font-semibold text-slate-900">Mapy places</h4>
+                <h4 className="text-sm font-semibold font-label text-ink-strong">Mapy places</h4>
                 <ol className="mt-2 space-y-2">
                   {data.googlePlaces.map((place, idx) => (
                     <li
                       key={place.id}
-                      className="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2"
+                      className="flex items-start gap-3 rounded-xl bg-brand-50 border border-brand-50 px-3 py-2"
                     >
                       <div className="mt-1 h-6 w-6 flex-none rounded-full bg-brand-100 text-center text-xs font-semibold text-brand-700">
                         {idx + 1}
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-slate-900">{place.name}</p>
-                        <p className="text-xs text-slate-600">Place ID: {place.id}</p>
+                        <p className="text-sm font-semibold font-label text-ink-strong">{place.name}</p>
+                        <p className="text-xs font-label text-ink-muted">Place ID: {place.id}</p>
                       </div>
                     </li>
                   ))}
@@ -199,8 +199,8 @@ export const TripDetail = () => {
         <aside className="space-y-6">
           <TripMap trip={data} />
           <SurfaceCard>
-            <h3 className="text-lg font-semibold text-slate-900">Completed this trip</h3>
-            <p className="mt-2 text-sm text-slate-600">{formatDoneCount(completedByUsers.length)}</p>
+            <h3 className="text-lg font-semibold font-display text-ink-strong">Completed this trip</h3>
+            <p className="mt-2 text-sm text-ink-muted">{formatDoneCount(completedByUsers.length)}</p>
             {authenticated ? (
               <Button
                 type="button"
@@ -212,7 +212,7 @@ export const TripDetail = () => {
                 {userMarkedDone ? 'Marked as done' : markDoneMut.isPending ? 'Saving...' : 'Mark as done'}
               </Button>
             ) : (
-              <p className="mt-3 text-sm text-slate-600">
+              <p className="mt-3 text-sm text-ink-muted">
                 Login to mark this trip as done.
                 <Button
                   type="button"
@@ -228,18 +228,18 @@ export const TripDetail = () => {
             )}
           </SurfaceCard>
           <SurfaceCard>
-            <h3 className="text-lg font-semibold text-slate-900">Comments</h3>
+            <h3 className="text-lg font-semibold font-display text-ink-strong">Comments</h3>
             {data.comments?.length ? (
-              <ul className="mt-3 space-y-3 text-sm text-slate-700">
+              <ul className="mt-3 space-y-3 text-sm text-ink-strong">
                 {data.comments.map((comment, idx) => (
-                  <li key={idx} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
-                    <p className="font-semibold text-slate-900">{comment.name ?? 'Visitor'}</p>
+                  <li key={idx} className="rounded-xl bg-brand-50 border border-brand-50 px-3 py-2">
+                    <p className="font-semibold font-label text-ink-strong">{comment.name ?? 'Visitor'}</p>
                     <p>{comment.value}</p>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="mt-3 text-sm text-slate-600">No comments yet.</p>
+              <p className="mt-3 text-sm text-ink-muted">No comments yet.</p>
             )}
             {authenticated ? (
               <form
@@ -260,7 +260,7 @@ export const TripDetail = () => {
                 </Button>
               </form>
             ) : (
-              <p className="mt-3 text-sm text-slate-600">
+              <p className="mt-3 text-sm text-ink-muted">
                 Please login to comment.
                 <Button
                   type="button"
@@ -276,7 +276,7 @@ export const TripDetail = () => {
             )}
           </SurfaceCard>
           <SurfaceCard>
-            <h3 className="text-lg font-semibold text-slate-900">Rate this trip</h3>
+            <h3 className="text-lg font-semibold font-display text-ink-strong">Rate this trip</h3>
             <div className="mt-2 flex items-center gap-2">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
@@ -284,14 +284,14 @@ export const TripDetail = () => {
                   type="button"
                   onClick={() => ratingMut.mutate(star)}
                   className={`h-9 w-9 rounded-full border text-sm font-semibold ${
-                    data.rating && data.rating >= star ? 'bg-brand-600 text-white' : 'bg-white text-slate-800'
+                    data.rating && data.rating >= star ? 'bg-brand-600 text-white border-brand-100' : 'bg-white text-ink-strong border border-brand-100'
                   }`}
                 >
                   {star}
                 </button>
               ))}
             </div>
-            {ratingMut.isPending && <p className="mt-2 text-xs text-slate-600">Submitting...</p>}
+            {ratingMut.isPending && <p className="mt-2 text-xs text-ink-muted">Submitting...</p>}
           </SurfaceCard>
         </aside>
       </div>
@@ -325,19 +325,19 @@ const TripMap = ({ trip }: { trip: TripModel }) => {
 
   if (!allCoords.length) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
-        <h3 className="text-lg font-semibold text-slate-900">Map</h3>
-        <p className="mt-2 text-sm text-slate-600">No coordinates available.</p>
+      <div className="rounded-xl bg-white p-5 shadow-card">
+        <h3 className="text-lg font-semibold font-display text-ink-strong">Map</h3>
+        <p className="mt-2 text-sm text-ink-muted">No coordinates available.</p>
       </div>
     );
   }
 
   if (!hasTiles) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
-        <h3 className="text-lg font-semibold text-slate-900">Map</h3>
-        <p className="mt-2 text-sm text-slate-600">
-          Provide <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">VITE_MAPY_API_KEY</code> to render the
+      <div className="rounded-xl bg-white p-5 shadow-card">
+        <h3 className="text-lg font-semibold font-display text-ink-strong">Map</h3>
+        <p className="mt-2 text-sm text-ink-muted">
+          Provide <code className="rounded bg-brand-50 px-1.5 py-0.5 text-xs">VITE_MAPY_API_KEY</code> to render the
           map.
         </p>
       </div>
@@ -348,7 +348,7 @@ const TripMap = ({ trip }: { trip: TripModel }) => {
   const bounds = allCoords.length > 1 ? L.latLngBounds(allCoords) : undefined;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
+    <div className="overflow-hidden rounded-2xl bg-white shadow-card">
       <MapContainer
         center={center}
         zoom={10}

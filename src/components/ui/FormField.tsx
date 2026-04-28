@@ -7,11 +7,11 @@ type FormFieldProps = {
 };
 
 const controlClassName =
-  'w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-brand-400';
+  'w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm outline-none transition focus:border-brand-400 placeholder:text-ink-subtle';
 
 export const FormField = ({ label, error, children }: FormFieldProps) => (
-  <label className="space-y-1 text-sm text-slate-700">
-    <span className="block font-semibold text-slate-900">{label}</span>
+  <label className="space-y-1 text-sm font-label text-ink-muted">
+    <span className="block font-semibold text-ink-strong">{label}</span>
     {children}
     {error?.message ? <p className="text-xs font-semibold text-rose-600">{error.message}</p> : null}
   </label>

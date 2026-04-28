@@ -40,12 +40,12 @@ export const EventDetail = () => {
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-700">{data.category?.title ?? 'Event'}</p>
-          <h1 className="text-3xl font-bold text-slate-900">{data.name}</h1>
-          <p className="text-slate-600">{data.venue}</p>
-          <p className="text-sm text-slate-600">{formatDate(data.startTime)}</p>
+          <h1 className="text-3xl font-semibold font-display text-ink-strong">{data.name}</h1>
+          <p className="text-ink-muted font-label">{data.venue}</p>
+          <p className="text-sm font-label text-ink-muted">{formatDate(data.startTime)}</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+          <div className="rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold font-label text-ink-muted">
             Capacity {data.capacity}
           </div>
           {canUserEdit && (
@@ -71,8 +71,8 @@ export const EventDetail = () => {
       <section className="mt-8 grid gap-6 lg:grid-cols-[2fr,1fr]">
         <div className="space-y-4">
           <SurfaceCard>
-            <h2 className="text-lg font-semibold text-slate-900">About</h2>
-            <p className="mt-2 text-slate-700 leading-relaxed">{data.description}</p>
+            <h2 className="text-lg font-semibold font-display text-ink-strong">About</h2>
+            <p className="mt-2 text-ink-default font-label leading-relaxed">{data.description}</p>
             <div className="mt-4">
               <TagList
                 tags={
@@ -95,8 +95,8 @@ export const EventDetail = () => {
 
         <aside className="space-y-4">
           <SurfaceCard as="aside">
-            <h3 className="text-lg font-semibold text-slate-900">Details</h3>
-            <dl className="mt-3 grid gap-2 text-sm text-slate-700">
+            <h3 className="text-lg font-semibold font-display text-ink-strong">Details</h3>
+            <dl className="mt-3 grid gap-2 text-sm text-ink-strong">
               <Detail label="Venue" value={data.venue} />
               <Detail label="Start time" value={formatDate(data.startTime)} />
               <Detail label="Duration" value={formatDuration(data.duration)} />
@@ -128,8 +128,8 @@ const formatPrice = (price?: number) => {
 };
 
 const Detail = ({ label, value }: { label: string; value?: string }) => (
-  <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
-    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
-    <p className="mt-1 text-slate-800">{value ?? '—'}</p>
+  <div className="rounded-xl bg-brand-50 border border-brand-50 px-3 py-2">
+    <p className="text-xs font-semibold uppercase tracking-wide text-ink-subtle font-label">{label}</p>
+    <p className="mt-1 text-ink-strong font-label">{value ?? '—'}</p>
   </div>
 );

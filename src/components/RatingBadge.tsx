@@ -5,7 +5,7 @@ interface Props {
 export const RatingBadge = ({ rating }: Props) => {
   if (rating == null) {
     return (
-      <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-600 shadow-sm">
+      <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-ink-subtle shadow-sm">
         New
       </span>
     );

@@ -66,9 +66,9 @@ export const UserDetail = () => {
             {getInitials(user)}
           </div>
           <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-slate-900">{getDisplayName(user)}</h1>
-            <p className="text-sm text-slate-600">{user.email}</p>
-            <p className="text-xs text-slate-500">Joined {formatDate(user.createdAt)}</p>
+            <h1 className="text-2xl font-semibold font-display text-ink-strong">{getDisplayName(user)}</h1>
+            <p className="text-sm text-ink-subtle">{user.email}</p>
+            <p className="text-xs text-ink-subtle">Joined {formatDate(user.createdAt)}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -79,7 +79,7 @@ export const UserDetail = () => {
             <>
               <button
                 onClick={() => followMut.mutate(user.id)}
-                className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-70"
+                className="rounded-full bg-slate-900 text-white px-4 py-2 text-sm font-semibold shadow-sm transition hover:bg-slate-800 disabled:opacity-70"
                 disabled={followMut.isPending}
               >
                 {followMut.isPending ? 'Following...' : 'Follow'}
@@ -99,8 +99,8 @@ export const UserDetail = () => {
       <section className="mt-8 grid gap-6 lg:grid-cols-[2fr,1fr]">
         <div className="space-y-4">
           <div className="rounded-2xl bg-white p-5 shadow-card">
-            <h2 className="text-lg font-semibold text-slate-900">Profile</h2>
-            <dl className="mt-3 grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
+            <h2 className="text-lg font-semibold font-display text-ink-strong">Profile</h2>
+            <dl className="mt-3 grid gap-2 text-sm text-ink-strong sm:grid-cols-2">
               <Detail label="Username" value={user.username} />
               <Detail label="Name" value={[user.firstName, user.lastName].filter(Boolean).join(' ') || user.name} />
               <Detail label="Display name" value={user.displayName} />
@@ -110,37 +110,37 @@ export const UserDetail = () => {
             </dl>
           </div>
           <div className="rounded-2xl bg-white p-5 shadow-card">
-            <h3 className="text-lg font-semibold text-slate-900">Tags</h3>
-            <p className="mt-2 text-sm text-slate-600">Interests pulled from associated trips/places.</p>
+            <h3 className="text-lg font-semibold font-display text-ink-strong">Tags</h3>
+            <p className="mt-2 text-sm font-label text-ink-muted">Interests pulled from associated trips/places.</p>
             <TagList tags={[]} />
           </div>
           <div className="rounded-2xl bg-white p-5 shadow-card">
-            <h3 className="text-lg font-semibold text-slate-900">Places</h3>
+            <h3 className="text-lg font-semibold font-display text-ink-strong">Places</h3>
             {placesQuery.isLoading ? (
-              <p className="text-sm text-slate-600">Loading...</p>
+              <p className="text-sm text-ink-muted">Loading...</p>
             ) : places.length ? (
-              <ul className="mt-3 space-y-2 text-sm text-slate-700">
+              <ul className="mt-3 space-y-2 text-sm text-ink-strong">
                 {places.map((p: Place) => (
-                  <li key={p.id} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
+                  <li key={p.id} className="rounded-xl bg-brand-50 border border-brand-50 px-3 py-2">
                     {p.name}
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="mt-2 text-sm text-slate-600">No places yet.</p>
+              <p className="mt-2 text-sm text-ink-muted">No places yet.</p>
             )}
           </div>
           <div className="rounded-2xl bg-white p-5 shadow-card">
-            <h3 className="text-lg font-semibold text-slate-900">Trips</h3>
+            <h3 className="text-lg font-semibold font-display text-ink-strong">Trips</h3>
             {tripsQuery.isLoading ? (
-              <p className="text-sm text-slate-600">Loading...</p>
+              <p className="text-sm text-ink-muted">Loading...</p>
             ) : trips.length ? (
-              <ul className="mt-3 space-y-2 text-sm text-slate-700">
+              <ul className="mt-3 space-y-2 text-sm text-ink-strong">
                 {trips.map((t: Trip) => (
-                  <li key={t.id} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
+                  <li key={t.id} className="rounded-xl bg-brand-50 border border-brand-50 px-3 py-2">
                     <Link
                       to={`/trips/${t.id}`}
-                      className="font-semibold text-slate-900 transition hover:text-brand-600"
+                      className="font-semibold font-label text-ink-strong transition hover:text-brand-700"
                     >
                       {t.name}
                     </Link>
@@ -148,25 +148,25 @@ export const UserDetail = () => {
                 ))}
               </ul>
             ) : (
-              <p className="mt-2 text-sm text-slate-600">No trips yet.</p>
+              <p className="mt-2 text-sm text-ink-muted">No trips yet.</p>
             )}
           </div>
         </div>
 
         <aside className="space-y-4">
           <div className="rounded-2xl bg-white p-5 shadow-card">
-            <h3 className="text-lg font-semibold text-slate-900">Signed-up CoTravels</h3>
+            <h3 className="text-lg font-semibold font-display text-ink-strong">Signed-up CoTravels</h3>
             {attendedWanders.length ? (
               <ul className="mt-3 space-y-2">
                 {attendedWanders.map((wander) => (
-                  <li key={wander.id} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
-                    <p className="text-sm font-semibold text-slate-900">{wander.description}</p>
-                    <p className="text-xs text-slate-600">{wander.startTime}</p>
+                  <li key={wander.id} className="rounded-xl bg-brand-50 border border-brand-50 px-3 py-2">
+                    <p className="text-sm font-semibold font-label text-ink-strong">{wander.description}</p>
+                    <p className="text-xs font-label text-ink-muted">{wander.startTime}</p>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="mt-2 text-sm text-slate-600">No signed-up co-travel plans yet.</p>
+              <p className="mt-2 text-sm text-ink-muted">No signed-up co-travel plans yet.</p>
             )}
           </div>
         </aside>
@@ -191,8 +191,8 @@ const formatDate = (value: string | number) => {
 };
 
 const Detail = ({ label, value }: { label: string; value?: string }) => (
-  <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
-    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
-    <p className="mt-1 text-slate-800">{value ?? '—'}</p>
+  <div className="rounded-xl bg-brand-50 border border-brand-50 px-3 py-2">
+    <p className="text-xs font-semibold uppercase tracking-wide text-ink-subtle font-label">{label}</p>
+    <p className="mt-1 text-ink-strong font-label">{value ?? '—'}</p>
   </div>
 );

@@ -111,32 +111,32 @@ export const CotravelList = () => {
         }
       />
 
-      <SurfaceCard className="mt-6 border border-slate-200 shadow-sm">
+      <SurfaceCard className="mt-6 border border-brand-100">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+          <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-ink-subtle">
             Starts From
             <TextInput
               type="date"
               value={draft.startsFrom}
               onChange={(event) => setDraft((prev) => ({ ...prev, startsFrom: event.target.value }))}
-              className="font-medium text-slate-900"
+              className="font-medium text-ink-strong"
             />
           </label>
-          <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+          <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-ink-subtle">
             Starts Until
             <TextInput
               type="date"
               value={draft.startsUntil}
               onChange={(event) => setDraft((prev) => ({ ...prev, startsUntil: event.target.value }))}
-              className="font-medium text-slate-900"
+              className="font-medium text-ink-strong"
             />
           </label>
-          <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+          <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-ink-subtle">
             Created By
             <select
               value={draft.createdBy}
               onChange={(event) => setDraft((prev) => ({ ...prev, createdBy: event.target.value }))}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-900 shadow-sm outline-none focus:border-brand-400"
+              className="w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm font-medium text-ink-default shadow-sm outline-none focus:border-brand-400"
             >
               <option value="">Any organizer</option>
               {(usersQuery.data?.data ?? []).map((user) => (
@@ -148,17 +148,17 @@ export const CotravelList = () => {
           </label>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-500">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-ink-muted">
         </div>
 
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
-          <div className="relative rounded-2xl border border-slate-100 bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Categories</p>
+          <div className="relative rounded-2xl bg-brand-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink-subtle">Categories</p>
             <button
               type="button"
               aria-expanded={isCategoriesOpen}
               onClick={() => setIsCategoriesOpen((prev) => !prev)}
-              className="mt-3 flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-3 py-2 text-left text-sm font-semibold text-slate-700 shadow-sm"
+              className="mt-3 flex w-full items-center justify-between rounded-2xl border border-brand-100 bg-white px-3 py-2 text-left text-sm font-semibold text-ink-default shadow-sm"
             >
               <span className="truncate pr-3">
                 {draft.categories.length
@@ -168,10 +168,10 @@ export const CotravelList = () => {
                       .join(', ')
                   : 'Select categories'}
               </span>
-              <span className={`text-xs text-slate-500 transition ${isCategoriesOpen ? 'rotate-180' : ''}`}>▼</span>
+              <span className={`text-xs text-ink-subtle transition ${isCategoriesOpen ? 'rotate-180' : ''}`}>▼</span>
             </button>
             {isCategoriesOpen && (
-              <div className="absolute left-4 right-4 z-20 mt-2 max-h-60 overflow-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-lg">
+              <div className="absolute left-4 right-4 z-20 mt-2 max-h-60 overflow-auto rounded-2xl bg-white border border-brand-100 p-2 shadow-lg">
                 {(categoriesQuery.data ?? []).map((category) => (
                   <button
                     key={category.id}
@@ -182,26 +182,26 @@ export const CotravelList = () => {
                     }
                     className={`flex w-full items-center rounded-xl px-3 py-2 text-left text-sm transition ${
                       draft.categories.includes(category.id)
-                        ? 'bg-slate-900 text-white'
-                        : 'text-slate-700 hover:bg-slate-100'
+                        ? 'bg-brand-700 text-white'
+                        : 'text-ink-default hover:bg-brand-50'
                     }`}
                   >
                     {category.title || category.name}
                   </button>
                 ))}
                 {!categoriesQuery.isLoading && !(categoriesQuery.data ?? []).length && (
-                  <p className="px-3 py-2 text-xs text-slate-500">No categories available.</p>
+                  <p className="px-3 py-2 text-xs text-ink-muted">No categories available.</p>
                 )}
               </div>
             )}
           </div>
-          <div className="relative rounded-2xl border border-slate-100 bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Tags</p>
+          <div className="relative rounded-2xl bg-brand-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink-subtle">Tags</p>
             <button
               type="button"
               aria-expanded={isTagsOpen}
               onClick={() => setIsTagsOpen((prev) => !prev)}
-              className="mt-3 flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-3 py-2 text-left text-sm font-semibold text-slate-700 shadow-sm"
+              className="mt-3 flex w-full items-center justify-between rounded-2xl border border-brand-100 bg-white px-3 py-2 text-left text-sm font-semibold text-ink-default shadow-sm"
             >
               <span className="truncate pr-3">
                 {draft.tags.length
@@ -211,10 +211,10 @@ export const CotravelList = () => {
                       .join(', ')
                   : 'Select tags'}
               </span>
-              <span className={`text-xs text-slate-500 transition ${isTagsOpen ? 'rotate-180' : ''}`}>▼</span>
+              <span className={`text-xs text-ink-subtle transition ${isTagsOpen ? 'rotate-180' : ''}`}>▼</span>
             </button>
             {isTagsOpen && (
-              <div className="absolute left-4 right-4 z-20 mt-2 max-h-60 overflow-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-lg">
+              <div className="absolute left-4 right-4 z-20 mt-2 max-h-60 overflow-auto rounded-2xl bg-white border border-brand-100 p-2 shadow-lg">
                 {(tagsQuery.data ?? []).map((tag) => (
                   <button
                     key={tag.id}
@@ -223,15 +223,15 @@ export const CotravelList = () => {
                     onClick={() => setDraft((prev) => ({ ...prev, tags: toggleId(prev.tags, tag.id) }))}
                     className={`flex w-full items-center rounded-xl px-3 py-2 text-left text-sm transition ${
                       draft.tags.includes(tag.id)
-                        ? 'bg-slate-900 text-white'
-                        : 'text-slate-700 hover:bg-slate-100'
+                        ? 'bg-brand-700 text-white'
+                        : 'text-ink-default hover:bg-brand-50'
                     }`}
                   >
                     {tag.title || tag.name}
                   </button>
                 ))}
                 {!tagsQuery.isLoading && !(tagsQuery.data ?? []).length && (
-                  <p className="px-3 py-2 text-xs text-slate-500">No tags available.</p>
+                  <p className="px-3 py-2 text-xs text-ink-muted">No tags available.</p>
                 )}
               </div>
             )}
@@ -266,7 +266,7 @@ export const CotravelList = () => {
             </Button>
           </div>
 
-          <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+          <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-ink-subtle">
             Page size
             <select
               value={pageSize}
@@ -274,7 +274,7 @@ export const CotravelList = () => {
                 setPage(0);
                 setPageSize(Number(event.target.value));
               }}
-              className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-semibold text-slate-700 shadow-sm"
+              className="rounded-full border border-brand-100 bg-white px-3 py-1 text-sm font-semibold text-ink-default shadow-sm"
             >
               {[6, 9, 12, 18].map((size) => (
                 <option key={size} value={size}>

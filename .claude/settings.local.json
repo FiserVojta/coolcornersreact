@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:api.anthropic.com)",
+      "Bash(npm run *)",
+      "Read(//private/tmp/**)",
+      "Bash(mkdir -p coolcorners-design)",
+      "Bash(unzip -o \"/Users/vojtechfiser/Documents/private-projects/coolCorners/corners-react/Cool Corners Design System-handoff.zip\" -d /tmp/coolcorners-design)",
+      "Bash(cp \"/Users/vojtechfiser/.claude/projects/-Users-vojtechfiser-Documents-private-projects-coolCorners-corners-react/4fecb269-bb20-4d08-ab16-b573dcf3448d/tool-results/webfetch-1777300727367-wmj43d.bin\" /tmp/stitch-design.gz)",
+      "Bash(gunzip -f stitch-design.gz)",
+      "Bash(mkdir -p stitch-xMFevZpJ9)",
+      "Bash(tar -xf stitch-design -C stitch-xMFevZpJ9)"
+    ]
+  }
+}
