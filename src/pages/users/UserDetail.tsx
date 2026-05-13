@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { fetchUser, fetchUserPlaces, fetchUserTrips, followUsers, unfollowUsers } from '../../api/users';
+import { fetchUser, fetchUserPlaces, fetchUserTrips, followUsers, unfollowUsers, addUserRating } from '../../api/users';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { useAuth } from '../../auth/AuthContext';
@@ -43,6 +43,14 @@ export const UserDetail = () => {
 
   const unfollowMut = useMutation({
     mutationFn: (userId: number) => unfollowUsers({ userIds: [userId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user', email] });
+    }
+  });
+
+  const ratingMut = useMutation({
+    mutationFn: (rating: number) =>
+      addUserRating(userQuery.data?.id ?? 0, { rating, createdBy: username ?? 'web-client' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user', email] });
     }
@@ -107,6 +115,7 @@ export const UserDetail = () => {
               <Detail label="Followers" value={String(user.followers?.length ?? 0)} />
               <Detail label="Following" value={String(user.following?.length ?? 0)} />
               <Detail label="Joined" value={formatDate(user.createdAt)} />
+              <Detail label="Rating" value={user.rating != null ? user.rating.toFixed(1) : '—'} />
             </dl>
           </div>
           <div className="rounded-2xl bg-white p-5 shadow-card">
@@ -154,6 +163,29 @@ export const UserDetail = () => {
         </div>
 
         <aside className="space-y-4">
+          {!isCurrent && authenticated && (
+            <div className="rounded-2xl bg-white p-5 shadow-card">
+              <h3 className="text-lg font-semibold font-display text-ink-strong">Rate this user</h3>
+              <div className="mt-2 flex items-center gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => ratingMut.mutate(star)}
+                    disabled={ratingMut.isPending}
+                    className={`h-9 w-9 rounded-full border text-sm font-semibold disabled:opacity-60 ${
+                      user.rating && user.rating >= star
+                        ? 'bg-brand-600 text-white border-brand-600'
+                        : 'bg-white text-ink-strong border-brand-100'
+                    }`}
+                  >
+                    {star}
+                  </button>
+                ))}
+              </div>
+              {ratingMut.isPending && <p className="mt-2 text-xs text-ink-muted">Submitting...</p>}
+            </div>
+          )}
           <div className="rounded-2xl bg-white p-5 shadow-card">
             <h3 className="text-lg font-semibold font-display text-ink-strong">Signed-up CoTravels</h3>
             {attendedWanders.length ? (

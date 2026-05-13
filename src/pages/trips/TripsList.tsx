@@ -18,6 +18,7 @@ export const TripsList = () => {
   const [isTagsOpen, setIsTagsOpen] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [selectedTags, setSelectedTags] = useState<number[]>([]);
+  const [minRating, setMinRating] = useState(0);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(9);
   const safePage = Math.max(0, page);
@@ -33,8 +34,15 @@ export const TripsList = () => {
   });
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['trips', selectedCategories, selectedTags, safePage, pageSize],
-    queryFn: () => fetchTrips({ categories: selectedCategories, tags: selectedTags, page: safePage, size: pageSize })
+    queryKey: ['trips', selectedCategories, selectedTags, minRating, safePage, pageSize],
+    queryFn: () =>
+      fetchTrips({
+        categories: selectedCategories,
+        tags: selectedTags,
+        minRating,
+        page: safePage,
+        size: pageSize
+      })
   });
   const trips = data?.data ?? [];
   const categories = categoriesQuery.data ?? [];
@@ -55,11 +63,17 @@ export const TripsList = () => {
     setSelectedTags((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
   };
 
+  const toggleMinRating = (value: number) => {
+    setPage(0);
+    setMinRating((prev) => (prev === value ? 0 : value));
+  };
+
   const resetFilters = () => {
     setIsCategoriesOpen(false);
     setIsTagsOpen(false);
     setSelectedCategories([]);
     setSelectedTags([]);
+    setMinRating(0);
     setPage(0);
   };
 
@@ -172,6 +186,33 @@ export const TripsList = () => {
                 {!tags.length && <p className="text-xs text-ink-muted">No tags available.</p>}
               </div>
             )}
+          </div>
+          <div className="flex-1 min-w-[220px]">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink-subtle">Minimum rating</p>
+            <div role="group" aria-label="Minimum rating" className="mt-2 flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((value) => {
+                const active = minRating >= value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-label={`Filter to rating ${value} or higher`}
+                    aria-pressed={minRating === value}
+                    onClick={() => toggleMinRating(value)}
+                    className={`flex h-9 w-9 items-center justify-center rounded-full border text-lg transition ${
+                      active
+                        ? 'border-brand-700 bg-brand-700 text-white shadow-sm'
+                        : 'border-brand-100 bg-white text-ink-subtle hover:border-brand-300'
+                    }`}
+                  >
+                    ★
+                  </button>
+                );
+              })}
+              {minRating > 0 && (
+                <span className="ml-2 text-xs font-semibold text-ink-subtle">{minRating}+</span>
+              )}
+            </div>
           </div>
           <button
             type="button"

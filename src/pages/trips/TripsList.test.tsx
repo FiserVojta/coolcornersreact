@@ -30,6 +30,63 @@ describe('TripsList', () => {
     expect(screen.queryByRole('button', { name: 'Login to create' })).not.toBeInTheDocument();
   });
 
+  it('sends minRating when a star is selected and clears it on second click', async () => {
+    const minRatingValues: (string | null)[] = [];
+    server.use(
+      http.get('http://localhost:8080/api/public/trips', ({ request }) => {
+        const url = new URL(request.url);
+        minRatingValues.push(url.searchParams.get('minRating'));
+        const minRating = Number(url.searchParams.get('minRating') ?? '0');
+        const all = [
+          {
+            id: 401,
+            name: 'Low Rated Trip',
+            description: 'A so-so trip.',
+            duration: 60,
+            rating: 2.5,
+            tags: [],
+            images: []
+          },
+          {
+            id: 402,
+            name: 'High Rated Trip',
+            description: 'A great trip.',
+            duration: 90,
+            rating: 4.6,
+            tags: [],
+            images: []
+          }
+        ];
+        const filtered = minRating > 0 ? all.filter((trip) => trip.rating >= minRating) : all;
+        return HttpResponse.json({ totalItems: filtered.length, data: filtered });
+      })
+    );
+
+    renderWithProviders(<TripsList />, {
+      route: '/trips'
+    });
+
+    expect(await screen.findByText('Low Rated Trip')).toBeInTheDocument();
+    expect(screen.getByText('High Rated Trip')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Filter to rating 4 or higher' }));
+
+    await waitFor(() => {
+      expect(screen.queryByText('Low Rated Trip')).not.toBeInTheDocument();
+      expect(screen.getByText('High Rated Trip')).toBeInTheDocument();
+      expect(screen.getByText('Found 1 trips.')).toBeInTheDocument();
+    });
+    expect(minRatingValues).toContain('4');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Filter to rating 4 or higher' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Low Rated Trip')).toBeInTheDocument();
+      expect(screen.getByText('High Rated Trip')).toBeInTheDocument();
+      expect(screen.getByText('Found 2 trips.')).toBeInTheDocument();
+    });
+  });
+
   it('requests filtered trips when a category and tag are selected', async () => {
     server.use(
       http.get('http://localhost:8080/api/public/categories', () =>

@@ -1,15 +1,16 @@
 import { apiClient } from './client';
 import type { PagedResult, Place } from '../types/place';
 import type { Trip } from '../types/trip';
-import type { User, UserDetail, UserFollowRequest } from '../types/user';
+import type { User, UserDetail, UserFollowRequest, UserRateRequest } from '../types/user';
 
-export const fetchUsers = async (params?: { page?: number; size?: number; search?: string }) => {
+export const fetchUsers = async (params?: { page?: number; size?: number; search?: string; minRating?: number }) => {
   const query = new URLSearchParams();
   const page = params?.page ?? 0;
   const size = params?.size ?? 20;
   query.set('page', String(page));
   query.set('size', String(size));
   if (params?.search) query.set('search', params.search);
+  if (params?.minRating) query.set('minRating', String(params.minRating));
 
   const { data } = await apiClient.get<PagedResult<User>>('/public/users', { params: query });
   return data;
@@ -42,5 +43,10 @@ export const fetchUserPlaces = async (email: string) => {
 
 export const fetchUserTrips = async (email: string) => {
   const { data } = await apiClient.get<Trip[]>(`/public/users/${encodeURIComponent(email)}/trips`);
+  return data;
+};
+
+export const addUserRating = async (userId: number, payload: UserRateRequest) => {
+  const { data } = await apiClient.patch<number>(`/users/${userId}/rate`, payload);
   return data;
 };

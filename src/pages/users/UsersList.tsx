@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchUsers } from '../../api/users';
 import { LoadingState } from '../../components/LoadingState';
@@ -14,16 +14,14 @@ export const UsersList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [ratingFilter, setRatingFilter] = useState<RatingFilter>('');
   const { data, isLoading, error } = useQuery({
-    queryKey: ['users', searchTerm],
-    queryFn: () => fetchUsers({ search: searchTerm.trim() || undefined })
+    queryKey: ['users', searchTerm, ratingFilter],
+    queryFn: () => fetchUsers({
+      search: searchTerm.trim() || undefined,
+      minRating: ratingFilter ? Number(ratingFilter) : undefined
+    })
   });
 
-  const filteredUsers = useMemo(() => {
-    const users = data?.data ?? [];
-    if (!ratingFilter) return users;
-    const minRating = Number(ratingFilter);
-    return users.filter((user) => (user.rating ?? 0) >= minRating);
-  }, [data?.data, ratingFilter]);
+  const filteredUsers = data?.data ?? [];
 
   if (isLoading) return <LoadingState label="Loading users..." />;
   if (error) return <ErrorState message="Unable to load users right now." />;

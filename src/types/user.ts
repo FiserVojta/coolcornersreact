@@ -23,3 +23,8 @@ export interface UserDetail extends User {
 export interface UserFollowRequest {
   userIds: number[];
 }
+
+export interface UserRateRequest {
+  rating: number;
+  createdBy: string;
+}
