@@ -15,6 +15,7 @@ import { EventDetail } from './pages/events/EventDetail';
 import { EventForm } from './pages/events/EventForm';
 import { UsersList } from './pages/users/UsersList';
 import { UserDetail } from './pages/users/UserDetail';
+import { Profile } from './pages/profile/Profile';
 import { ProtectedRoute } from './auth/ProtectedRoute';
 
 function App() {
@@ -98,6 +99,14 @@ function App() {
         />
         <Route path="/users" element={<UsersList />} />
         <Route path="/users/:id" element={<UserDetail />} />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </div>

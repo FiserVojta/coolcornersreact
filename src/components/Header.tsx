@@ -33,7 +33,12 @@ export const Header = () => {
         <div className="flex items-center gap-3">
           {authenticated ? (
             <>
-              <span className="text-sm font-label text-ink-muted">Hi, {username ?? 'user'}</span>
+              <Link
+                to="/profile"
+                className="text-sm font-label text-ink-muted underline-offset-4 hover:text-ink-strong hover:underline"
+              >
+                Hi, {username ?? 'user'}
+              </Link>
               <button
                 onClick={() => logout()}
                 className="rounded-full bg-brand-700 text-white px-3 py-1.5 text-sm font-semibold shadow-sm transition hover:bg-brand-600"

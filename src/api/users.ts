@@ -1,7 +1,7 @@
 import { apiClient } from './client';
 import type { PagedResult, Place } from '../types/place';
 import type { Trip } from '../types/trip';
-import type { User, UserDetail, UserFollowRequest, UserRateRequest } from '../types/user';
+import type { User, UserDetail, UserFollowRequest, UserRateRequest, UserUpdateRequest } from '../types/user';
 
 export const fetchUsers = async (params?: { page?: number; size?: number; search?: string; minRating?: number }) => {
   const query = new URLSearchParams();
@@ -23,6 +23,11 @@ export const fetchUser = async (email: string) => {
 
 export const fetchCurrentUser = async () => {
   const { data } = await apiClient.get<User>('/users/me');
+  return data;
+};
+
+export const updateCurrentUser = async (payload: UserUpdateRequest) => {
+  const { data } = await apiClient.put<User>('/users/me', payload);
   return data;
 };
 

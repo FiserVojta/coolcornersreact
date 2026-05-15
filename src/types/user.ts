@@ -28,3 +28,9 @@ export interface UserRateRequest {
   rating: number;
   createdBy: string;
 }
+
+export interface UserUpdateRequest {
+  name?: string;
+  displayName?: string;
+  discordId?: string;
+}
