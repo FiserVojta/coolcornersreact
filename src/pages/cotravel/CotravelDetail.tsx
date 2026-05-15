@@ -224,7 +224,6 @@ export const CotravelDetail = () => {
                     </div>
                     <div>
                       <p className="text-sm font-semibold font-label text-ink-strong">{getDisplayName(user)}</p>
-                      <p className="text-xs font-label text-ink-muted">{user.email}</p>
                     </div>
                   </li>
                 ))}
@@ -432,7 +431,7 @@ const extractGoogleCoords = (places?: Cotravel['googlePlaces']) =>
     .filter(Boolean) as { lat: number; lng: number }[];
 
 const getDisplayName = (user: User) =>
-  user.displayName || user.name || [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email || 'Traveler';
+  user.displayName || user.name || [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username || 'Traveler';
 
 const getInitials = (user: User) => {
   const name = getDisplayName(user);

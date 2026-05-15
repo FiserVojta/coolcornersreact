@@ -13,12 +13,12 @@ describe('UserDetail', () => {
         <Route path="/users/:id" element={<UserDetail />} />
       </Routes>,
       {
-        route: '/users/ada%40example.com'
+        route: '/users/1'
       }
     );
 
     expect(await screen.findByRole('heading', { name: 'Ada Lovelace' })).toBeInTheDocument();
-    expect(screen.getByText('ada@example.com')).toBeInTheDocument();
+    expect(screen.queryByText('ada@example.com')).not.toBeInTheDocument();
     expect(screen.getByText('Profile')).toBeInTheDocument();
     expect(screen.getByText('Hidden Courtyard')).toBeInTheDocument();
     expect(screen.getByText('Prague Dawn Walk')).toBeInTheDocument();
@@ -28,7 +28,7 @@ describe('UserDetail', () => {
 
   it('renders signed-up cotravels from the user detail payload without a separate wanders request', async () => {
     server.use(
-      http.get('http://localhost:8080/api/public/users/:email/wanders', () =>
+      http.get('http://localhost:8080/api/public/users/:id/wanders', () =>
         HttpResponse.json({ message: 'unused endpoint' }, { status: 500 })
       )
     );
@@ -38,7 +38,7 @@ describe('UserDetail', () => {
         <Route path="/users/:id" element={<UserDetail />} />
       </Routes>,
       {
-        route: '/users/ada%40example.com'
+        route: '/users/1'
       }
     );
 
@@ -47,12 +47,27 @@ describe('UserDetail', () => {
   });
 
   it('shows self badge for the current user', async () => {
+    server.use(
+      http.get('http://localhost:8080/api/users/me', () =>
+        HttpResponse.json({
+          id: 1,
+          keycloakId: 'kc-1',
+          email: 'ada@example.com',
+          username: 'ada',
+          displayName: 'Ada Lovelace',
+          createdAt: '2024-01-15T08:00:00Z',
+          followers: [],
+          following: []
+        })
+      )
+    );
+
     renderWithProviders(
       <Routes>
         <Route path="/users/:id" element={<UserDetail />} />
       </Routes>,
       {
-        route: '/users/ada%40example.com',
+        route: '/users/1',
         authValue: {
           authenticated: true,
           username: 'ada'
@@ -69,7 +84,7 @@ describe('UserDetail', () => {
         <Route path="/users/:id" element={<UserDetail />} />
       </Routes>,
       {
-        route: '/users/ada%40example.com',
+        route: '/users/1',
         authValue: {
           authenticated: true,
           username: 'grace'
@@ -84,7 +99,7 @@ describe('UserDetail', () => {
 
   it('renders an error state when the user API fails', async () => {
     server.use(
-      http.get('http://localhost:8080/api/public/users/:email', () =>
+      http.get('http://localhost:8080/api/public/users/:id', () =>
         HttpResponse.json({ message: 'boom' }, { status: 500 })
       )
     );
@@ -94,7 +109,7 @@ describe('UserDetail', () => {
         <Route path="/users/:id" element={<UserDetail />} />
       </Routes>,
       {
-        route: '/users/ada%40example.com'
+        route: '/users/1'
       }
     );
 

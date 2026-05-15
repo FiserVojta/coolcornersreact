@@ -1,70 +1,92 @@
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { fetchUser, fetchUserPlaces, fetchUserTrips, followUsers, unfollowUsers, addUserRating } from '../../api/users';
+import {
+  fetchCurrentUser,
+  fetchUser,
+  fetchUserPlaces,
+  fetchUserTrips,
+  followUsers,
+  unfollowUsers,
+  addUserRating
+} from '../../api/users';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { useAuth } from '../../auth/AuthContext';
 import type { UserDetail as UserDetailModel } from '../../types/user';
-import type { Place } from '../../types/place';
+import type { Place, Tag } from '../../types/place';
 import type { Trip } from '../../types/trip';
 import { TagList } from '../../components/TagList';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 export const UserDetail = () => {
   const { id } = useParams();
-  const email = id ? decodeURIComponent(id) : '';
-  const { authenticated, username } = useAuth();
+  const userId = id ? Number(id) : NaN;
+  const validId = Number.isFinite(userId);
+  const { authenticated } = useAuth();
   const queryClient = useQueryClient();
 
   const userQuery = useQuery({
-    queryKey: ['user', email],
-    queryFn: () => fetchUser(email),
-    enabled: !!email
+    queryKey: ['user', userId],
+    queryFn: () => fetchUser(userId),
+    enabled: validId
   });
 
   const placesQuery = useQuery({
-    queryKey: ['user-places', email],
-    queryFn: () => fetchUserPlaces(email),
-    enabled: !!email
+    queryKey: ['user-places', userId],
+    queryFn: () => fetchUserPlaces(userId),
+    enabled: validId
   });
 
   const tripsQuery = useQuery({
-    queryKey: ['user-trips', email],
-    queryFn: () => fetchUserTrips(email),
-    enabled: !!email
+    queryKey: ['user-trips', userId],
+    queryFn: () => fetchUserTrips(userId),
+    enabled: validId
+  });
+
+  const meQuery = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: fetchCurrentUser,
+    enabled: authenticated
   });
 
   const followMut = useMutation({
-    mutationFn: (userId: number) => followUsers({ userIds: [userId] }),
+    mutationFn: (id: number) => followUsers({ userIds: [id] }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user', email] });
+      queryClient.invalidateQueries({ queryKey: ['user', userId] });
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
     }
   });
 
   const unfollowMut = useMutation({
-    mutationFn: (userId: number) => unfollowUsers({ userIds: [userId] }),
+    mutationFn: (id: number) => unfollowUsers({ userIds: [id] }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user', email] });
+      queryClient.invalidateQueries({ queryKey: ['user', userId] });
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
     }
   });
 
   const ratingMut = useMutation({
     mutationFn: (rating: number) =>
-      addUserRating(userQuery.data?.id ?? 0, { rating, createdBy: username ?? 'web-client' }),
+      addUserRating(userQuery.data?.id ?? 0, {
+        rating,
+        createdBy: meQuery.data?.id != null ? String(meQuery.data.id) : 'web-client'
+      }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user', email] });
+      queryClient.invalidateQueries({ queryKey: ['user', userId] });
     }
   });
 
-  if (!email) return <ErrorState message="Invalid user" />;
+  if (!validId) return <ErrorState message="Invalid user" />;
   if (userQuery.isLoading) return <LoadingState label="Loading user..." />;
   if (userQuery.error || !userQuery.data) return <ErrorState message="Unable to load this user right now." />;
 
   const user = userQuery.data;
   const attendedWanders = user.wandersAttended ?? [];
+  const organizedWanders = user.wandersOrganized ?? [];
   const places = placesQuery.data ?? [];
   const trips = tripsQuery.data ?? [];
-  const isCurrent = authenticated && (user.email === username || user.username === username || user.name === username);
+  const uniqueTags = collectTags(places, trips);
+  const isCurrent = authenticated && meQuery.data?.id === user.id;
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-10">
@@ -75,7 +97,6 @@ export const UserDetail = () => {
           </div>
           <div className="space-y-1">
             <h1 className="text-2xl font-semibold font-display text-ink-strong">{getDisplayName(user)}</h1>
-            <p className="text-sm text-ink-subtle">{user.email}</p>
             <p className="text-xs text-ink-subtle">Joined {formatDate(user.createdAt)}</p>
           </div>
         </div>
@@ -109,7 +130,6 @@ export const UserDetail = () => {
           <div className="rounded-2xl bg-white p-5 shadow-card">
             <h2 className="text-lg font-semibold font-display text-ink-strong">Profile</h2>
             <dl className="mt-3 grid gap-2 text-sm text-ink-strong sm:grid-cols-2">
-              <Detail label="Username" value={user.username} />
               <Detail label="Name" value={[user.firstName, user.lastName].filter(Boolean).join(' ') || user.name} />
               <Detail label="Display name" value={user.displayName} />
               <Detail label="Followers" value={String(user.followers?.length ?? 0)} />
@@ -121,7 +141,13 @@ export const UserDetail = () => {
           <div className="rounded-2xl bg-white p-5 shadow-card">
             <h3 className="text-lg font-semibold font-display text-ink-strong">Tags</h3>
             <p className="mt-2 text-sm font-label text-ink-muted">Interests pulled from associated trips/places.</p>
-            <TagList tags={[]} />
+            {uniqueTags.length ? (
+              <div className="mt-3">
+                <TagList tags={uniqueTags} />
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-ink-muted">No tags yet.</p>
+            )}
           </div>
           <div className="rounded-2xl bg-white p-5 shadow-card">
             <h3 className="text-lg font-semibold font-display text-ink-strong">Places</h3>
@@ -131,7 +157,12 @@ export const UserDetail = () => {
               <ul className="mt-3 space-y-2 text-sm text-ink-strong">
                 {places.map((p: Place) => (
                   <li key={p.id} className="rounded-xl bg-brand-50 border border-brand-50 px-3 py-2">
-                    {p.name}
+                    <Link
+                      to={`/places/${p.id}`}
+                      className="font-semibold font-label text-ink-strong transition hover:text-brand-700"
+                    >
+                      {p.name}
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -187,13 +218,32 @@ export const UserDetail = () => {
             </div>
           )}
           <div className="rounded-2xl bg-white p-5 shadow-card">
+            <h3 className="text-lg font-semibold font-display text-ink-strong">Organized CoTravels</h3>
+            {organizedWanders.length ? (
+              <ul className="mt-3 space-y-2">
+                {organizedWanders.map((wander) => (
+                  <li key={wander.id} className="rounded-xl bg-brand-50 border border-brand-50 px-3 py-2">
+                    <Link to={`/cotravel/${wander.id}`} className="block transition hover:text-brand-700">
+                      <p className="text-sm font-semibold font-label text-ink-strong">{wander.description}</p>
+                      <p className="text-xs font-label text-ink-muted">{wander.startTime}</p>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-sm text-ink-muted">No organized co-travel plans yet.</p>
+            )}
+          </div>
+          <div className="rounded-2xl bg-white p-5 shadow-card">
             <h3 className="text-lg font-semibold font-display text-ink-strong">Signed-up CoTravels</h3>
             {attendedWanders.length ? (
               <ul className="mt-3 space-y-2">
                 {attendedWanders.map((wander) => (
                   <li key={wander.id} className="rounded-xl bg-brand-50 border border-brand-50 px-3 py-2">
-                    <p className="text-sm font-semibold font-label text-ink-strong">{wander.description}</p>
-                    <p className="text-xs font-label text-ink-muted">{wander.startTime}</p>
+                    <Link to={`/cotravel/${wander.id}`} className="block transition hover:text-brand-700">
+                      <p className="text-sm font-semibold font-label text-ink-strong">{wander.description}</p>
+                      <p className="text-xs font-label text-ink-muted">{wander.startTime}</p>
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -207,8 +257,18 @@ export const UserDetail = () => {
   );
 };
 
+const collectTags = (places: Place[], trips: Trip[]): Tag[] => {
+  const seen = new Map<number, Tag>();
+  for (const source of [...places, ...trips]) {
+    for (const tag of source.tags ?? []) {
+      if (!seen.has(tag.id)) seen.set(tag.id, tag);
+    }
+  }
+  return Array.from(seen.values());
+};
+
 const getDisplayName = (user: UserDetailModel) =>
-  user.displayName || user.name || [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email || 'User';
+  user.displayName || user.name || [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username || 'User';
 
 const getInitials = (user: UserDetailModel) => {
   const name = getDisplayName(user);

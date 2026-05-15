@@ -16,8 +16,8 @@ export const fetchUsers = async (params?: { page?: number; size?: number; search
   return data;
 };
 
-export const fetchUser = async (email: string) => {
-  const { data } = await apiClient.get<UserDetail>(`/public/users/${encodeURIComponent(email)}`);
+export const fetchUser = async (id: number) => {
+  const { data } = await apiClient.get<UserDetail>(`/public/users/${id}`);
   return data;
 };
 
@@ -41,13 +41,13 @@ export const unfollowUsers = async (payload: UserFollowRequest) => {
   return data;
 };
 
-export const fetchUserPlaces = async (email: string) => {
-  const { data } = await apiClient.get<Place[]>(`/public/users/${encodeURIComponent(email)}/places`);
+export const fetchUserPlaces = async (id: number) => {
+  const { data } = await apiClient.get<Place[]>(`/public/users/${id}/places`);
   return data;
 };
 
-export const fetchUserTrips = async (email: string) => {
-  const { data } = await apiClient.get<Trip[]>(`/public/users/${encodeURIComponent(email)}/trips`);
+export const fetchUserTrips = async (id: number) => {
+  const { data } = await apiClient.get<Trip[]>(`/public/users/${id}/trips`);
   return data;
 };
 

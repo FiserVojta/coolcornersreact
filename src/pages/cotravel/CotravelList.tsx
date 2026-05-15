@@ -34,8 +34,8 @@ const emptyFilters: FilterDraft = {
 const toStartOfDay = (date: string) => (date ? `${date}T00:00:00` : undefined);
 const toEndOfDay = (date: string) => (date ? `${date}T23:59:59` : undefined);
 const toggleId = (list: number[], id: number) => (list.includes(id) ? list.filter((item) => item !== id) : [...list, id]);
-const getUserLabel = (user: { displayName?: string; name?: string; firstName?: string; lastName?: string; email: string }) =>
-  user.displayName || user.name || [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email;
+const getUserLabel = (user: { displayName?: string; name?: string; firstName?: string; lastName?: string; username?: string }) =>
+  user.displayName || user.name || [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username || 'Traveler';
 
 export const CotravelList = () => {
   const { authenticated, login } = useAuth();

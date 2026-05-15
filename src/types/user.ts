@@ -3,7 +3,7 @@ import type { Cotravel } from './cotravel';
 export interface User {
   id: number;
   keycloakId: string;
-  email: string;
+  email?: string;
   username?: string;
   firstName?: string;
   lastName?: string;

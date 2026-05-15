@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import type { User } from '../types/user';
 
 const getDisplayName = (user: User) =>
-  user.displayName || user.name || [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email || 'User';
+  user.displayName || user.name || [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username || 'User';
 
 const getInitials = (user: User) => {
   const name = getDisplayName(user);
@@ -14,7 +14,7 @@ const getInitials = (user: User) => {
 export const UserCard = ({ user }: { user: User }) => {
   return (
     <Link
-      to={`/users/${encodeURIComponent(user.email)}`}
+      to={`/users/${user.id}`}
       className="group flex flex-col gap-3 rounded-2xl bg-white border border-brand-50 p-4 shadow-card transition hover:-translate-y-1 hover:shadow-card-hover"
     >
       <div className="flex items-center gap-3">
@@ -23,7 +23,6 @@ export const UserCard = ({ user }: { user: User }) => {
         </div>
         <div className="flex flex-col">
           <span className="text-sm font-semibold text-ink-strong">{getDisplayName(user)}</span>
-          <span className="text-xs text-ink-subtle">{user.email}</span>
         </div>
       </div>
       <div className="flex items-center justify-between text-xs text-ink-muted">

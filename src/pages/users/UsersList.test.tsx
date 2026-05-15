@@ -13,7 +13,7 @@ describe('UsersList', () => {
 
     expect(await screen.findByText('Ada Lovelace')).toBeInTheDocument();
     expect(screen.getByText('Found 1 users.')).toBeInTheDocument();
-    expect(screen.getByText('ada@example.com')).toBeInTheDocument();
+    expect(screen.queryByText('ada@example.com')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Clear filters' })).toBeInTheDocument();
   });
 

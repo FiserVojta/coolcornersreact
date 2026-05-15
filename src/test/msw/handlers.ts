@@ -37,6 +37,18 @@ export const handlers = [
       ]
     })
   ),
+  http.get(`${apiUrl}/users/me`, () =>
+    HttpResponse.json({
+      id: 99,
+      keycloakId: 'kc-me',
+      email: 'me@example.com',
+      username: 'me',
+      displayName: 'Test Me',
+      createdAt: '2024-01-01T00:00:00Z',
+      followers: [],
+      following: []
+    })
+  ),
   http.get(`${apiUrl}/public/users`, () =>
     HttpResponse.json({
       totalItems: 1,
@@ -44,7 +56,6 @@ export const handlers = [
         {
           id: 1,
           keycloakId: 'kc-1',
-          email: 'ada@example.com',
           firstName: 'Ada',
           lastName: 'Lovelace',
           displayName: 'Ada Lovelace',
@@ -56,11 +67,10 @@ export const handlers = [
       ]
     })
   ),
-  http.get(`${apiUrl}/public/users/:email`, () =>
+  http.get(`${apiUrl}/public/users/:id`, () =>
     HttpResponse.json({
       id: 1,
       keycloakId: 'kc-1',
-      email: 'ada@example.com',
       username: 'ada',
       firstName: 'Ada',
       lastName: 'Lovelace',
@@ -78,7 +88,7 @@ export const handlers = [
       following: []
     })
   ),
-  http.get(`${apiUrl}/public/users/:email/places`, () =>
+  http.get(`${apiUrl}/public/users/:id/places`, () =>
     HttpResponse.json([
       {
         id: 201,
@@ -86,7 +96,7 @@ export const handlers = [
       }
     ])
   ),
-  http.get(`${apiUrl}/public/users/:email/trips`, () =>
+  http.get(`${apiUrl}/public/users/:id/trips`, () =>
     HttpResponse.json([
       {
         id: 301,
