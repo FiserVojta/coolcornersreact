@@ -1,4 +1,4 @@
-canconst runtime: AppRuntimeConfig =
+const runtime: AppRuntimeConfig =
   (typeof window !== 'undefined' && window.__APP_CONFIG__) || {};
 
 const pick = (key: keyof AppRuntimeConfig, fallback?: string) => {
