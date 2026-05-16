@@ -37,7 +37,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       })
       .then((auth) => {
         setAuthenticated(auth);
-        setAuthTokenGetter(() => keycloak.token ?? undefined);
+        setAuthTokenGetter(async () => {
+          if (!keycloak.token) return undefined;
+          try {
+            await keycloak.updateToken(30);
+          } catch (err) {
+            console.warn('[Keycloak] Token refresh failed, redirecting to login', err);
+            keycloak.login();
+            return undefined;
+          }
+          return keycloak.token ?? undefined;
+        });
       })
       .catch((err) => {
         console.error('[Keycloak] Failed to initialize', err);
