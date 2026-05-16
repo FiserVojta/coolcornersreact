@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { deleteCotravel, fetchCotravel, joinCotravel, leaveCotravel } from '../../api/cotravel';
+import { fetchCurrentUser } from '../../api/users';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { TagList } from '../../components/TagList';
@@ -21,12 +22,18 @@ export const CotravelDetail = () => {
   const cotravelId = Number(id);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { authenticated, login, canEdit, username, name, email } = useAuth();
+  const { authenticated, login, canEdit } = useAuth();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['cotravel', cotravelId],
     queryFn: () => fetchCotravel(cotravelId),
     enabled: Number.isFinite(cotravelId)
+  });
+
+  const meQuery = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: fetchCurrentUser,
+    enabled: authenticated
   });
 
   const joinMutation = useMutation({
@@ -60,7 +67,7 @@ export const CotravelDetail = () => {
   const filled = data.wanderers?.length ?? 0;
   const capacity = data.capacity ?? 0;
   const canUserEdit = canEdit(data.createdBy?.email || data.createdBy?.username || data.createdBy?.name);
-  const userJoined = hasJoined(data.wanderers, [username, name, email]);
+  const userJoined = hasJoined(data.wanderers, meQuery.data?.id);
   const backgroundImageUrl = data.backgroundImage?.url ?? '';
   const heroTitleClass = 'text-white';
   const heroLabelClass = 'text-brand-200';
@@ -440,10 +447,9 @@ const getInitials = (user: User) => {
   return name.slice(0, 2).toUpperCase();
 };
 
-const hasJoined = (users: User[] | undefined, identifiers: Array<string | undefined>) => {
-  const ids = identifiers.filter(Boolean) as string[];
-  if (!ids.length || !users?.length) return false;
-  return users.some((u) => ids.some((id) => u.email === id || u.username === id || u.name === id));
+const hasJoined = (users: User[] | undefined, currentUserId: number | undefined) => {
+  if (currentUserId == null || !users?.length) return false;
+  return users.some((u) => u.id === currentUserId);
 };
 
 const getCoordsFromGeometry = (geometry?: GeometryPoint | null) => {

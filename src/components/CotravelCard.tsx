@@ -7,9 +7,9 @@ const formatDate = (value: string | number) => {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
-export const CotravelCard = ({ cotravel }: { cotravel: Cotravel }) => {
+export const CotravelCard = ({ cotravel, joined }: { cotravel: Cotravel; joined?: boolean }) => {
   const image = cotravel.backgroundImage?.url ?? pickImage(cotravel.description);
-  const filled = cotravel.wanderers?.length ?? 0;
+  const filled = cotravel.wandererIds?.length ?? cotravel.wanderers?.length ?? 0;
   const capacity = cotravel.capacity ?? 0;
 
   return (
@@ -33,6 +33,11 @@ export const CotravelCard = ({ cotravel }: { cotravel: Cotravel }) => {
         <div className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-ink-default shadow-sm">
           {filled}/{capacity} joined
         </div>
+        {joined ? (
+          <div className="absolute right-3 top-3 rounded-full bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white shadow-sm">
+            Joined
+          </div>
+        ) : null}
       </div>
       <div className="flex flex-1 flex-col gap-3 px-4 pb-4 pt-3">
         <div className="flex items-start justify-between gap-2">

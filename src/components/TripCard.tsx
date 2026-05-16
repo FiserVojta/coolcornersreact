@@ -4,6 +4,7 @@ import { TagList } from './TagList';
 
 interface Props {
   trip: TripModel;
+  done?: boolean;
 }
 
 const formatDuration = (minutes?: number) => {
@@ -18,7 +19,7 @@ const formatDuration = (minutes?: number) => {
   return `${days} day${days > 1 ? 's' : ''}`;
 };
 
-export const TripCard = ({ trip }: Props) => {
+export const TripCard = ({ trip, done }: Props) => {
   const image = trip.backgroundImage?.url ?? trip.images?.[0];
   const clampedRating = Math.max(0, Math.min(5, Number(trip.rating) || 0));
   const fullStars = Math.floor(clampedRating);
@@ -42,6 +43,11 @@ export const TripCard = ({ trip }: Props) => {
             <span className="text-sm font-semibold font-label">No image</span>
           </div>
         )}
+        {done ? (
+          <div className="absolute left-3 top-3 rounded-full bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white shadow-sm">
+            Done
+          </div>
+        ) : null}
         <div className="absolute right-3 top-3">
           <div className="inline-flex items-center gap-1 rounded-lg bg-white/90 px-2 py-1 text-xs font-semibold font-label text-ink-default shadow-sm backdrop-blur-sm">
             <span className="inline-flex items-center" aria-label={`Rating ${clampedRating} out of 5`}>

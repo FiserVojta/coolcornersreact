@@ -7,7 +7,7 @@ import { CotravelCard } from '../../components/CotravelCard';
 import { useAuth } from '../../auth/AuthContext';
 import { fetchCategories } from '../../api/categories';
 import { fetchTags } from '../../api/tags';
-import { fetchUsers } from '../../api/users';
+import { fetchCurrentUser, fetchUsers } from '../../api/users';
 import { PageContainer } from '../../components/layout/PageContainer';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/ui/Button';
@@ -61,6 +61,13 @@ export const CotravelList = () => {
     queryKey: ['users', 'cotravel-filter'],
     queryFn: () => fetchUsers({ size: 100 })
   });
+
+  const meQuery = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: fetchCurrentUser,
+    enabled: authenticated
+  });
+  const currentUserId = meQuery.data?.id;
 
   const queryFilters = useMemo(() => {
     const createdBy = filters.createdBy ? Number(filters.createdBy) : undefined;
@@ -288,7 +295,11 @@ export const CotravelList = () => {
 
       <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {plans.map((wander) => (
-          <CotravelCard key={wander.id} cotravel={wander} />
+          <CotravelCard
+            key={wander.id}
+            cotravel={wander}
+            joined={currentUserId != null && (wander.wandererIds?.includes(currentUserId) ?? false)}
+          />
         ))}
       </div>
 

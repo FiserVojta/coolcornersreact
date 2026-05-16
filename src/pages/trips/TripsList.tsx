@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchTrips } from '../../api/trips';
 import { fetchCategories } from '../../api/categories';
 import { fetchTags } from '../../api/tags';
+import { fetchCurrentUser } from '../../api/users';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { TripCard } from '../../components/TripCard';
@@ -44,6 +45,13 @@ export const TripsList = () => {
         size: pageSize
       })
   });
+
+  const meQuery = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: fetchCurrentUser,
+    enabled: authenticated
+  });
+  const currentUserId = meQuery.data?.id;
   const trips = data?.data ?? [];
   const categories = categoriesQuery.data ?? [];
   const tags = tagsQuery.data ?? [];
@@ -246,7 +254,11 @@ export const TripsList = () => {
 
       <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {trips.map((trip) => (
-          <TripCard key={trip.id} trip={trip} />
+          <TripCard
+            key={trip.id}
+            trip={trip}
+            done={currentUserId != null && (trip.completedByUsers?.some((u) => u.id === currentUserId) ?? false)}
+          />
         ))}
       </div>
 

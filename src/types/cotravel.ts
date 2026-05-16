@@ -18,6 +18,7 @@ export interface Cotravel {
   capacity: number;
   startTime: string | number;
   wanderers?: User[];
+  wandererIds?: number[];
   tags?: Tag[];
   category?: Category;
   wanderParts?: CotravelPart[];
