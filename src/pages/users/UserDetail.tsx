@@ -139,35 +139,35 @@ export const UserDetail = () => {
             </dl>
           </div>
           <div className="rounded-2xl bg-white p-5 shadow-card">
-            <h3 className="text-lg font-semibold font-display text-ink-strong">Tags</h3>
-            <p className="mt-2 text-sm font-label text-ink-muted">Interests pulled from associated trips/places.</p>
-            {uniqueTags.length ? (
-              <div className="mt-3">
-                <TagList tags={uniqueTags} />
-              </div>
-            ) : (
-              <p className="mt-3 text-sm text-ink-muted">No tags yet.</p>
-            )}
-          </div>
-          <div className="rounded-2xl bg-white p-5 shadow-card">
-            <h3 className="text-lg font-semibold font-display text-ink-strong">Places</h3>
-            {placesQuery.isLoading ? (
-              <p className="text-sm text-ink-muted">Loading...</p>
-            ) : places.length ? (
-              <ul className="mt-3 space-y-2 text-sm text-ink-strong">
-                {places.map((p: Place) => (
-                  <li key={p.id} className="rounded-xl bg-brand-50 border border-brand-50 px-3 py-2">
-                    <Link
-                      to={`/places/${p.id}`}
-                      className="font-semibold font-label text-ink-strong transition hover:text-brand-700"
-                    >
-                      {p.name}
+            <h3 className="text-lg font-semibold font-display text-ink-strong">Organized CoTravels</h3>
+            {organizedWanders.length ? (
+              <ul className="mt-3 space-y-2">
+                {organizedWanders.map((wander) => (
+                  <li key={wander.id} className="rounded-xl bg-brand-50 border border-brand-50 px-3 py-2">
+                    <Link to={`/cotravel/${wander.id}`} className="block transition hover:text-brand-700">
+                      <p className="text-sm font-semibold font-label text-ink-strong">{deriveCotravelTitle(wander.description)}</p>
                     </Link>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="mt-2 text-sm text-ink-muted">No places yet.</p>
+              <p className="mt-2 text-sm text-ink-muted">No organized co-travel plans yet.</p>
+            )}
+          </div>
+          <div className="rounded-2xl bg-white p-5 shadow-card">
+            <h3 className="text-lg font-semibold font-display text-ink-strong">Signed-up CoTravels</h3>
+            {attendedWanders.length ? (
+              <ul className="mt-3 space-y-2">
+                {attendedWanders.map((wander) => (
+                  <li key={wander.id} className="rounded-xl bg-brand-50 border border-brand-50 px-3 py-2">
+                    <Link to={`/cotravel/${wander.id}`} className="block transition hover:text-brand-700">
+                      <p className="text-sm font-semibold font-label text-ink-strong">{deriveCotravelTitle(wander.description)}</p>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-sm text-ink-muted">No signed-up co-travel plans yet.</p>
             )}
           </div>
           <div className="rounded-2xl bg-white p-5 shadow-card">
@@ -218,37 +218,24 @@ export const UserDetail = () => {
             </div>
           )}
           <div className="rounded-2xl bg-white p-5 shadow-card">
-            <h3 className="text-lg font-semibold font-display text-ink-strong">Organized CoTravels</h3>
-            {organizedWanders.length ? (
-              <ul className="mt-3 space-y-2">
-                {organizedWanders.map((wander) => (
-                  <li key={wander.id} className="rounded-xl bg-brand-50 border border-brand-50 px-3 py-2">
-                    <Link to={`/cotravel/${wander.id}`} className="block transition hover:text-brand-700">
-                      <p className="text-sm font-semibold font-label text-ink-strong">{wander.description}</p>
-                      <p className="text-xs font-label text-ink-muted">{wander.startTime}</p>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+            <h3 className="text-lg font-semibold font-display text-ink-strong">Tags</h3>
+            <p className="mt-2 text-sm font-label text-ink-muted">Interests pulled from associated trips/places.</p>
+            {uniqueTags.length ? (
+              <div className="mt-3">
+                <TagList tags={uniqueTags} />
+              </div>
             ) : (
-              <p className="mt-2 text-sm text-ink-muted">No organized co-travel plans yet.</p>
+              <p className="mt-3 text-sm text-ink-muted">No tags yet.</p>
             )}
           </div>
           <div className="rounded-2xl bg-white p-5 shadow-card">
-            <h3 className="text-lg font-semibold font-display text-ink-strong">Signed-up CoTravels</h3>
-            {attendedWanders.length ? (
-              <ul className="mt-3 space-y-2">
-                {attendedWanders.map((wander) => (
-                  <li key={wander.id} className="rounded-xl bg-brand-50 border border-brand-50 px-3 py-2">
-                    <Link to={`/cotravel/${wander.id}`} className="block transition hover:text-brand-700">
-                      <p className="text-sm font-semibold font-label text-ink-strong">{wander.description}</p>
-                      <p className="text-xs font-label text-ink-muted">{wander.startTime}</p>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+            <h3 className="text-lg font-semibold font-display text-ink-strong">About</h3>
+            {user.introduction ? (
+              <p className="mt-3 whitespace-pre-line text-sm font-label leading-relaxed text-ink-default">
+                {user.introduction}
+              </p>
             ) : (
-              <p className="mt-2 text-sm text-ink-muted">No signed-up co-travel plans yet.</p>
+              <p className="mt-3 text-sm text-ink-muted">No self-introduction yet.</p>
             )}
           </div>
         </aside>
@@ -275,6 +262,17 @@ const getInitials = (user: UserDetailModel) => {
   const parts = name.split(' ');
   if (parts.length >= 2) return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
   return name.slice(0, 2).toUpperCase();
+};
+
+const deriveCotravelTitle = (value?: string) => {
+  if (!value) return 'Community adventure';
+  const lower = value.toLowerCase();
+  if (lower.includes('iceland') || lower.includes('northern')) return 'Northern Lights Escape';
+  if (lower.includes('asia') || lower.includes('thailand')) return 'Southeast Asia Backpack';
+  if (lower.includes('alps') || lower.includes('swiss')) return 'Alpine Trails';
+  if (lower.includes('safari') || lower.includes('tanzania')) return 'Savanna Safari';
+  if (lower.includes('greece')) return 'Greek Island Hopping';
+  return value;
 };
 
 const formatDate = (value: string | number) => {

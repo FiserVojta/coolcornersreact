@@ -220,18 +220,40 @@ export const CotravelDetail = () => {
 
         <aside className="space-y-6">
           <CotravelMap parts={data.wanderParts} googlePlaces={data.googlePlaces} />
+          {data.createdBy && (
+            <SurfaceCard>
+              <h3 className="text-lg font-semibold font-display text-ink-strong">Organizer</h3>
+              <Link
+                to={`/users/${data.createdBy.id}`}
+                className="mt-3 flex items-center gap-3 rounded-xl bg-brand-50 border border-brand-50 px-3 py-2 transition hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 text-sm font-semibold text-brand-700">
+                  {getInitials(data.createdBy)}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold font-label text-ink-strong">{getDisplayName(data.createdBy)}</p>
+                  <p className="text-xs font-label text-ink-muted">Organizer</p>
+                </div>
+              </Link>
+            </SurfaceCard>
+          )}
           <SurfaceCard>
             <h3 className="text-lg font-semibold font-display text-ink-strong">Travelers</h3>
             {data.wanderers?.length ? (
               <ul className="mt-3 space-y-3">
                 {data.wanderers.map((user) => (
-                  <li key={user.id} className="flex items-center gap-3 rounded-xl bg-brand-50 border border-brand-50 px-3 py-2">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 text-sm font-semibold text-brand-700">
-                      {getInitials(user)}
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold font-label text-ink-strong">{getDisplayName(user)}</p>
-                    </div>
+                  <li key={user.id}>
+                    <Link
+                      to={`/users/${user.id}`}
+                      className="flex items-center gap-3 rounded-xl bg-brand-50 border border-brand-50 px-3 py-2 transition hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
+                    >
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 text-sm font-semibold text-brand-700">
+                        {getInitials(user)}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold font-label text-ink-strong">{getDisplayName(user)}</p>
+                      </div>
+                    </Link>
                   </li>
                 ))}
               </ul>

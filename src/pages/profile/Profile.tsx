@@ -8,7 +8,7 @@ import { PageContainer } from '../../components/layout/PageContainer';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { Button } from '../../components/ui/Button';
-import { FormField, TextInput } from '../../components/ui/FormField';
+import { FormField, TextArea, TextInput } from '../../components/ui/FormField';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 
@@ -26,7 +26,7 @@ export const Profile = () => {
     reset,
     formState: { isSubmitting, isDirty }
   } = useForm<UserUpdateRequest>({
-    defaultValues: { name: '', displayName: '', discordId: '' }
+    defaultValues: { name: '', displayName: '', discordId: '', introduction: '' }
   });
 
   useEffect(() => {
@@ -34,7 +34,8 @@ export const Profile = () => {
       reset({
         name: meQuery.data.name ?? '',
         displayName: meQuery.data.displayName ?? '',
-        discordId: (meQuery.data as { discordId?: string }).discordId ?? ''
+        discordId: (meQuery.data as { discordId?: string }).discordId ?? '',
+        introduction: meQuery.data.introduction ?? ''
       });
     }
   }, [meQuery.data, reset]);
@@ -47,7 +48,8 @@ export const Profile = () => {
       reset({
         name: updated.name ?? '',
         displayName: updated.displayName ?? '',
-        discordId: (updated as { discordId?: string }).discordId ?? ''
+        discordId: (updated as { discordId?: string }).discordId ?? '',
+        introduction: updated.introduction ?? ''
       });
     }
   });
@@ -67,7 +69,8 @@ export const Profile = () => {
     updateMut.mutate({
       name: values.name?.trim() ?? '',
       displayName: values.displayName?.trim() ?? '',
-      discordId: values.discordId?.trim() ?? ''
+      discordId: values.discordId?.trim() ?? '',
+      introduction: values.introduction?.trim() ?? ''
     });
   };
 
@@ -98,6 +101,14 @@ export const Profile = () => {
 
           <FormField label="Discord ID">
             <TextInput placeholder="e.g. username#1234 or numeric id" {...register('discordId')} />
+          </FormField>
+
+          <FormField label="Self introduction">
+            <TextArea
+              rows={4}
+              placeholder="Tell the community a bit about yourself..."
+              {...register('introduction')}
+            />
           </FormField>
 
           {updateMut.isError ? (

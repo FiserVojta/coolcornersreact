@@ -25,16 +25,30 @@ export const UserCard = ({ user }: { user: User }) => {
           <span className="text-sm font-semibold text-ink-strong">{getDisplayName(user)}</span>
         </div>
       </div>
-      <div className="flex items-center justify-between text-xs text-ink-muted">
-        <span>Followers: {user.followers?.length ?? 0}</span>
-        <span>Following: {user.following?.length ?? 0}</span>
+      <div className="grid grid-cols-3 gap-2 text-center text-xs">
+        <div className="rounded-lg bg-brand-50 px-2 py-1.5">
+          <p className="text-sm font-semibold text-ink-strong">{user.tripsCompleted ?? 0}</p>
+          <p className="text-[10px] uppercase tracking-wide text-ink-muted">Trips</p>
+        </div>
+        <div className="rounded-lg bg-brand-50 px-2 py-1.5">
+          <p className="text-sm font-semibold text-ink-strong">{user.cotravelsOrganized ?? 0}</p>
+          <p className="text-[10px] uppercase tracking-wide text-ink-muted">Organized</p>
+        </div>
+        <div className="rounded-lg bg-brand-50 px-2 py-1.5">
+          <p className="text-sm font-semibold text-ink-strong">{user.cotravelsAttended ?? 0}</p>
+          <p className="text-[10px] uppercase tracking-wide text-ink-muted">Joined</p>
+        </div>
+      </div>
+      <div className="flex items-center justify-end text-xs text-ink-muted">
         <span>Joined: {formatDate(user.createdAt)}</span>
       </div>
     </Link>
   );
 };
 
-const formatDate = (value: string | number) => {
+const formatDate = (value?: string | number | null) => {
+  if (value == null || value === '') return '—';
   const date = typeof value === 'number' ? new Date(value > 1e10 ? value : value * 1000) : new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 };

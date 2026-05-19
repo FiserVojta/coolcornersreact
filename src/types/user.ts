@@ -11,8 +11,12 @@ export interface User {
   displayName?: string;
   rating?: number | null;
   createdAt: string | number;
+  introduction?: string | null;
   followers?: User[];
   following?: User[];
+  tripsCompleted?: number | null;
+  cotravelsOrganized?: number | null;
+  cotravelsAttended?: number | null;
 }
 
 export interface UserDetail extends User {
@@ -33,4 +37,5 @@ export interface UserUpdateRequest {
   name?: string;
   displayName?: string;
   discordId?: string;
+  introduction?: string;
 }
