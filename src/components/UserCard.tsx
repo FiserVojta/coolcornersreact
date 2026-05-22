@@ -28,15 +28,15 @@ export const UserCard = ({ user }: { user: User }) => {
       <div className="grid grid-cols-3 gap-2 text-center text-xs">
         <div className="rounded-lg bg-brand-50 px-2 py-1.5">
           <p className="text-sm font-semibold text-ink-strong">{user.tripsCompleted ?? 0}</p>
-          <p className="text-[10px] uppercase tracking-wide text-ink-muted">Trips</p>
+          <p className="text-[10px] uppercase tracking-wide text-ink-muted">Trips Completed</p>
         </div>
         <div className="rounded-lg bg-brand-50 px-2 py-1.5">
           <p className="text-sm font-semibold text-ink-strong">{user.cotravelsOrganized ?? 0}</p>
-          <p className="text-[10px] uppercase tracking-wide text-ink-muted">Organized</p>
+          <p className="text-[10px] uppercase tracking-wide text-ink-muted">Cotravels Created</p>
         </div>
         <div className="rounded-lg bg-brand-50 px-2 py-1.5">
           <p className="text-sm font-semibold text-ink-strong">{user.cotravelsAttended ?? 0}</p>
-          <p className="text-[10px] uppercase tracking-wide text-ink-muted">Joined</p>
+          <p className="text-[10px] uppercase tracking-wide text-ink-muted">Cotravels Participated</p>
         </div>
       </div>
       <div className="flex items-center justify-end text-xs text-ink-muted">

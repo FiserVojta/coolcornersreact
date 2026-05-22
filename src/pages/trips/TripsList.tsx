@@ -20,6 +20,8 @@ export const TripsList = () => {
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [selectedTags, setSelectedTags] = useState<number[]>([]);
   const [minRating, setMinRating] = useState(0);
+  const [sortBy, setSortBy] = useState<'' | 'rating' | 'completedCount'>('');
+  const [sortDir, setSortDir] = useState<'ASC' | 'DESC'>('DESC');
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(9);
   const safePage = Math.max(0, page);
@@ -35,14 +37,16 @@ export const TripsList = () => {
   });
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['trips', selectedCategories, selectedTags, minRating, safePage, pageSize],
+    queryKey: ['trips', selectedCategories, selectedTags, minRating, sortBy, sortDir, safePage, pageSize],
     queryFn: () =>
       fetchTrips({
         categories: selectedCategories,
         tags: selectedTags,
         minRating,
         page: safePage,
-        size: pageSize
+        size: pageSize,
+        orderBy: sortBy || undefined,
+        order: sortBy ? sortDir : undefined
       })
   });
 
@@ -82,6 +86,8 @@ export const TripsList = () => {
     setSelectedCategories([]);
     setSelectedTags([]);
     setMinRating(0);
+    setSortBy('');
+    setSortDir('DESC');
     setPage(0);
   };
 
@@ -232,23 +238,59 @@ export const TripsList = () => {
         </div>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-ink-muted">
           <p>Select multiple categories or tags to narrow the list.</p>
-          <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-ink-subtle">
-            Page size
-            <select
-              value={pageSize}
-              onChange={(event) => {
-                setPage(0);
-                setPageSize(Number(event.target.value));
-              }}
-              className="rounded-full border border-brand-100 bg-white px-3 py-1 text-sm font-semibold text-ink-default shadow-sm"
+          <div className="flex flex-wrap items-center gap-4">
+            <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-ink-subtle">
+              Sort by
+              <select
+                value={sortBy}
+                onChange={(event) => {
+                  setPage(0);
+                  setSortBy(event.target.value as '' | 'rating' | 'completedCount');
+                }}
+                className="rounded-full border border-brand-100 bg-white px-3 py-1 text-sm font-semibold text-ink-default shadow-sm"
+              >
+                <option value="">Default</option>
+                <option value="rating">Rating</option>
+                <option value="completedCount">Number completed</option>
+              </select>
+            </label>
+            <label
+              className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-ink-subtle ${
+                sortBy ? '' : 'opacity-50'
+              }`}
             >
-              {[6, 9, 12, 18].map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
-          </label>
+              Direction
+              <select
+                value={sortDir}
+                disabled={!sortBy}
+                onChange={(event) => {
+                  setPage(0);
+                  setSortDir(event.target.value as 'ASC' | 'DESC');
+                }}
+                className="rounded-full border border-brand-100 bg-white px-3 py-1 text-sm font-semibold text-ink-default shadow-sm disabled:cursor-not-allowed"
+              >
+                <option value="DESC">Descending</option>
+                <option value="ASC">Ascending</option>
+              </select>
+            </label>
+            <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-ink-subtle">
+              Page size
+              <select
+                value={pageSize}
+                onChange={(event) => {
+                  setPage(0);
+                  setPageSize(Number(event.target.value));
+                }}
+                className="rounded-full border border-brand-100 bg-white px-3 py-1 text-sm font-semibold text-ink-default shadow-sm"
+              >
+                {[6, 9, 12, 18].map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
         </div>
       </section>
 

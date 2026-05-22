@@ -99,7 +99,11 @@ export const TripDetail = () => {
               <h1 className={`text-3xl font-semibold font-display ${heroTitleClass}`}>{data.name}</h1>
               <RatingBadge rating={data.rating} />
             </div>
-            <p className={heroMetaClass}>{formatDuration(data.duration)}</p>
+            <p className={heroMetaClass}>
+              {formatDuration(data.duration)}
+              <span className="mx-2 opacity-60">·</span>
+              <span>✓ {completedByUsers.length} {completedByUsers.length === 1 ? 'time' : 'times'} completed</span>
+            </p>
           </div>
           {canUserEdit && (
             <div className="flex items-center gap-2">

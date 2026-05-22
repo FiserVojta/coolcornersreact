@@ -85,9 +85,17 @@ export const TripCard = ({ trip, done }: Props) => {
       <div className="flex flex-1 flex-col gap-3 px-4 pb-4 pt-3">
         <div className="flex items-start justify-between gap-2">
           <h3 className="font-display text-lg font-semibold text-ink-strong">{trip.name}</h3>
-          <span className="rounded-lg bg-brand-50 px-2.5 py-1 text-xs font-semibold font-label text-ink-default">
-            {formatDuration(trip.duration)}
-          </span>
+          <div className="flex flex-col items-end gap-1">
+            <span className="rounded-lg bg-brand-50 px-2.5 py-1 text-xs font-semibold font-label text-ink-default">
+              {formatDuration(trip.duration)}
+            </span>
+            <span
+              className="rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-semibold font-label text-emerald-700"
+              title="Times completed"
+            >
+              ✓ {trip.completedByUsers?.length ?? 0} done
+            </span>
+          </div>
         </div>
         <p className="line-clamp-2 text-sm font-label text-ink-muted">{trip.description}</p>
         <TagList tags={trip.tags} />
