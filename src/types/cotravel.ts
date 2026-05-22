@@ -55,4 +55,6 @@ export interface CotravelSearchRequest {
   page?: number;
   size?: number;
   search?: string;
+  sortBy?: string;
+  sortDir?: string;
 }

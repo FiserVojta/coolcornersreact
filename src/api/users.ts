@@ -3,7 +3,7 @@ import type { PagedResult, Place } from '../types/place';
 import type { Trip } from '../types/trip';
 import type { User, UserDetail, UserFollowRequest, UserRateRequest, UserUpdateRequest } from '../types/user';
 
-export const fetchUsers = async (params?: { page?: number; size?: number; search?: string; minRating?: number }) => {
+export const fetchUsers = async (params?: { page?: number; size?: number; search?: string; minRating?: number; sortBy?: string; sortDir?: string }) => {
   const query = new URLSearchParams();
   const page = params?.page ?? 0;
   const size = params?.size ?? 20;
@@ -11,6 +11,8 @@ export const fetchUsers = async (params?: { page?: number; size?: number; search
   query.set('size', String(size));
   if (params?.search) query.set('search', params.search);
   if (params?.minRating) query.set('minRating', String(params.minRating));
+  if (params?.sortBy) query.set('sortBy', params.sortBy);
+  if (params?.sortDir) query.set('sortDir', params.sortDir);
 
   const { data } = await apiClient.get<PagedResult<User>>('/public/users', { params: query });
   return data;

@@ -10,14 +10,20 @@ import { TextInput } from '../../components/ui/FormField';
 
 type RatingFilter = '' | '1' | '2' | '3' | '4' | '5';
 
+type UserSortKey = '' | 'TRIPS_COMPLETED' | 'COTRAVELS_CREATED' | 'COTRAVELS_PARTICIPATED';
+
 export const UsersList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [ratingFilter, setRatingFilter] = useState<RatingFilter>('');
+  const [sortBy, setSortBy] = useState<UserSortKey>('');
+  const [sortDir, setSortDir] = useState<'ASC' | 'DESC'>('DESC');
   const { data, isLoading, error } = useQuery({
-    queryKey: ['users', searchTerm, ratingFilter],
+    queryKey: ['users', searchTerm, ratingFilter, sortBy, sortDir],
     queryFn: () => fetchUsers({
       search: searchTerm.trim() || undefined,
-      minRating: ratingFilter ? Number(ratingFilter) : undefined
+      minRating: ratingFilter ? Number(ratingFilter) : undefined,
+      sortBy: sortBy || undefined,
+      sortDir: sortBy ? sortDir : undefined
     })
   });
 
@@ -29,6 +35,8 @@ export const UsersList = () => {
   const resetFilters = () => {
     setSearchTerm('');
     setRatingFilter('');
+    setSortBy('');
+    setSortDir('DESC');
   };
 
   return (
@@ -76,6 +84,37 @@ export const UsersList = () => {
         </div>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-ink-muted">
           <p>Search by name or narrow the list by rating.</p>
+          <div className="flex flex-wrap items-center gap-4">
+            <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-ink-subtle">
+              Sort by
+              <select
+                value={sortBy}
+                onChange={(event) => setSortBy(event.target.value as UserSortKey)}
+                className="rounded-full border border-brand-100 bg-white px-3 py-1 text-sm font-semibold text-ink-default shadow-sm"
+              >
+                <option value="">Default</option>
+                <option value="TRIPS_COMPLETED">Trips completed</option>
+                <option value="COTRAVELS_CREATED">Cotravels created</option>
+                <option value="COTRAVELS_PARTICIPATED">Cotravels participated</option>
+              </select>
+            </label>
+            <label
+              className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-ink-subtle ${
+                sortBy ? '' : 'opacity-50'
+              }`}
+            >
+              Direction
+              <select
+                value={sortDir}
+                disabled={!sortBy}
+                onChange={(event) => setSortDir(event.target.value as 'ASC' | 'DESC')}
+                className="rounded-full border border-brand-100 bg-white px-3 py-1 text-sm font-semibold text-ink-default shadow-sm disabled:cursor-not-allowed"
+              >
+                <option value="DESC">Descending</option>
+                <option value="ASC">Ascending</option>
+              </select>
+            </label>
+          </div>
         </div>
       </section>
 

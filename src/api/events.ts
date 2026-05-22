@@ -13,8 +13,8 @@ export const fetchEvents = async (filters?: Partial<EventSearchRequest>) => {
   request.categories.forEach((id) => params.append('categories', String(id)));
   if (Number.isFinite(request.page)) params.append('page', String(request.page));
   if (Number.isFinite(request.size)) params.append('size', String(request.size));
-  if (request.orderBy) params.append('orderBy', request.orderBy);
-  if (request.order) params.append('order', request.order);
+  if (request.sortBy) params.append('sortBy', request.sortBy);
+  if (request.sortDir) params.append('sortDir', request.sortDir);
 
   const { data } = await apiClient.get<PagedResult<EventModel>>('/public/events', { params });
   return data;

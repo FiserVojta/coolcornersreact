@@ -20,7 +20,7 @@ export const TripsList = () => {
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [selectedTags, setSelectedTags] = useState<number[]>([]);
   const [minRating, setMinRating] = useState(0);
-  const [sortBy, setSortBy] = useState<'' | 'rating' | 'completedCount'>('');
+  const [sortBy, setSortBy] = useState<'' | 'RATING' | 'COMPLETED_COUNT'>('');
   const [sortDir, setSortDir] = useState<'ASC' | 'DESC'>('DESC');
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(9);
@@ -245,13 +245,13 @@ export const TripsList = () => {
                 value={sortBy}
                 onChange={(event) => {
                   setPage(0);
-                  setSortBy(event.target.value as '' | 'rating' | 'completedCount');
+                  setSortBy(event.target.value as '' | 'RATING' | 'COMPLETED_COUNT');
                 }}
                 className="rounded-full border border-brand-100 bg-white px-3 py-1 text-sm font-semibold text-ink-default shadow-sm"
               >
                 <option value="">Default</option>
-                <option value="rating">Rating</option>
-                <option value="completedCount">Number completed</option>
+                <option value="RATING">Rating</option>
+                <option value="COMPLETED_COUNT">Number completed</option>
               </select>
             </label>
             <label

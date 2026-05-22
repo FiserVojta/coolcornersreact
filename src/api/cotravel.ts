@@ -11,7 +11,7 @@ const defaultParams = {
 
 export const fetchCotravelList = async (params?: CotravelListParams) => {
   const query = new URLSearchParams();
-  const { page, size, search, startsFrom, startsUntil, createdBy, categories, tags } = { ...defaultParams, ...params };
+  const { page, size, search, startsFrom, startsUntil, createdBy, categories, tags, sortBy, sortDir } = { ...defaultParams, ...params };
   query.set('page', String(page));
   query.set('size', String(size));
   if (search) query.set('search', search);
@@ -20,6 +20,8 @@ export const fetchCotravelList = async (params?: CotravelListParams) => {
   if (Number.isFinite(createdBy)) query.set('createdBy', String(createdBy));
   categories?.forEach((id) => query.append('categories', String(id)));
   tags?.forEach((id) => query.append('tags', String(id)));
+  if (sortBy) query.set('sortBy', sortBy);
+  if (sortDir) query.set('sortDir', sortDir);
 
   const { data } = await apiClient.get<PagedResult<Cotravel>>('/public/wanders', { params: query });
   return data;

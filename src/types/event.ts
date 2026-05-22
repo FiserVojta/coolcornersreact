@@ -30,6 +30,6 @@ export interface EventSearchRequest {
   categories: number[];
   page?: number;
   size?: number;
-  orderBy?: string;
-  order?: string;
+  sortBy?: string;
+  sortDir?: string;
 }

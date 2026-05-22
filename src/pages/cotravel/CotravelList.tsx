@@ -43,6 +43,8 @@ export const CotravelList = () => {
   const [isTagsOpen, setIsTagsOpen] = useState(false);
   const [draft, setDraft] = useState<FilterDraft>(emptyFilters);
   const [filters, setFilters] = useState<FilterDraft>(emptyFilters);
+  const [sortBy, setSortBy] = useState<'' | 'START_TIME'>('');
+  const [sortDir, setSortDir] = useState<'ASC' | 'DESC'>('ASC');
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(9);
   const safePage = Math.max(0, page);
@@ -78,9 +80,11 @@ export const CotravelList = () => {
       categories: filters.categories,
       tags: filters.tags,
       page: safePage,
-      size: pageSize
+      size: pageSize,
+      sortBy: sortBy || undefined,
+      sortDir: sortBy ? sortDir : undefined
     };
-  }, [filters, pageSize, safePage]);
+  }, [filters, pageSize, safePage, sortBy, sortDir]);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['cotravel', queryFilters],
@@ -264,6 +268,8 @@ export const CotravelList = () => {
                 setIsTagsOpen(false);
                 setDraft(emptyFilters);
                 setFilters(emptyFilters);
+                setSortBy('');
+                setSortDir('ASC');
                 setPage(0);
               }}
               variant="secondary"
@@ -273,23 +279,58 @@ export const CotravelList = () => {
             </Button>
           </div>
 
-          <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-ink-subtle">
-            Page size
-            <select
-              value={pageSize}
-              onChange={(event) => {
-                setPage(0);
-                setPageSize(Number(event.target.value));
-              }}
-              className="rounded-full border border-brand-100 bg-white px-3 py-1 text-sm font-semibold text-ink-default shadow-sm"
+          <div className="flex flex-wrap items-center gap-4">
+            <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-ink-subtle">
+              Sort by
+              <select
+                value={sortBy}
+                onChange={(event) => {
+                  setPage(0);
+                  setSortBy(event.target.value as '' | 'START_TIME');
+                }}
+                className="rounded-full border border-brand-100 bg-white px-3 py-1 text-sm font-semibold text-ink-default shadow-sm"
+              >
+                <option value="">Default</option>
+                <option value="START_TIME">Start date</option>
+              </select>
+            </label>
+            <label
+              className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-ink-subtle ${
+                sortBy ? '' : 'opacity-50'
+              }`}
             >
-              {[6, 9, 12, 18].map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
-          </label>
+              Direction
+              <select
+                value={sortDir}
+                disabled={!sortBy}
+                onChange={(event) => {
+                  setPage(0);
+                  setSortDir(event.target.value as 'ASC' | 'DESC');
+                }}
+                className="rounded-full border border-brand-100 bg-white px-3 py-1 text-sm font-semibold text-ink-default shadow-sm disabled:cursor-not-allowed"
+              >
+                <option value="ASC">Ascending</option>
+                <option value="DESC">Descending</option>
+              </select>
+            </label>
+            <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-ink-subtle">
+              Page size
+              <select
+                value={pageSize}
+                onChange={(event) => {
+                  setPage(0);
+                  setPageSize(Number(event.target.value));
+                }}
+                className="rounded-full border border-brand-100 bg-white px-3 py-1 text-sm font-semibold text-ink-default shadow-sm"
+              >
+                {[6, 9, 12, 18].map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
         </div>
       </SurfaceCard>
 
