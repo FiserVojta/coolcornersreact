@@ -1,8 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { fetchCurrentUser, unfollowUsers, updateCurrentUser } from '../../api/users';
+import { uploadFile } from '../../api/files';
 import type { User, UserUpdateRequest } from '../../types/user';
 import { PageContainer } from '../../components/layout/PageContainer';
 import { PageHeader } from '../../components/layout/PageHeader';
@@ -11,6 +12,7 @@ import { Button } from '../../components/ui/Button';
 import { FormField, TextArea, TextInput } from '../../components/ui/FormField';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
+import { Avatar } from '../../components/Avatar';
 
 export const Profile = () => {
   const queryClient = useQueryClient();
@@ -62,6 +64,38 @@ export const Profile = () => {
     }
   });
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const uploadAvatarMut = useMutation({
+    mutationFn: async (file: File) => {
+      const uploaded = await uploadFile(file);
+      const fileId = uploaded.id != null ? Number(uploaded.id) : NaN;
+      if (!Number.isFinite(fileId)) {
+        throw new Error('Upload did not return a file id');
+      }
+      return updateCurrentUser({ profilePictureFileId: fileId });
+    },
+    onSuccess: (updated) => {
+      queryClient.setQueryData(['currentUser'], updated);
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+      setUploadError(null);
+    },
+    onError: () => setUploadError('Failed to upload photo. Please try again.')
+  });
+
+  const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Please choose an image file.');
+      return;
+    }
+    uploadAvatarMut.mutate(file);
+  };
+
   if (meQuery.isLoading) return <LoadingState label="Loading profile..." />;
   if (meQuery.error || !meQuery.data) return <ErrorState message="Failed to load profile." />;
 
@@ -85,6 +119,33 @@ export const Profile = () => {
       />
 
       <SurfaceCard className="mt-8 space-y-6">
+        <div className="flex items-center gap-5">
+          <Avatar user={meQuery.data} size="xl" />
+          <div className="space-y-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarSelect}
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadAvatarMut.isPending}
+            >
+              {uploadAvatarMut.isPending ? 'Uploading...' : meQuery.data.profilePictureUrl ? 'Change photo' : 'Upload photo'}
+            </Button>
+            {uploadError ? (
+              <p className="text-xs font-semibold text-rose-600">{uploadError}</p>
+            ) : (
+              <p className="text-xs text-ink-muted">PNG or JPG, square images look best.</p>
+            )}
+          </div>
+        </div>
+
         <div>
           <p className="text-xs font-semibold font-label uppercase tracking-[0.2em] text-ink-muted">Email</p>
           <p className="font-display text-lg text-ink-strong">{meQuery.data.email}</p>
@@ -149,9 +210,7 @@ export const Profile = () => {
                   to={`/users/${followed.id}`}
                   className="flex min-w-0 items-center gap-3 transition hover:text-brand-700"
                 >
-                  <div className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-white text-xs font-semibold text-brand-700">
-                    {getInitials(followed)}
-                  </div>
+                  <Avatar user={followed} size="sm" />
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold font-label text-ink-strong">{getDisplayName(followed)}</p>
                   </div>
@@ -175,10 +234,3 @@ export const Profile = () => {
 
 const getDisplayName = (user: User) =>
   user.displayName || user.name || [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username || 'User';
-
-const getInitials = (user: User) => {
-  const name = getDisplayName(user);
-  const parts = name.split(' ');
-  if (parts.length >= 2) return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
-  return name.slice(0, 2).toUpperCase();
-};

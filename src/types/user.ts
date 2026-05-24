@@ -12,6 +12,7 @@ export interface User {
   rating?: number | null;
   createdAt: string | number;
   introduction?: string | null;
+  profilePictureUrl?: string | null;
   followers?: User[];
   following?: User[];
   tripsCompleted?: number | null;
@@ -38,4 +39,5 @@ export interface UserUpdateRequest {
   displayName?: string;
   discordId?: string;
   introduction?: string;
+  profilePictureFileId?: number | null;
 }

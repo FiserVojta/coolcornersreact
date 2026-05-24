@@ -16,6 +16,7 @@ import type { UserDetail as UserDetailModel } from '../../types/user';
 import type { Place, Tag } from '../../types/place';
 import type { Trip } from '../../types/trip';
 import { TagList } from '../../components/TagList';
+import { Avatar } from '../../components/Avatar';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 export const UserDetail = () => {
@@ -92,9 +93,7 @@ export const UserDetail = () => {
     <main className="mx-auto max-w-5xl px-4 py-10">
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-100 text-lg font-semibold text-brand-700">
-            {getInitials(user)}
-          </div>
+          <Avatar user={user} size="lg" />
           <div className="space-y-1">
             <h1 className="text-2xl font-semibold font-display text-ink-strong">{getDisplayName(user)}</h1>
             <p className="text-xs text-ink-subtle">Joined {formatDate(user.createdAt)}</p>
@@ -256,13 +255,6 @@ const collectTags = (places: Place[], trips: Trip[]): Tag[] => {
 
 const getDisplayName = (user: UserDetailModel) =>
   user.displayName || user.name || [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username || 'User';
-
-const getInitials = (user: UserDetailModel) => {
-  const name = getDisplayName(user);
-  const parts = name.split(' ');
-  if (parts.length >= 2) return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
-  return name.slice(0, 2).toUpperCase();
-};
 
 const deriveCotravelTitle = (value?: string) => {
   if (!value) return 'Community adventure';
