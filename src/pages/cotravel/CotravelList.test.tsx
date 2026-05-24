@@ -53,7 +53,8 @@ describe('CotravelList', () => {
     expect((await screen.findAllByText('Weekend riverside wander')).length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: /select categories/i })).toHaveAttribute('aria-expanded', 'false');
     expect(screen.getByRole('button', { name: /select tags/i })).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.getByLabelText('Created By')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Created By' })).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: 'Search plans' })).toBeInTheDocument();
   });
 
   it('applies highlighted category and tag selections from overlay dropdowns', async () => {
@@ -134,15 +135,19 @@ describe('CotravelList', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Hiking' }));
     fireEvent.click(screen.getByRole('button', { name: /select tags/i }));
     fireEvent.click(screen.getByRole('button', { name: 'Group' }));
-    fireEvent.change(screen.getByLabelText('Created By'), { target: { value: '2' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Created By' }));
+    fireEvent.click(screen.getByRole('option', { name: 'Host Two' }));
 
     await waitFor(() => {
       expect(screen.queryAllByText('Weekend riverside wander')).toHaveLength(0);
       expect(screen.getAllByText('Mountain hiking weekend').length).toBeGreaterThan(0);
-      expect(screen.getByRole('button', { name: /hiking/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /group/i })).toBeInTheDocument();
-      expect(screen.getByLabelText('Created By')).toHaveValue('2');
+      expect(
+        screen.getAllByRole('button', { name: 'Hiking' }).some((button) => button.getAttribute('aria-pressed') === 'true')
+      ).toBe(true);
+      expect(
+        screen.getAllByRole('button', { name: 'Group' }).some((button) => button.getAttribute('aria-pressed') === 'true')
+      ).toBe(true);
+      expect(screen.getByRole('button', { name: 'Created By' })).toHaveTextContent('Host Two');
     });
   });
 });

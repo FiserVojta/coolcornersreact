@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { fetchEvents } from '../../api/events';
 import { fetchCategories } from '../../api/categories';
 import { LoadingState } from '../../components/LoadingState';
@@ -10,16 +10,36 @@ import { PageContainer } from '../../components/layout/PageContainer';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/ui/Button';
 import { PaginationControls } from '../../components/ui/PaginationControls';
+import {
+  FilterChip,
+  FilterShell,
+  ListToolbar,
+  MultiSelectFilter,
+  SearchInput,
+  SortSelect,
+  type SortOption
+} from '../../components/filters';
+
+const PAGE_SIZE = 9;
+
+type SortKey = 'soonest' | 'latest';
+
+const SORT_OPTIONS: { key: SortKey; label: string; sortBy?: string; sortDir?: 'ASC' | 'DESC' }[] = [
+  { key: 'soonest', label: 'Starting soonest', sortBy: 'START_TIME', sortDir: 'ASC' },
+  { key: 'latest', label: 'Starting latest', sortBy: 'START_TIME', sortDir: 'DESC' }
+];
+
+const SORT_SELECT_OPTIONS: SortOption[] = SORT_OPTIONS.map(({ key, label }) => ({ value: key, label }));
 
 export const EventsList = () => {
   const { authenticated, login } = useAuth();
-  const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
+  const [search, setSearch] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
-  const [sortBy, setSortBy] = useState<'' | 'START_TIME'>('');
-  const [sortDir, setSortDir] = useState<'ASC' | 'DESC'>('ASC');
+  const [sortKey, setSortKey] = useState<SortKey>('soonest');
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(9);
   const safePage = Math.max(0, page);
+
+  const sortOption = SORT_OPTIONS.find((opt) => opt.key === sortKey) ?? SORT_OPTIONS[0];
 
   const categoriesQuery = useQuery({
     queryKey: ['categories', 'EVENT'],
@@ -27,39 +47,65 @@ export const EventsList = () => {
   });
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['events', selectedCategories, sortBy, sortDir, safePage, pageSize],
+    queryKey: ['events', selectedCategories, sortKey, safePage],
     queryFn: () =>
       fetchEvents({
         categories: selectedCategories,
         page: safePage,
-        size: pageSize,
-        sortBy: sortBy || undefined,
-        sortDir: sortBy ? sortDir : undefined
-      })
+        size: PAGE_SIZE,
+        sortBy: sortOption.sortBy,
+        sortDir: sortOption.sortDir
+      }),
+    placeholderData: keepPreviousData
   });
+
   const events = data?.data ?? [];
   const categories = categoriesQuery.data ?? [];
   const totalItems = data?.totalItems ?? events.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+
+  const filteredEvents = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return events;
+    return events.filter((event) => {
+      const haystack = `${event.name ?? ''} ${event.description ?? ''} ${event.venue ?? ''}`.toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [events, search]);
+
+  const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
   const currentPage = Math.min(safePage, totalPages - 1);
   const canPrevious = currentPage > 0;
   const canNext = currentPage + 1 < totalPages;
+
+  const categoryOptions = categories.map((category) => ({
+    id: category.id,
+    label: category.title || category.name
+  }));
+  const selectedCategoryObjs = categoryOptions.filter((category) => selectedCategories.includes(category.id));
+  const hasActiveFilters = selectedCategories.length > 0 || search.trim().length > 0;
 
   const toggleCategory = (id: number) => {
     setPage(0);
     setSelectedCategories((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
   };
 
-  const resetFilters = () => {
-    setIsCategoriesOpen(false);
+  const removeCategory = (id: number) => {
+    setPage(0);
+    setSelectedCategories((prev) => prev.filter((item) => item !== id));
+  };
+
+  const clearAll = () => {
+    setSearch('');
     setSelectedCategories([]);
-    setSortBy('');
-    setSortDir('ASC');
     setPage(0);
   };
 
   if (isLoading) return <LoadingState label="Loading events..." />;
   if (error) return <ErrorState message="Unable to load events right now." />;
+
+  const chips = selectedCategoryObjs.map((category) => (
+    <FilterChip key={`cat-${category.id}`} label={category.label} onRemove={() => removeCategory(category.id)} />
+  ));
 
   return (
     <PageContainer>
@@ -88,119 +134,68 @@ export const EventsList = () => {
         }
       />
 
-      <section className="mt-8 rounded-3xl border border-brand-100 bg-white p-5 shadow-sm">
-        <div className="flex flex-wrap items-end gap-4">
-          <div className="relative flex-1 min-w-[220px]">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink-subtle">Categories</p>
-            <button
-              type="button"
-              aria-expanded={isCategoriesOpen}
-              onClick={() => setIsCategoriesOpen((prev) => !prev)}
-              className="mt-2 flex w-full items-center justify-between rounded-2xl border border-brand-100 bg-white px-3 py-2 text-left text-sm font-semibold text-ink-default shadow-sm"
-            >
-              <span className="truncate pr-3">
-                {selectedCategories.length
-                  ? categories
-                      .filter((category) => selectedCategories.includes(category.id))
-                      .map((category) => category.title || category.name)
-                      .join(', ')
-                  : 'Select categories'}
-              </span>
-              <span className={`text-xs text-ink-subtle transition ${isCategoriesOpen ? 'rotate-180' : ''}`}>▼</span>
-            </button>
-            {isCategoriesOpen && (
-              <div className="absolute left-0 right-0 z-20 mt-2 max-h-60 overflow-auto rounded-2xl bg-white border border-brand-100 p-2 shadow-lg">
-                {categories.map((category) => (
-                  <button
-                    key={category.id}
-                    type="button"
-                    aria-pressed={selectedCategories.includes(category.id)}
-                    onClick={() => toggleCategory(category.id)}
-                    className={`flex w-full items-center rounded-xl px-3 py-2 text-left text-sm transition ${
-                      selectedCategories.includes(category.id)
-                        ? 'bg-brand-700 text-white'
-                        : 'text-ink-default hover:bg-brand-50'
-                    }`}
-                  >
-                    {category.title || category.name}
-                  </button>
-                ))}
-                {!categories.length && <p className="text-xs text-ink-muted">No categories available.</p>}
-              </div>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={resetFilters}
-            className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:border-slate-400"
-          >
-            Clear filters
-          </button>
+      <FilterShell>
+        <SearchInput
+          value={search}
+          onChange={(value) => {
+            setPage(0);
+            setSearch(value);
+          }}
+          placeholder="Search events by name or description"
+          ariaLabel="Search events"
+        />
+        <div className="mt-3.5 flex flex-wrap items-end gap-4">
+          <MultiSelectFilter
+            label="Categories"
+            placeholder="Select categories"
+            options={categoryOptions}
+            selectedIds={selectedCategories}
+            onToggle={toggleCategory}
+            countNoun={{ singular: 'category', plural: 'categories' }}
+            emptyMessage="No categories available."
+          />
         </div>
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-ink-muted">
-          <p>Select categories to narrow the list.</p>
-          <div className="flex flex-wrap items-center gap-4">
-            <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-ink-subtle">
-              Sort by
-              <select
-                value={sortBy}
-                onChange={(event) => {
-                  setPage(0);
-                  setSortBy(event.target.value as '' | 'START_TIME');
-                }}
-                className="rounded-full border border-brand-100 bg-white px-3 py-1 text-sm font-semibold text-ink-default shadow-sm"
-              >
-                <option value="">Default</option>
-                <option value="START_TIME">Start date</option>
-              </select>
-            </label>
-            <label
-              className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-ink-subtle ${
-                sortBy ? '' : 'opacity-50'
-              }`}
-            >
-              Direction
-              <select
-                value={sortDir}
-                disabled={!sortBy}
-                onChange={(event) => {
-                  setPage(0);
-                  setSortDir(event.target.value as 'ASC' | 'DESC');
-                }}
-                className="rounded-full border border-brand-100 bg-white px-3 py-1 text-sm font-semibold text-ink-default shadow-sm disabled:cursor-not-allowed"
-              >
-                <option value="ASC">Ascending</option>
-                <option value="DESC">Descending</option>
-              </select>
-            </label>
-            <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-ink-subtle">
-              Page size
-              <select
-                value={pageSize}
-                onChange={(event) => {
-                  setPage(0);
-                  setPageSize(Number(event.target.value));
-                }}
-                className="rounded-full border border-brand-100 bg-white px-3 py-1 text-sm font-semibold text-ink-default shadow-sm"
-              >
-                {[6, 9, 12, 18].map((size) => (
-                  <option key={size} value={size}>
-                    {size}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-        </div>
-      </section>
+      </FilterShell>
 
-      <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {events.map((event) => (
+      <ListToolbar
+        chips={chips}
+        hasActiveFilters={hasActiveFilters}
+        onClearAll={clearAll}
+        countLabel={`${filteredEvents.length} of ${totalItems} events`}
+        sortControl={
+          <SortSelect
+            value={sortKey}
+            options={SORT_SELECT_OPTIONS}
+            onChange={(value) => {
+              setPage(0);
+              setSortKey(value as SortKey);
+            }}
+          />
+        }
+      />
+
+      <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {filteredEvents.map((event) => (
           <EventCard key={event.id} event={event} />
         ))}
       </div>
 
-      {totalItems > pageSize && (
+      {filteredEvents.length === 0 && (
+        <div className="mt-10 flex flex-col items-center gap-3 rounded-2xl border border-dashed border-brand-100 bg-white/60 px-6 py-12 text-center">
+          <p className="text-sm text-ink-muted">No events match these filters.</p>
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={clearAll}
+              className="rounded-full border border-brand-100 bg-white px-4 py-2 text-sm font-semibold text-ink-strong shadow-sm transition hover:border-brand-300"
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+      )}
+
+      {totalItems > PAGE_SIZE && (
         <PaginationControls
           currentPage={currentPage}
           totalPages={totalPages}

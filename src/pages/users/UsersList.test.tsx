@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { UsersList } from './UsersList';
@@ -14,14 +14,16 @@ describe('UsersList', () => {
     expect(await screen.findByText('Ada Lovelace')).toBeInTheDocument();
     expect(screen.getByText('Found 1 users.')).toBeInTheDocument();
     expect(screen.queryByText('ada@example.com')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Clear filters' })).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: 'Search users' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Minimum rating' })).toBeInTheDocument();
   });
 
-  it('filters users by search term and rating', async () => {
+  it('filters users by search term and rating threshold', async () => {
     server.use(
       http.get('http://localhost:8080/api/public/users', ({ request }) => {
         const url = new URL(request.url);
         const search = (url.searchParams.get('search') ?? '').toLowerCase();
+        const minRating = Number(url.searchParams.get('minRating') ?? '0');
         const users = [
           {
             id: 1,
@@ -47,7 +49,9 @@ describe('UsersList', () => {
             followers: [],
             following: []
           }
-        ].filter((user) => !search || user.displayName.toLowerCase().includes(search));
+        ]
+          .filter((user) => !search || user.displayName.toLowerCase().includes(search))
+          .filter((user) => !minRating || user.rating >= minRating);
 
         return HttpResponse.json({
           totalItems: users.length,
@@ -63,25 +67,27 @@ describe('UsersList', () => {
     expect(await screen.findByText('Ada Lovelace')).toBeInTheDocument();
     expect(screen.getByText('Grace Hopper')).toBeInTheDocument();
 
-    fireEvent.change(screen.getByPlaceholderText('Search by name...'), {
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search users' }), {
       target: { value: 'Ada' }
     });
 
-    expect(await screen.findByText('Ada Lovelace')).toBeInTheDocument();
-    expect(screen.queryByText('Grace Hopper')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText('Grace Hopper')).not.toBeInTheDocument();
+      expect(screen.getByText('Ada Lovelace')).toBeInTheDocument();
+    });
 
-    fireEvent.change(screen.getByPlaceholderText('Search by name...'), {
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search users' }), {
       target: { value: '' }
     });
     expect(await screen.findByText('Grace Hopper')).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText('Filter by rating'), {
-      target: { value: '4' }
-    });
+    fireEvent.click(screen.getByRole('button', { name: 'Filter to rating 4 or higher' }));
 
-    expect(screen.getByText('Ada Lovelace')).toBeInTheDocument();
-    expect(screen.queryByText('Grace Hopper')).not.toBeInTheDocument();
-    expect(screen.getByText('Found 1 users.')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText('Grace Hopper')).not.toBeInTheDocument();
+      expect(screen.getByText('Ada Lovelace')).toBeInTheDocument();
+      expect(screen.getByText('Found 1 users.')).toBeInTheDocument();
+    });
   });
 
   it('renders an error state when the users API fails', async () => {

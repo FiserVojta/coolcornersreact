@@ -19,8 +19,7 @@ describe('EventsList', () => {
     expect(screen.getByText('Found 2 events.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Create event' })).toBeInTheDocument();
     expect(screen.getByText('Select categories')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Clear filters' })).toBeInTheDocument();
-    expect(screen.getByText('Page size')).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: 'Search events' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /select categories/i })).toHaveAttribute('aria-expanded', 'false');
   });
 
