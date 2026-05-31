@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { createTrip, fetchTrip, updateTrip } from '../../api/trips';
 import { fetchCategories } from '../../api/categories';
 import { fetchTags } from '../../api/tags';
@@ -14,6 +14,25 @@ import { env } from '../../config/env';
 import { CircleMarker, MapContainer, Tooltip, useMapEvents } from 'react-leaflet';
 import type { LeafletMouseEvent } from 'leaflet';
 import { MapyTileLayer } from '../../components/MapyTileLayer';
+import '../../styles/create-form.css';
+
+const UPLOAD_GLYPH = (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+    <path
+      d="M10 13V4M10 4L6.5 7.5M10 4l3.5 3.5"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path d="M4 13v2.5A1.5 1.5 0 005.5 17h9a1.5 1.5 0 001.5-1.5V13" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+  </svg>
+);
+
+const firstSentence = (text?: string | null) => {
+  const first = (text?.split('. ')[0] ?? '').trim();
+  return first ? first.replace(/\.?$/, '.') : 'Add a description…';
+};
 
 export const TripForm = () => {
   const { id } = useParams();
@@ -209,9 +228,6 @@ export const TripForm = () => {
   if (isEdit && tripQuery.isLoading) return <LoadingState label="Loading trip..." />;
   if (isEdit && tripQuery.error) return <ErrorState message="Failed to load trip for editing." />;
 
-  const heroTitleClass = 'text-white';
-  const heroLabelClass = 'text-brand-200';
-
   const removeGooglePlace = (placeId: string) => {
     setGooglePlaces((prev) => prev.filter((place) => place.placeId !== placeId));
   };
@@ -259,350 +275,362 @@ export const TripForm = () => {
     });
   };
 
+  const categories = categoriesQuery.data ?? [];
+  const tags = tagsQuery.data ?? [];
+  const watchedName = watch('name');
+  const watchedDescription = watch('description');
+  const watchedDuration = watch('duration');
+  const watchedCategoryId = watch('categoryId');
+  const activeCategory = categories.find((cat) => cat.id === Number(watchedCategoryId));
+  const categoryLabel = activeCategory?.title || activeCategory?.name || 'Uncategorised';
+  const previewTags = tags.filter((tag) => selectedTags.includes(tag.id));
+  const stopCount = googlePlaces.length;
+
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10">
-      <div className="relative mb-8 overflow-hidden rounded-3xl">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={backgroundImageUrl ? { backgroundImage: `url(${backgroundImageUrl})` } : undefined}
-        />
-        <div
-          className={`absolute inset-0 ${
-            backgroundImageUrl ? 'bg-slate-900/55' : 'bg-gradient-to-br from-brand-900 via-brand-700 to-accent-700'
-          }`}
-        />
-        <div className="relative z-10 flex items-center justify-between px-6 py-10">
-          <div>
-            <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${heroLabelClass}`}>Trips</p>
-            <h1 className={`text-3xl font-semibold font-display ${heroTitleClass}`}>{isEdit ? 'Edit trip' : 'Create trip'}</h1>
-          </div>
-        </div>
-      </div>
+    <main className="cf-page">
+      <p className="crumbs">
+        <Link to="/trips">Trips</Link>
+        <span className="sep">/</span>
+        <span className="here">{isEdit ? 'Edit' : 'New'}</span>
+      </p>
+      <p className="page-eyebrow">Trips</p>
+      <h1 className="page-h1">{isEdit ? 'Edit trip' : 'Create trip'}</h1>
+      <p className="page-desc">Add a new trip for the community to discover. You can save and edit the details any time after.</p>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-6">
-        <div className="grid gap-4">
-          <Field label="Name" error={errors.name}>
-            <input
-              {...register('name', { required: 'Name is required' })}
-              className="w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm outline-none focus:border-brand-400"
-            />
-          </Field>
-        </div>
-
-        <Field label="Description" error={errors.description}>
-          <textarea
-            {...register('description', { required: 'Description is required' })}
-            rows={4}
-            className="w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm outline-none focus:border-brand-400"
-          />
-        </Field>
-
-        <Field label="Background image">
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-3">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(event) => {
-                  const file = event.target.files?.[0] ?? null;
-                  setSelectedBackgroundFile(file);
-                  setBackgroundUploadMessage(null);
-                }}
-                className="w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm outline-none focus:border-brand-400 sm:w-auto"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  if (!selectedBackgroundFile) return;
-                  backgroundUploadMut.mutate(selectedBackgroundFile);
-                }}
-                disabled={!selectedBackgroundFile || backgroundUploadMut.isPending}
-                className="rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {backgroundUploadMut.isPending ? 'Uploading...' : 'Upload'}
-              </button>
+      <form className="split" onSubmit={handleSubmit(onSubmit)}>
+        {/* LEFT: the form */}
+        <div className="stack">
+          {/* 1 · Basics */}
+          <section className="panel">
+            <div className="panel-head">
+              <span className="n">1</span>
+              <h3>Basics</h3>
             </div>
-            {selectedBackgroundFile && (
-              <p className="text-xs font-label text-ink-muted">Selected: {selectedBackgroundFile.name}</p>
-            )}
-            {backgroundUploadMessage && <p className="text-xs font-label text-ink-muted">{backgroundUploadMessage}</p>}
-            {backgroundImageUrl && (
-              <img
-                src={backgroundImageUrl}
-                alt="Background upload preview"
-                className="h-40 w-full rounded-2xl object-cover shadow-sm sm:h-48"
-                loading="lazy"
-              />
-            )}
-          </div>
-        </Field>
-
-        <Field label="Trip photo">
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-3">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(event) => {
-                  const file = event.target.files?.[0] ?? null;
-                  setSelectedFile(file);
-                  setUploadMessage(null);
-                }}
-                className="w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm outline-none focus:border-brand-400 sm:w-auto"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  if (!selectedFile) return;
-                  uploadMut.mutate(selectedFile);
-                }}
-                disabled={!selectedFile || uploadMut.isPending}
-                className="rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {uploadMut.isPending ? 'Uploading...' : 'Upload'}
-              </button>
-            </div>
-            {selectedFile && <p className="text-xs font-label text-ink-muted">Selected: {selectedFile.name}</p>}
-            {uploadMessage && <p className="text-xs font-label text-ink-muted">{uploadMessage}</p>}
-            {uploadedFiles.length ? (
-              <ul className="text-xs font-label text-ink-muted">
-                {uploadedFiles.map((file) => (
-                  <li key={file.fileId}>{file.name}</li>
-                ))}
-              </ul>
-            ) : null}
-            {imageUrl && (
-              <img
-                src={imageUrl}
-                alt="Trip upload preview"
-                className="h-40 w-full rounded-2xl object-cover shadow-sm sm:h-48"
-                loading="lazy"
-              />
-            )}
-          </div>
-        </Field>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Duration (minutes)" error={errors.duration}>
-            <input
-              type="number"
-              min={0}
-              {...register('duration', { valueAsNumber: true, required: 'Duration is required' })}
-              className="w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm outline-none focus:border-brand-400"
-            />
-          </Field>
-          <Field label="Category ID" error={errors.categoryId}>
-            <select
-              {...register('categoryId', { valueAsNumber: true, required: 'Category is required' })}
-              className="w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm outline-none focus:border-brand-400"
-            >
-              <option value="">Select category</option>
-              {(categoriesQuery.data ?? []).map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.title || cat.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </div>
-
-        <input type="hidden" {...register('author')} />
-        <input type="hidden" {...register('rating', { valueAsNumber: true })} />
-
-        <Field label="Tags">
-          <details className="group rounded-2xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm">
-            <summary className="cursor-pointer list-none font-semibold text-ink-strong">
-              {selectedTags.length
-                ? (tagsQuery.data ?? [])
-                    .filter((tag) => selectedTags.includes(tag.id))
-                    .map((tag) => tag.title || tag.name)
-                    .join(', ')
-                : 'Select tags'}
-            </summary>
-            <div className="mt-3 max-h-48 space-y-2 overflow-auto pb-1 pr-1">
-              {(tagsQuery.data ?? []).map((tag) => (
-                <label key={tag.id} className="flex items-center gap-2 text-sm text-ink-strong">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 rounded border-brand-100 text-ink-strong focus:ring-brand-400"
-                    checked={selectedTags.includes(tag.id)}
-                    onChange={() => toggleTag(tag.id)}
-                  />
-                  <span>{tag.title || tag.name}</span>
-                </label>
-              ))}
-              {!(tagsQuery.data ?? []).length && <p className="text-xs text-ink-muted">No tags available.</p>}
-            </div>
-          </details>
-        </Field>
-
-        <section className="rounded-2xl border border-brand-100 bg-white p-5 shadow-sm">
-          <div className="flex flex-col gap-1">
-            <h3 className="text-base font-semibold font-display text-ink-strong">Mapy places</h3>
-            <p className="text-xs font-label text-ink-muted">Search and add multiple places to this trip.</p>
-          </div>
-
-          <div className="mt-4 space-y-3">
-            {canSearch ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <input
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Search for a place"
-                  className="flex-1 rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm outline-none focus:border-brand-400"
+            <div className="panel-body">
+              <label className="field">
+                <span className="field-label">Trip name</span>
+                <input className="input" placeholder="Name your trip" {...register('name', { required: 'Name is required' })} />
+                {errors.name?.message && <p className="field-error">{errors.name.message}</p>}
+              </label>
+              <label className="field">
+                <span className="field-label">Description</span>
+                <textarea
+                  className="textarea"
+                  rows={4}
+                  placeholder="What's the shape of the trip and why is it worth doing."
+                  {...register('description', { required: 'Description is required' })}
                 />
-                <button
-                  type="button"
-                  onClick={handleSearch}
-                  disabled={searching || !searchQuery.trim()}
-                  className="rounded-full bg-brand-700 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {searching ? 'Searching...' : 'Search'}
-                </button>
-              </div>
-            ) : (
-              <p className="text-sm font-label text-ink-muted">
-                Provide <code className="rounded bg-brand-50 px-1.5 py-0.5 text-xs">VITE_MAPY_API_KEY</code> to search
-                Mapy places.
-              </p>
-            )}
-
-            {searchMessage && <p className="text-xs text-ink-muted">{searchMessage}</p>}
-            {searchResults.length ? (
-              <ul className="space-y-2">
-                {searchResults.map((result) => (
-                  <li
-                    key={result.id}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-brand-50 px-3 py-2 text-sm"
+                {errors.description?.message && <p className="field-error">{errors.description.message}</p>}
+              </label>
+              <div className="grid-2">
+                <label className="field">
+                  <span className="field-label">Category</span>
+                  <select
+                    className="select-native"
+                    {...register('categoryId', { valueAsNumber: true, required: 'Category is required' })}
                   >
-                    <div>
-                      <p className="font-semibold text-ink-strong">{result.name}</p>
-                      <p className="text-xs text-ink-muted">
-                        {result.lat.toFixed(5)}, {result.lng.toFixed(5)}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => addSearchResult(result)}
-                      className="rounded-full bg-brand-700 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-600"
-                    >
-                      Add place
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-
-            {hasTiles ? (
-              <div className="overflow-hidden rounded-2xl bg-white">
-                <MapContainer
-                  center={mapCenter}
-                  zoom={googlePlaces.length ? 11 : 6}
-                  style={{ width: '100%', height: '260px' }}
-                  scrollWheelZoom={false}
-                >
-                  <MapyTileLayer />
-                  <MapClickHandler onClick={handleMapClick} />
-                  {googlePlaces
-                    .map((place) => ({
-                      place,
-                      coords: getCoordsFromGeometry(place.geometry)
-                    }))
-                    .filter((entry) => !!entry.coords)
-                    .map((place, idx) => (
-                      <CircleMarker
-                        key={place.place.placeId}
-                        center={place.coords as { lat: number; lng: number }}
-                        radius={7}
-                        pathOptions={{ color: '#0f172a', weight: 2, fillColor: '#ffffff', fillOpacity: 1 }}
-                      >
-                        <Tooltip direction="top" offset={[0, -8]}>{`${idx + 1}`}</Tooltip>
-                      </CircleMarker>
+                    <option value="">Select category</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.title || cat.name}
+                      </option>
                     ))}
-                </MapContainer>
+                  </select>
+                  {errors.categoryId?.message && <p className="field-error">{errors.categoryId.message}</p>}
+                </label>
+                <label className="field">
+                  <span className="field-label">Duration (minutes)</span>
+                  <input
+                    className="input"
+                    type="number"
+                    min={0}
+                    {...register('duration', { valueAsNumber: true, required: 'Duration is required' })}
+                  />
+                  {errors.duration?.message && <p className="field-error">{errors.duration.message}</p>}
+                </label>
               </div>
-            ) : (
-              <p className="text-sm font-label text-ink-muted">
-                Provide <code className="rounded bg-brand-50 px-1.5 py-0.5 text-xs">VITE_MAPY_API_KEY</code> to render
-                the map.
-              </p>
-            )}
+              <div className="field">
+                <span className="field-label">Tags</span>
+                <div className="chips">
+                  {tags.map((tag) => {
+                    const on = selectedTags.includes(tag.id);
+                    return (
+                      <button
+                        key={tag.id}
+                        type="button"
+                        className={`chip-toggle${on ? ' on' : ''}`}
+                        onClick={() => toggleTag(tag.id)}
+                      >
+                        <span className="dot">{on ? '✓' : '+'}</span>
+                        {tag.title || tag.name}
+                      </button>
+                    );
+                  })}
+                  {!tags.length && <p className="field-hint">No tags available.</p>}
+                </div>
+                <p className="field-hint">Pick a few that fit. Tags power filtering on the trips list.</p>
+              </div>
+            </div>
+          </section>
 
-            {hasTiles && <p className="text-xs text-ink-muted">Tip: click the map to add a location.</p>}
-
-            {googlePlaces.length ? (
-              <ul className="space-y-2">
-                {googlePlaces.map((place, idx) => (
-                  <li
-                    key={place.placeId}
-                    className="flex items-center justify-between rounded-xl bg-brand-50 px-3 py-2 text-sm"
-                  >
-                    <div>
-                      <p className="font-semibold text-ink-strong">
-                        {idx + 1}. {place.name ?? 'Mapy place'}
-                      </p>
-                      <p className="text-xs text-ink-muted">Place ID: {place.placeId}</p>
-                    </div>
+          {/* 2 · Photos */}
+          <section className="panel">
+            <div className="panel-head">
+              <span className="n">2</span>
+              <h3>Photos</h3>
+            </div>
+            <div className="panel-body">
+              <div className="grid-2">
+                <div className="field">
+                  <span className="field-label">Cover photo</span>
+                  <label className="upload cover">
+                    <span className="glyph">{UPLOAD_GLYPH}</span>
+                    <span className="up-title">
+                      {selectedFile ? selectedFile.name : <>Drop cover or <b>browse</b></>}
+                    </span>
+                    <span className="up-mono">1600 × 900 · JPG or PNG</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0] ?? null;
+                        setSelectedFile(file);
+                        setUploadMessage(null);
+                      }}
+                    />
+                  </label>
+                  {selectedFile && (
                     <button
                       type="button"
-                      onClick={() => removeGooglePlace(place.placeId)}
-                      className="rounded-full border border-brand-100 bg-white px-3 py-1 text-xs font-semibold text-ink-strong"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => uploadMut.mutate(selectedFile)}
+                      disabled={uploadMut.isPending}
                     >
-                      Remove
+                      {uploadMut.isPending ? 'Uploading…' : 'Upload selected file'}
                     </button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-xs text-ink-muted">No places added yet.</p>
-            )}
+                  )}
+                  {uploadMessage && <p className="upload-status">{uploadMessage}</p>}
+                  {uploadedFiles.length ? (
+                    <ul className="upload-status">
+                      {uploadedFiles.map((file) => (
+                        <li key={file.fileId}>{file.name}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {imageUrl && <img className="upload-preview" src={imageUrl} alt="Trip cover preview" loading="lazy" />}
+                  <p className="field-hint">Shown on the trip card across the app.</p>
+                </div>
+
+                <div className="field">
+                  <span className="field-label">
+                    Header background <span className="field-opt">Optional</span>
+                  </span>
+                  <label className="upload cover">
+                    <span className="glyph">{UPLOAD_GLYPH}</span>
+                    <span className="up-title">
+                      {selectedBackgroundFile ? selectedBackgroundFile.name : <>Drop banner or <b>browse</b></>}
+                    </span>
+                    <span className="up-mono">2400 × 800 · JPG or PNG</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0] ?? null;
+                        setSelectedBackgroundFile(file);
+                        setBackgroundUploadMessage(null);
+                      }}
+                    />
+                  </label>
+                  {selectedBackgroundFile && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => backgroundUploadMut.mutate(selectedBackgroundFile)}
+                      disabled={backgroundUploadMut.isPending}
+                    >
+                      {backgroundUploadMut.isPending ? 'Uploading…' : 'Upload selected file'}
+                    </button>
+                  )}
+                  {backgroundUploadMessage && <p className="upload-status">{backgroundUploadMessage}</p>}
+                  {backgroundImageUrl && (
+                    <img className="upload-preview" src={backgroundImageUrl} alt="Header background preview" loading="lazy" />
+                  )}
+                  <p className="field-hint">Sits behind the title on the trip's own page.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* 3 · Stops */}
+          <section className="panel">
+            <div className="panel-head">
+              <span className="n">3</span>
+              <h3>Stops on the route</h3>
+            </div>
+            <div className="panel-body">
+              {canSearch ? (
+                <div className="search-row">
+                  <input
+                    className="input"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder="Search for a place — town, trailhead, address"
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={handleSearch}
+                    disabled={searching || !searchQuery.trim()}
+                  >
+                    {searching ? 'Searching…' : 'Search'}
+                  </button>
+                </div>
+              ) : (
+                <p className="field-hint">
+                  Provide <code>VITE_MAPY_API_KEY</code> to search Mapy places.
+                </p>
+              )}
+
+              {searchMessage && <p className="field-hint">{searchMessage}</p>}
+              {searchResults.length ? (
+                <div className="rows">
+                  {searchResults.map((result) => (
+                    <div key={result.id} className="row-item">
+                      <div className="grow">
+                        <p className="r-name">{result.name}</p>
+                        <p className="r-meta mono">
+                          {result.lat.toFixed(5)}, {result.lng.toFixed(5)}
+                        </p>
+                      </div>
+                      <button type="button" className="pick-btn" onClick={() => addSearchResult(result)}>
+                        Add
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
+              {hasTiles ? (
+                <div className="map-frame">
+                  <MapContainer
+                    center={mapCenter}
+                    zoom={googlePlaces.length ? 11 : 6}
+                    style={{ width: '100%', height: '240px' }}
+                    scrollWheelZoom={false}
+                  >
+                    <MapyTileLayer />
+                    <MapClickHandler onClick={handleMapClick} />
+                    {googlePlaces
+                      .map((place) => ({
+                        place,
+                        coords: getCoordsFromGeometry(place.geometry)
+                      }))
+                      .filter((entry) => !!entry.coords)
+                      .map((place, idx) => (
+                        <CircleMarker
+                          key={place.place.placeId}
+                          center={place.coords as { lat: number; lng: number }}
+                          radius={7}
+                          pathOptions={{ color: '#0f172a', weight: 2, fillColor: '#ffffff', fillOpacity: 1 }}
+                        >
+                          <Tooltip direction="top" offset={[0, -8]}>{`${idx + 1}`}</Tooltip>
+                        </CircleMarker>
+                      ))}
+                  </MapContainer>
+                </div>
+              ) : (
+                <p className="field-hint">
+                  Provide <code>VITE_MAPY_API_KEY</code> to render the map.
+                </p>
+              )}
+
+              {hasTiles && <p className="map-note">Mapy.cz map · click to add a stop.</p>}
+
+              {googlePlaces.length ? (
+                <div className="rows">
+                  {googlePlaces.map((place, idx) => {
+                    const coords = getCoordsFromGeometry(place.geometry);
+                    return (
+                      <div key={place.placeId} className="row-item">
+                        <span className="num">{idx + 1}</span>
+                        <div className="grow">
+                          <p className="r-name">{place.name ?? 'Mapy place'}</p>
+                          <p className="r-meta mono">
+                            {coords ? `${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}` : `Place ID: ${place.placeId}`}
+                          </p>
+                        </div>
+                        <button type="button" className="x" onClick={() => removeGooglePlace(place.placeId)}>
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="seg-empty">No stops added yet — search or click the map to add them.</p>
+              )}
+            </div>
+          </section>
+
+          <input type="hidden" {...register('author')} />
+          <input type="hidden" {...register('rating', { valueAsNumber: true })} />
+
+          <div className="form-actions">
+            <span className="draft-note">Saved as a draft until you publish.</span>
+            <button type="button" className="btn btn-secondary" onClick={() => navigate(-1)}>
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isSubmitting || createMut.isPending || updateMut.isPending}
+            >
+              {isEdit ? (updateMut.isPending ? 'Saving…' : 'Save trip') : createMut.isPending ? 'Creating…' : 'Create trip'}
+            </button>
           </div>
-        </section>
-
-        <Field label="Existing Place IDs (comma separated)">
-          <input
-            {...register('placeIds')}
-            placeholder="e.g. 10,11"
-            className="w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm outline-none focus:border-brand-400"
-          />
-        </Field>
-
-        <div className="flex gap-3">
-          <button
-            type="submit"
-            disabled={isSubmitting || createMut.isPending || updateMut.isPending}
-            className="rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {isEdit ? (updateMut.isPending ? 'Saving...' : 'Save') : createMut.isPending ? 'Creating...' : 'Create'}
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="rounded-full border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700 shadow-sm transition hover:border-brand-300"
-          >
-            Cancel
-          </button>
         </div>
+
+        {/* RIGHT: live preview */}
+        <aside className="preview-rail">
+          <p className="preview-label">
+            <span className="live" /> Live preview
+          </p>
+          <div className="pv-card">
+            <div className="pv-img" style={imageUrl ? { backgroundImage: `url(${imageUrl})` } : undefined}>
+              <span className="pv-chip tr">
+                <span className="star">★</span> New
+              </span>
+            </div>
+            <div className="pv-body">
+              <div className="pv-row1">
+                <h3 className="pv-title">{watchedName || 'Untitled trip'}</h3>
+                <span className="pv-pill">{watchedDuration ? `${watchedDuration} min` : '—'}</span>
+              </div>
+              <p className="pv-desc">{firstSentence(watchedDescription)}</p>
+              <p className="pv-meta">
+                {stopCount} stop{stopCount === 1 ? '' : 's'} · {categoryLabel}
+              </p>
+              {previewTags.length ? (
+                <div className="tag-row">
+                  {previewTags.slice(0, 4).map((tag) => (
+                    <span key={tag.id} className="tag-mini">
+                      {tag.title || tag.name}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </div>
+          <p className="preview-tip">
+            This is how the trip appears on the trips list and in search results as you fill the form.
+          </p>
+        </aside>
       </form>
     </main>
   );
 };
-
-const Field = ({
-  label,
-  error,
-  children
-}: {
-  label: string;
-  error?: { message?: string };
-  children: React.ReactNode;
-}) => (
-  <label className="space-y-1 text-sm text-ink-strong">
-    <span className="block font-semibold font-label text-ink-strong">{label}</span>
-    {children}
-    {error?.message && <p className="text-xs font-semibold text-rose-600">{error.message}</p>}
-  </label>
-);
 
 const normalizeNumberList = (value: number[] | string | null | undefined) => {
   if (Array.isArray(value)) return value;

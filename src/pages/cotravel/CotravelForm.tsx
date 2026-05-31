@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { createCotravel, fetchCotravel, updateCotravel } from '../../api/cotravel';
 import { fetchCategories } from '../../api/categories';
 import { fetchTags } from '../../api/tags';
@@ -17,6 +17,7 @@ import { ErrorState } from '../../components/ErrorState';
 import { env } from '../../config/env';
 import { CircleMarker, MapContainer, Tooltip, useMapEvents } from 'react-leaflet';
 import { MapyTileLayer } from '../../components/MapyTileLayer';
+import '../../styles/create-form.css';
 
 type FormValues = CotravelCreateRequest;
 type SegmentDraft = {
@@ -25,6 +26,33 @@ type SegmentDraft = {
   tripIds: number[];
   placeIds: number[];
   googlePlaces: GooglePlaceInput[];
+};
+
+const UPLOAD_GLYPH = (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+    <path
+      d="M10 13V4M10 4L6.5 7.5M10 4l3.5 3.5"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path d="M4 13v2.5A1.5 1.5 0 005.5 17h9a1.5 1.5 0 001.5-1.5V13" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+  </svg>
+);
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const formatPlanDate = (value?: string | null) => {
+  if (!value) return 'Date TBD';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Date TBD';
+  return `${MONTHS[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+};
+
+const planTitleFrom = (text?: string | null) => {
+  const first = (text ?? '').split(/[.\n]/)[0].trim();
+  return first || 'Untitled plan';
 };
 
 const createSegmentId = () => `segment-${Math.random().toString(36).slice(2, 9)}`;
@@ -154,6 +182,10 @@ export const CotravelForm = () => {
   }, [detailQuery.data, reset]);
 
   const selectedTags = useWatch({ control, name: 'tags' }) ?? [];
+  const watchedDescription = useWatch({ control, name: 'description' });
+  const watchedCategory = useWatch({ control, name: 'category' });
+  const watchedCapacity = useWatch({ control, name: 'capacity' });
+  const watchedStart = useWatch({ control, name: 'startTime' });
 
   const createMut = useMutation({
     mutationFn: (payload: FormValues) => createCotravel(payload),
@@ -305,213 +337,243 @@ export const CotravelForm = () => {
     setValue('tags', next, { shouldValidate: true, shouldDirty: true });
   };
 
-  const heroTitleClass = 'text-white';
-  const heroLabelClass = 'text-brand-200';
+  const categories = categoriesQuery.data ?? [];
+  const tags = tagsQuery.data ?? [];
+  const activeCategory = categories.find((cat) => cat.id === Number(watchedCategory));
+  const categoryLabel = activeCategory?.title || activeCategory?.name || 'Uncategorised';
+  const previewTags = tags.filter((tag) => selectedTags.includes(tag.id));
+  const segmentCount = segments.length;
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10">
-      <div className="relative mb-8 overflow-hidden rounded-3xl">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={backgroundImageUrl ? { backgroundImage: `url(${backgroundImageUrl})` } : undefined}
-        />
-        <div
-          className={`absolute inset-0 ${
-            backgroundImageUrl ? 'bg-slate-900/55' : 'bg-gradient-to-br from-brand-900 via-brand-700 to-accent-700'
-          }`}
-        />
-        <div className="relative z-10 flex items-center justify-between px-6 py-10">
-          <div>
-            <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${heroLabelClass}`}>CoTravel</p>
-            <h1 className={`text-3xl font-semibold font-display ${heroTitleClass}`}>{isEdit ? 'Edit plan' : 'Create plan'}</h1>
-          </div>
-        </div>
-      </div>
+    <main className="cf-page">
+      <p className="crumbs">
+        <Link to="/cotravel">CoTravel</Link>
+        <span className="sep">/</span>
+        <span className="here">{isEdit ? 'Edit' : 'New'}</span>
+      </p>
+      <p className="page-eyebrow">CoTravel</p>
+      <h1 className="page-h1">{isEdit ? 'Edit plan' : 'Create plan'}</h1>
+      <p className="page-desc">
+        Organise a community-led trip others can join. Group your trips and places into segments, then set the group size.
+      </p>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-6">
-        <Field label="Description" error={errors.description}>
-          <textarea
-            {...register('description', { required: 'Description is required' })}
-            rows={4}
-            className="w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm outline-none focus:border-brand-400"
-          />
-        </Field>
+      <form className="split" onSubmit={handleSubmit(onSubmit)}>
+        {/* LEFT: the form */}
+        <div className="stack">
+          {/* 1 · Basics */}
+          <section className="panel">
+            <div className="panel-head">
+              <span className="n">1</span>
+              <h3>Basics</h3>
+            </div>
+            <div className="panel-body">
+              <label className="field">
+                <span className="field-label">What's the plan</span>
+                <textarea
+                  className="textarea"
+                  rows={4}
+                  placeholder="Describe the journey — the first line becomes the title."
+                  {...register('description', { required: 'Description is required' })}
+                />
+                {errors.description?.message ? (
+                  <p className="field-error">{errors.description.message}</p>
+                ) : (
+                  <p className="field-hint">The first sentence is used as the plan's title across the app.</p>
+                )}
+              </label>
+              <div className="grid-2">
+                <label className="field">
+                  <span className="field-label">Category</span>
+                  <select
+                    className="select-native"
+                    {...register('category', { valueAsNumber: true, required: 'Category is required' })}
+                  >
+                    <option value="">Select category</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.title || cat.name}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.category?.message && <p className="field-error">{errors.category.message}</p>}
+                </label>
+                <div className="field">
+                  <span className="field-label">Group size</span>
+                  <div className="affix">
+                    <input
+                      type="number"
+                      min={1}
+                      {...register('capacity', { valueAsNumber: true, required: 'Capacity is required' })}
+                    />
+                    <span className="suf">wanderers</span>
+                  </div>
+                  {errors.capacity?.message && <p className="field-error">{errors.capacity.message}</p>}
+                </div>
+              </div>
+              <div className="field">
+                <span className="field-label">Tags</span>
+                <div className="chips">
+                  {tags.map((tag) => {
+                    const on = selectedTags.includes(tag.id);
+                    return (
+                      <button
+                        key={tag.id}
+                        type="button"
+                        className={`chip-toggle${on ? ' on' : ''}`}
+                        onClick={() => toggleTag(tag.id)}
+                      >
+                        <span className="dot">{on ? '✓' : '+'}</span>
+                        {tag.title || tag.name}
+                      </button>
+                    );
+                  })}
+                  {!tags.length && <p className="field-hint">No tags available.</p>}
+                </div>
+              </div>
+            </div>
+          </section>
 
-        <Field label="Background image">
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-3">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(event) => {
-                  const file = event.target.files?.[0] ?? null;
-                  setSelectedBackgroundFile(file);
-                  setBackgroundUploadMessage(null);
-                }}
-                className="w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm outline-none focus:border-brand-400 sm:w-auto"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  if (!selectedBackgroundFile) return;
-                  backgroundUploadMut.mutate(selectedBackgroundFile);
-                }}
-                disabled={!selectedBackgroundFile || backgroundUploadMut.isPending}
-                className="rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {backgroundUploadMut.isPending ? 'Uploading...' : 'Upload'}
+          {/* 2 · When & cover */}
+          <section className="panel">
+            <div className="panel-head">
+              <span className="n">2</span>
+              <h3>When &amp; cover</h3>
+            </div>
+            <div className="panel-body">
+              <label className="field" style={{ maxWidth: '320px' }}>
+                <span className="field-label">Start</span>
+                <input
+                  className="input"
+                  type="datetime-local"
+                  {...register('startTime', { required: 'Start time is required' })}
+                />
+                {errors.startTime?.message && <p className="field-error">{errors.startTime.message}</p>}
+              </label>
+              <div className="field">
+                <span className="field-label">
+                  Cover image <span className="field-opt">Optional</span>
+                </span>
+                <label className="upload wide">
+                  <span className="glyph">{UPLOAD_GLYPH}</span>
+                  <span className="up-title">
+                    {selectedBackgroundFile ? selectedBackgroundFile.name : <>Drop a cover or <b>browse</b></>}
+                  </span>
+                  <span className="up-mono">2400 × 800 · JPG or PNG</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] ?? null;
+                      setSelectedBackgroundFile(file);
+                      setBackgroundUploadMessage(null);
+                    }}
+                  />
+                </label>
+                {selectedBackgroundFile && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => backgroundUploadMut.mutate(selectedBackgroundFile)}
+                    disabled={backgroundUploadMut.isPending}
+                  >
+                    {backgroundUploadMut.isPending ? 'Uploading…' : 'Upload selected file'}
+                  </button>
+                )}
+                {backgroundUploadMessage && <p className="upload-status">{backgroundUploadMessage}</p>}
+                {backgroundImageUrl && (
+                  <img className="upload-preview" src={backgroundImageUrl} alt="Cover preview" loading="lazy" />
+                )}
+              </div>
+            </div>
+          </section>
+
+          {/* 3 · Segments */}
+          <section className="panel">
+            <div className="panel-head">
+              <span className="n">3</span>
+              <h3>Segments</h3>
+              <button type="button" className="btn btn-dashed btn-sm head-action" onClick={addSegment}>
+                Add segment
               </button>
             </div>
-            {selectedBackgroundFile && (
-              <p className="text-xs font-label text-ink-muted">Selected: {selectedBackgroundFile.name}</p>
-            )}
-            {backgroundUploadMessage && <p className="text-xs font-label text-ink-muted">{backgroundUploadMessage}</p>}
-            {backgroundImageUrl && (
-              <img
-                src={backgroundImageUrl}
-                alt="Background upload preview"
-                className="h-40 w-full rounded-2xl object-cover shadow-sm sm:h-48"
-                loading="lazy"
-              />
-            )}
-          </div>
-        </Field>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Start time" error={errors.startTime}>
-            <input
-              type="datetime-local"
-              {...register('startTime', { required: 'Start time is required' })}
-              className="w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm outline-none focus:border-brand-400"
-            />
-          </Field>
-          <Field label="Capacity" error={errors.capacity}>
-            <input
-              type="number"
-              min={1}
-              {...register('capacity', { valueAsNumber: true, required: 'Capacity is required' })}
-              className="w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm outline-none focus:border-brand-400"
-            />
-          </Field>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Category" error={errors.category}>
-            <select
-              {...register('category', { valueAsNumber: true, required: 'Category is required' })}
-              className="w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm outline-none focus:border-brand-400"
-            >
-              <option value="">Select category</option>
-              {(categoriesQuery.data ?? []).map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.title || cat.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Tags">
-            <details className="group rounded-2xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-strong shadow-sm">
-              <summary className="cursor-pointer list-none font-semibold text-ink-strong">
-                {selectedTags.length
-                  ? (tagsQuery.data ?? [])
-                      .filter((tag) => selectedTags.includes(tag.id))
-                      .map((tag) => tag.title || tag.name)
-                      .join(', ')
-                  : 'Select tags'}
-              </summary>
-              <div className="mt-3 max-h-48 space-y-2 overflow-auto pb-1 pr-1">
-                {(tagsQuery.data ?? []).map((tag) => (
-                  <label key={tag.id} className="flex items-center gap-2 text-sm text-ink-strong">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-brand-100 text-ink-strong focus:ring-brand-400"
-                      checked={selectedTags.includes(tag.id)}
-                      onChange={() => toggleTag(tag.id)}
-                    />
-                    <span>{tag.title || tag.name}</span>
-                  </label>
+            <div className="panel-body">
+              <p className="field-hint" style={{ marginTop: '-4px' }}>
+                Group trips and places into legs of the journey. Order runs top to bottom.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {segments.map((segment, index) => (
+                  <SegmentEditor
+                    key={segment.id}
+                    index={index}
+                    segment={segment}
+                    trips={trips}
+                    places={places}
+                    tripsLoading={tripsQuery.isLoading}
+                    placesLoading={placesQuery.isLoading}
+                    canSearchMapy={canSearch}
+                    hasMapTiles={hasTiles}
+                    onRename={updateSegmentName}
+                    onToggleTrip={toggleSegmentTrip}
+                    onTogglePlace={toggleSegmentPlace}
+                    onAddMapyPlace={addSegmentGooglePlace}
+                    onRemoveMapyPlace={removeSegmentGooglePlace}
+                    onRemove={removeSegment}
+                    canRemove={segments.length > 1}
+                  />
                 ))}
-                {!(tagsQuery.data ?? []).length && <p className="text-xs text-ink-muted">No tags available.</p>}
               </div>
-            </details>
-          </Field>
-        </div>
-
-        <section className="rounded-2xl border border-brand-100 bg-white p-5 shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h3 className="text-base font-semibold font-display text-ink-strong">Segments</h3>
-              <p className="text-xs font-label text-ink-muted">Group trips and places into separate sections.</p>
             </div>
+          </section>
+
+          <div className="form-actions">
+            <span className="draft-note">Saved as a draft until you publish.</span>
+            <button type="button" className="btn btn-secondary" onClick={() => navigate(-1)}>
+              Cancel
+            </button>
             <button
-              type="button"
-              onClick={addSegment}
-              className="rounded-full border border-brand-100 bg-white px-3 py-1.5 text-xs font-semibold text-ink-strong transition hover:border-brand-300"
+              type="submit"
+              className="btn btn-primary"
+              disabled={isSubmitting || createMut.isPending || updateMut.isPending}
             >
-              Add segment
+              {isEdit ? (updateMut.isPending ? 'Saving…' : 'Save plan') : createMut.isPending ? 'Creating…' : 'Create plan'}
             </button>
           </div>
-
-          <div className="mt-4 space-y-4">
-            {segments.map((segment, index) => (
-              <SegmentEditor
-                key={segment.id}
-                index={index}
-                segment={segment}
-                trips={trips}
-                places={places}
-                tripsLoading={tripsQuery.isLoading}
-                placesLoading={placesQuery.isLoading}
-                canSearchMapy={canSearch}
-                hasMapTiles={hasTiles}
-                onRename={updateSegmentName}
-                onToggleTrip={toggleSegmentTrip}
-                onTogglePlace={toggleSegmentPlace}
-                onAddMapyPlace={addSegmentGooglePlace}
-                onRemoveMapyPlace={removeSegmentGooglePlace}
-                onRemove={removeSegment}
-                canRemove={segments.length > 1}
-              />
-            ))}
-          </div>
-        </section>
-
-        <div className="flex gap-3">
-          <button
-            type="submit"
-            disabled={isSubmitting || createMut.isPending || updateMut.isPending}
-            className="rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {isEdit ? (updateMut.isPending ? 'Saving...' : 'Save') : createMut.isPending ? 'Creating...' : 'Create'}
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="rounded-full border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700 shadow-sm transition hover:border-brand-300"
-          >
-            Cancel
-          </button>
         </div>
+
+        {/* RIGHT: live preview */}
+        <aside className="preview-rail">
+          <p className="preview-label">
+            <span className="live" /> Live preview
+          </p>
+          <div className="pv-card">
+            <div className="pv-img cotravel">
+              <span className="pv-chip tr">1/{watchedCapacity || '—'} joined</span>
+            </div>
+            <div className="pv-body">
+              <h3 className="pv-title">{planTitleFrom(watchedDescription)}</h3>
+              <p className="pv-meta">
+                {formatPlanDate(watchedStart)} · {segmentCount} segment{segmentCount === 1 ? '' : 's'} · {categoryLabel}
+              </p>
+              {previewTags.length ? (
+                <div className="tag-row">
+                  {previewTags.slice(0, 4).map((tag) => (
+                    <span key={tag.id} className="tag-mini">
+                      {tag.title || tag.name}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </div>
+          <p className="preview-tip">
+            This is how the plan appears on the co-travel list and in search results as you fill the form.
+          </p>
+        </aside>
       </form>
     </main>
   );
 };
-
-const Field = ({
-  label,
-  error,
-  children
-}: {
-  label: string;
-  error?: { message?: string };
-  children: React.ReactNode;
-}) => (
-  <label className="space-y-1 text-sm text-ink-strong">
-    <span className="block font-semibold font-label text-ink-strong">{label}</span>
-    {children}
-    {error?.message && <p className="text-xs font-semibold text-rose-600">{error.message}</p>}
-  </label>
-);
 
 const SegmentEditor = ({
   index,
@@ -614,61 +676,49 @@ const SegmentEditor = ({
   };
 
   return (
-    <div className="rounded-xl bg-brand-50 p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex flex-1 items-center gap-3">
+    <div className="segment">
+      <div className="segment-head">
+        <span className="seg-n">{index + 1}</span>
+        <span className="seg-name">
           <input
             value={segment.name}
             onChange={(event) => onRename(segment.id, event.target.value)}
             placeholder={`Segment ${index + 1}`}
-            className="flex-1 rounded-lg border border-brand-100 bg-white px-3 py-1.5 text-sm font-semibold text-ink-strong shadow-sm outline-none focus:border-brand-400"
           />
-        </div>
-        <button
-          type="button"
-          onClick={() => onRemove(segment.id)}
-          disabled={!canRemove}
-          className="rounded-full border border-brand-100 bg-white px-3 py-1 text-xs font-semibold text-ink-strong transition hover:border-brand-300 disabled:cursor-not-allowed disabled:opacity-60"
-        >
+        </span>
+        <button type="button" className="seg-remove" onClick={() => onRemove(segment.id)} disabled={!canRemove}>
           Remove
         </button>
       </div>
 
-      <div className="mt-3 grid gap-3 lg:grid-cols-2">
-        <div className="space-y-2 rounded-xl bg-white p-3">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-ink-strong">Trips</p>
-            <span className="text-xs text-ink-muted">{segment.tripIds.length} selected</span>
+      <div className="seg-grid">
+        <div className="seg-col">
+          <div className="seg-col-head">
+            <span className="ttl">Trips</span>
+            <span className="cnt">{segment.tripIds.length} selected</span>
           </div>
           <input
+            className="input"
             value={tripQuery}
             onChange={(event) => setTripQuery(event.target.value)}
             placeholder="Search trips"
-            className="w-full rounded-lg border border-brand-100 bg-white px-3 py-2 text-xs text-ink-strong shadow-sm outline-none focus:border-brand-400"
           />
-          <div className="max-h-48 space-y-2 overflow-auto">
+          <div className="pick-list">
             {tripsLoading ? (
-              <p className="text-xs text-ink-muted">Loading trips...</p>
+              <p className="seg-empty">Loading trips…</p>
             ) : filteredTrips.length ? (
               filteredTrips.map((trip) => {
                 const isSelected = segment.tripIds.includes(trip.id);
                 return (
-                  <div
-                    key={trip.id}
-                    className="flex items-center justify-between gap-3 rounded-lg bg-brand-50 px-3 py-2 text-xs"
-                  >
+                  <div key={trip.id} className="pick">
                     <div>
-                      <p className="font-semibold text-ink-strong">{trip.name}</p>
-                      {trip.category?.title && <p className="text-[10px] text-ink-muted">{trip.category.title}</p>}
+                      <p className="p-name">{trip.name}</p>
+                      {trip.category?.title && <p className="p-meta">{trip.category.title}</p>}
                     </div>
                     <button
                       type="button"
+                      className={`pick-btn${isSelected ? ' on' : ''}`}
                       onClick={() => onToggleTrip(segment.id, trip.id)}
-                      className={`rounded-full px-2.5 py-1 text-[10px] font-semibold shadow-sm transition ${
-                        isSelected
-                          ? 'bg-brand-100 text-brand-700'
-                          : 'border border-brand-100 bg-white text-ink-strong hover:border-brand-300'
-                      }`}
                     >
                       {isSelected ? 'Selected' : 'Add'}
                     </button>
@@ -676,45 +726,38 @@ const SegmentEditor = ({
                 );
               })
             ) : (
-              <p className="text-xs text-ink-muted">No trips found.</p>
+              <p className="seg-empty">No trips found.</p>
             )}
           </div>
         </div>
 
-        <div className="space-y-2 rounded-xl bg-white p-3">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-ink-strong">Places</p>
-            <span className="text-xs text-ink-muted">{segment.placeIds.length} selected</span>
+        <div className="seg-col">
+          <div className="seg-col-head">
+            <span className="ttl">Places</span>
+            <span className="cnt">{segment.placeIds.length} selected</span>
           </div>
           <input
+            className="input"
             value={placeQuery}
             onChange={(event) => setPlaceQuery(event.target.value)}
             placeholder="Search places"
-            className="w-full rounded-lg border border-brand-100 bg-white px-3 py-2 text-xs text-ink-strong shadow-sm outline-none focus:border-brand-400"
           />
-          <div className="max-h-48 space-y-2 overflow-auto">
+          <div className="pick-list">
             {placesLoading ? (
-              <p className="text-xs text-ink-muted">Loading places...</p>
+              <p className="seg-empty">Loading places…</p>
             ) : filteredPlaces.length ? (
               filteredPlaces.map((place) => {
                 const isSelected = segment.placeIds.includes(place.id);
                 return (
-                  <div
-                    key={place.id}
-                    className="flex items-center justify-between gap-3 rounded-lg bg-brand-50 px-3 py-2 text-xs"
-                  >
+                  <div key={place.id} className="pick">
                     <div>
-                      <p className="font-semibold text-ink-strong">{place.name}</p>
-                      {place.city?.name && <p className="text-[10px] text-ink-muted">{place.city.name}</p>}
+                      <p className="p-name">{place.name}</p>
+                      {place.city?.name && <p className="p-meta">{place.city.name}</p>}
                     </div>
                     <button
                       type="button"
+                      className={`pick-btn${isSelected ? ' on' : ''}`}
                       onClick={() => onTogglePlace(segment.id, place.id)}
-                      className={`rounded-full px-2.5 py-1 text-[10px] font-semibold shadow-sm transition ${
-                        isSelected
-                          ? 'bg-brand-100 text-brand-700'
-                          : 'border border-brand-100 bg-white text-ink-strong hover:border-brand-300'
-                      }`}
                     >
                       {isSelected ? 'Selected' : 'Add'}
                     </button>
@@ -722,126 +765,112 @@ const SegmentEditor = ({
                 );
               })
             ) : (
-              <p className="text-xs text-ink-muted">No places found.</p>
+              <p className="seg-empty">No places found.</p>
             )}
           </div>
         </div>
       </div>
 
-      <div className="mt-3 rounded-xl bg-white p-3">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold text-ink-strong">Mapy places</p>
-          <span className="text-xs text-ink-muted">{segment.googlePlaces.length} selected</span>
+      <div className="seg-col">
+        <div className="seg-col-head">
+          <span className="ttl">Mapy places</span>
+          <span className="cnt">{segment.googlePlaces.length} selected</span>
         </div>
 
-        <div className="mt-2 space-y-2">
-          {canSearchMapy ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                value={mapyQuery}
-                onChange={(event) => setMapyQuery(event.target.value)}
-                placeholder="Search Mapy places"
-                className="flex-1 rounded-lg border border-brand-100 bg-white px-3 py-2 text-xs text-ink-strong shadow-sm outline-none focus:border-brand-400"
-              />
-              <button
-                type="button"
-                onClick={handleMapySearch}
-                disabled={mapySearching || !mapyQuery.trim()}
-                className="rounded-full bg-brand-700 px-3 py-2 text-[10px] font-semibold text-white shadow-sm transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {mapySearching ? 'Searching...' : 'Search'}
-              </button>
-            </div>
-          ) : (
-            <p className="text-xs text-ink-muted">
-              Provide <code className="rounded bg-brand-50 px-1.5 py-0.5 text-[10px]">VITE_MAPY_API_KEY</code> to
-              search Mapy places.
-            </p>
-          )}
+        {canSearchMapy ? (
+          <div className="search-row">
+            <input
+              className="input"
+              value={mapyQuery}
+              onChange={(event) => setMapyQuery(event.target.value)}
+              placeholder="Search Mapy places"
+            />
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={handleMapySearch}
+              disabled={mapySearching || !mapyQuery.trim()}
+            >
+              {mapySearching ? 'Searching…' : 'Search'}
+            </button>
+          </div>
+        ) : (
+          <p className="field-hint">
+            Provide <code>VITE_MAPY_API_KEY</code> to search Mapy places.
+          </p>
+        )}
 
-          {mapyMessage && <p className="text-xs text-ink-muted">{mapyMessage}</p>}
-          {mapyResults.length ? (
-            <ul className="space-y-2">
-              {mapyResults.map((result) => (
-                <li
-                  key={result.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-brand-50 px-3 py-2 text-xs"
+        {mapyMessage && <p className="field-hint">{mapyMessage}</p>}
+        {mapyResults.length ? (
+          <div className="rows">
+            {mapyResults.map((result) => (
+              <div key={result.id} className="row-item">
+                <div className="grow">
+                  <p className="r-name">{result.name}</p>
+                  <p className="r-meta mono">
+                    {result.lat.toFixed(5)}, {result.lng.toFixed(5)}
+                  </p>
+                </div>
+                <button type="button" className="pick-btn" onClick={() => handleAddMapy(result)}>
+                  Add
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        {hasMapTiles ? (
+          <div className="map-frame">
+            <MapContainer
+              center={mapyCenter}
+              zoom={mapyCoords.length ? 11 : 6}
+              style={{ width: '100%', height: '200px' }}
+              scrollWheelZoom={false}
+            >
+              <MapyTileLayer />
+              <SegmentMapClickHandler onClick={handleMapyMapClick} />
+              {mapyCoords.map((coords, idx) => (
+                <CircleMarker
+                  key={`${coords.lat}-${coords.lng}-${idx}`}
+                  center={coords}
+                  radius={6}
+                  pathOptions={{ color: '#0f172a', weight: 2, fillColor: '#ffffff', fillOpacity: 1 }}
                 >
-                  <div>
-                    <p className="font-semibold text-ink-strong">{result.name}</p>
-                    <p className="text-[10px] text-ink-muted">
-                      {result.lat.toFixed(5)}, {result.lng.toFixed(5)}
+                  <Tooltip direction="top" offset={[0, -6]}>{`${idx + 1}`}</Tooltip>
+                </CircleMarker>
+              ))}
+            </MapContainer>
+          </div>
+        ) : (
+          <p className="field-hint">
+            Provide <code>VITE_MAPY_API_KEY</code> to render the map.
+          </p>
+        )}
+        {hasMapTiles && <p className="map-note">Mapy.cz map · click to add a stop.</p>}
+
+        {segment.googlePlaces.length ? (
+          <div className="rows">
+            {segment.googlePlaces.map((place, idx) => {
+              const coords = getCoordsFromGeometry(place.geometry);
+              return (
+                <div key={place.placeId} className="row-item">
+                  <span className="num">{idx + 1}</span>
+                  <div className="grow">
+                    <p className="r-name">{place.name ?? 'Mapy place'}</p>
+                    <p className="r-meta mono">
+                      {coords ? `${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}` : `Place ID: ${place.placeId}`}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleAddMapy(result)}
-                    className="rounded-full bg-brand-700 px-3 py-1 text-[10px] font-semibold text-white shadow-sm transition hover:bg-brand-600"
-                  >
-                    Add place
+                  <button type="button" className="x" onClick={() => onRemoveMapyPlace(segment.id, place.placeId)}>
+                    ×
                   </button>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-
-          {hasMapTiles ? (
-            <div className="overflow-hidden rounded-lg bg-white">
-              <MapContainer
-                center={mapyCenter}
-                zoom={mapyCoords.length ? 11 : 6}
-                style={{ width: '100%', height: '200px' }}
-                scrollWheelZoom={false}
-              >
-                <MapyTileLayer />
-                <SegmentMapClickHandler onClick={handleMapyMapClick} />
-                {mapyCoords.map((coords, idx) => (
-                  <CircleMarker
-                    key={`${coords.lat}-${coords.lng}-${idx}`}
-                    center={coords}
-                    radius={6}
-                    pathOptions={{ color: '#0f172a', weight: 2, fillColor: '#ffffff', fillOpacity: 1 }}
-                  >
-                    <Tooltip direction="top" offset={[0, -6]}>{`${idx + 1}`}</Tooltip>
-                  </CircleMarker>
-                ))}
-              </MapContainer>
-            </div>
-          ) : (
-            <p className="text-xs text-ink-muted">
-              Provide <code className="rounded bg-brand-50 px-1.5 py-0.5 text-[10px]">VITE_MAPY_API_KEY</code> to render
-              the map.
-            </p>
-          )}
-          {hasMapTiles && <p className="text-xs text-ink-muted">Tip: click the map to add a location.</p>}
-
-          {segment.googlePlaces.length ? (
-            <ul className="space-y-2">
-              {segment.googlePlaces.map((place, idx) => (
-                <li
-                  key={place.placeId}
-                  className="flex items-center justify-between rounded-lg bg-brand-50 px-3 py-2 text-xs"
-                >
-                  <div>
-                    <p className="font-semibold text-ink-strong">
-                      {idx + 1}. {place.name ?? 'Mapy place'}
-                    </p>
-                    <p className="text-[10px] text-ink-muted">Place ID: {place.placeId}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => onRemoveMapyPlace(segment.id, place.placeId)}
-                    className="rounded-full border border-brand-100 bg-white px-3 py-1 text-[10px] font-semibold text-ink-strong"
-                  >
-                    Remove
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-xs text-ink-muted">No Mapy places added yet.</p>
-          )}
-        </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="seg-empty">No Mapy places added yet.</p>
+        )}
       </div>
     </div>
   );

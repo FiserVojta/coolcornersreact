@@ -1,0 +1,261 @@
+/* ==========================================================================
+   create-form.css — shared shell for CoolCorners create/edit pages
+   Layout: calm page header + numbered section panels + sticky live preview.
+   Ported from the design handoff (create_form.css). Scoped under .cf-page so
+   the generic class names (.panel, .field, .input, .btn, ...) never leak into
+   the rest of the Tailwind app.
+   ========================================================================== */
+
+.cf-page {
+  /* brand (forest green scale) */
+  --brand-50: #eaf2ec;
+  --brand-100: #c8ddcd;
+  --brand-200: #8fbe9c;
+  --brand-300: #5a9c6c;
+  --brand-400: #2d7a47;
+  --brand-500: #135f30;
+  --brand-600: #0d4a25;
+  --brand-700: #093a1d;
+
+  /* brand-tinted ink */
+  --ink-strong: #1a1f1c;
+  --ink-default: #102a45;
+  --ink-muted: #163a5f;
+  --ink-subtle: #6b7e91;
+  --ink-faint: #a7b3c1;
+
+  /* surfaces */
+  --bg-page: #faf7f2;
+  --bg-inset: #f7f2e8;
+
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-card: 0 10px 40px rgba(15, 23, 42, 0.08);
+
+  --font-body: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Inter', system-ui, sans-serif;
+
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --radius-xs: 0.375rem;
+
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 36px 28px 80px;
+  font-family: var(--font-body);
+  color: var(--ink-default);
+}
+.cf-page *,
+.cf-page *::before,
+.cf-page *::after { box-sizing: border-box; }
+
+/* ---- Page header ---- */
+.cf-page .crumbs { font-size: 12px; color: var(--ink-subtle); margin: 0 0 14px; display: flex; align-items: center; gap: 7px; }
+.cf-page .crumbs a { color: var(--ink-subtle); text-decoration: none; }
+.cf-page .crumbs a:hover { color: var(--ink-muted); }
+.cf-page .crumbs .sep { color: var(--ink-faint); }
+.cf-page .crumbs .here { color: var(--ink-muted); font-weight: 600; }
+.cf-page .page-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: var(--brand-700); margin: 0; }
+.cf-page .page-h1 { font-family: var(--font-display); font-size: 30px; font-weight: 700; letter-spacing: -.025em; color: var(--ink-strong); margin: 5px 0 6px; line-height: 1.12; }
+.cf-page .page-desc { color: var(--ink-muted); font-size: 14.5px; margin: 0; max-width: 56ch; line-height: 1.5; }
+
+/* ============================================================
+   Form primitives
+   ============================================================ */
+.cf-page .field { display: flex; flex-direction: column; gap: 7px; }
+.cf-page .field-label { font-size: 13px; font-weight: 600; color: var(--ink-strong); display: flex; align-items: center; gap: 8px; }
+.cf-page .field-opt { font-size: 11px; font-weight: 500; color: var(--ink-faint); letter-spacing: .01em; }
+.cf-page .field-hint { font-size: 12px; color: var(--ink-subtle); margin: 0; line-height: 1.45; }
+.cf-page .field-error { font-size: 12px; font-weight: 600; color: #be123c; margin: 0; }
+
+.cf-page .input,
+.cf-page .textarea,
+.cf-page .select-native {
+  width: 100%; border: 1px solid var(--brand-100); background: #fff;
+  border-radius: 12px; padding: 10px 13px;
+  font-family: var(--font-body); font-size: 14px; color: var(--ink-strong);
+  box-shadow: var(--shadow-sm); outline: none;
+  transition: border-color .15s var(--ease-default);
+}
+.cf-page .input::placeholder,
+.cf-page .textarea::placeholder { color: var(--ink-faint); }
+.cf-page .input:focus,
+.cf-page .textarea:focus,
+.cf-page .select-native:focus { border-color: var(--brand-400); }
+.cf-page .textarea { resize: vertical; line-height: 1.55; min-height: 92px; }
+
+.cf-page .select-native {
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' fill='none' stroke='%236b7e91' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat; background-position: right 13px center;
+  padding-right: 34px; cursor: pointer;
+}
+
+.cf-page .combo { display: flex; gap: 8px; }
+.cf-page .combo .input { flex: 1; }
+.cf-page .combo .select-native { width: 116px; flex-shrink: 0; }
+
+/* prefix/suffix input (price, capacity, group size) */
+.cf-page .affix { display: flex; align-items: center; border: 1px solid var(--brand-100); background: #fff; border-radius: 12px; box-shadow: var(--shadow-sm); overflow: hidden; transition: border-color .15s var(--ease-default); }
+.cf-page .affix:focus-within { border-color: var(--brand-400); }
+.cf-page .affix .pre,
+.cf-page .affix .suf { font-size: 13px; font-weight: 600; color: var(--ink-subtle); padding: 0 12px; flex-shrink: 0; }
+.cf-page .affix .pre { border-right: 1px solid var(--brand-100); }
+.cf-page .affix .suf { border-left: 1px solid var(--brand-100); }
+.cf-page .affix input { border: none; outline: none; box-shadow: none; background: transparent; width: 100%; padding: 10px 13px; font-family: var(--font-body); font-size: 14px; color: var(--ink-strong); }
+
+.cf-page .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.cf-page .chip-toggle {
+  border: 1px solid var(--brand-100); background: #fff; color: var(--ink-muted);
+  border-radius: 9999px; padding: 7px 14px; font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: var(--font-body);
+  transition: background .15s var(--ease-default), border-color .15s var(--ease-default), color .15s var(--ease-default);
+}
+.cf-page .chip-toggle:hover { border-color: var(--brand-300); }
+.cf-page .chip-toggle.on { background: var(--brand-700); color: #fff; border-color: var(--brand-700); }
+.cf-page .chip-toggle .dot { color: var(--brand-300); margin-right: 5px; }
+.cf-page .chip-toggle.on .dot { color: #fff; }
+
+/* upload dropzone (wraps a visually-hidden real file input) */
+.cf-page .upload {
+  border: 1.5px dashed var(--brand-200); border-radius: 16px; background: #fff;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px;
+  text-align: center; padding: 26px; position: relative; overflow: hidden;
+  cursor: pointer; transition: border-color .15s var(--ease-default), background .15s var(--ease-default);
+}
+.cf-page .upload:hover { border-color: var(--brand-300); background: #fffdf8; }
+.cf-page .upload .glyph { width: 40px; height: 40px; border-radius: 11px; background: var(--brand-50); border: 1px solid var(--brand-100); display: flex; align-items: center; justify-content: center; color: var(--brand-700); }
+.cf-page .upload .glyph svg { display: block; }
+.cf-page .upload .up-title { font-size: 13.5px; font-weight: 600; color: var(--ink-strong); }
+.cf-page .upload .up-title b { color: var(--brand-700); }
+.cf-page .upload .up-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; color: var(--ink-subtle); }
+.cf-page .upload.cover { min-height: 170px; }
+.cf-page .upload.wide { min-height: 140px; }
+
+.cf-page .upload-preview { height: 170px; width: 100%; border-radius: 16px; object-fit: cover; box-shadow: var(--shadow-sm); }
+.cf-page .upload-status { font-size: 11.5px; color: var(--ink-subtle); margin: 0; word-break: break-word; }
+
+/* real Leaflet map frame (replaces the static .mapbox placeholder) */
+.cf-page .map-frame { border-radius: 14px; overflow: hidden; border: 1px solid var(--brand-100); position: relative; }
+.cf-page .map-frame .leaflet-container { font-family: var(--font-body); }
+.cf-page .map-note { font-size: 11.5px; color: var(--ink-subtle); margin: 0; }
+
+/* item rows (stops / picked trips+places / mapy results) */
+.cf-page .rows { display: flex; flex-direction: column; gap: 8px; }
+.cf-page .row-item { display: flex; align-items: center; gap: 12px; background: var(--bg-inset); border: 1px solid rgba(15, 90, 50, .07); border-radius: 12px; padding: 10px 12px; }
+.cf-page .row-item .num { width: 22px; height: 22px; border-radius: 9999px; flex-shrink: 0; background: var(--brand-700); color: #fff; font-size: 11.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.cf-page .row-item .r-name { font-size: 13.5px; font-weight: 600; color: var(--ink-strong); margin: 0; }
+.cf-page .row-item .r-meta { font-size: 11.5px; color: var(--ink-subtle); margin: 0; }
+.cf-page .row-item .r-meta.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.cf-page .row-item .grow { flex: 1; min-width: 0; }
+.cf-page .row-item .kind { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--brand-700); background: var(--brand-50); border: 1px solid var(--brand-100); border-radius: 9999px; padding: 3px 8px; flex-shrink: 0; }
+.cf-page .row-item .x { border: none; background: transparent; color: var(--ink-subtle); cursor: pointer; font-size: 16px; width: 26px; height: 26px; border-radius: 9999px; line-height: 1; flex-shrink: 0; }
+.cf-page .row-item .x:hover { background: rgba(15, 23, 42, .06); color: var(--ink-strong); }
+
+.cf-page .search-row { display: flex; gap: 8px; }
+.cf-page .search-row .input { flex: 1; }
+
+/* buttons */
+.cf-page .btn { border: none; border-radius: 9999px; font-family: var(--font-body); font-size: 14px; font-weight: 600; cursor: pointer; padding: 11px 22px; transition: background .15s var(--ease-default), border-color .15s var(--ease-default), transform .15s var(--ease-default); }
+.cf-page .btn:hover { transform: translateY(-1px); }
+.cf-page .btn:disabled { cursor: not-allowed; opacity: .65; transform: none; }
+.cf-page .btn-primary { background: var(--brand-700); color: #fff; box-shadow: var(--shadow-sm); }
+.cf-page .btn-primary:hover { background: var(--brand-600); }
+.cf-page .btn-secondary { background: #fff; color: var(--brand-700); border: 1px solid var(--brand-200); }
+.cf-page .btn-secondary:hover { border-color: var(--brand-300); }
+.cf-page .btn-sm { padding: 9px 16px; font-size: 13px; }
+.cf-page .btn-dashed { background: transparent; color: var(--brand-700); border: 1.5px dashed var(--brand-200); }
+.cf-page .btn-dashed:hover { border-color: var(--brand-300); background: #fffdf8; }
+
+/* ============================================================
+   Layout — form + live preview
+   ============================================================ */
+.cf-page .split { display: grid; grid-template-columns: 1fr 372px; gap: 28px; align-items: start; margin-top: 26px; }
+.cf-page .stack { display: flex; flex-direction: column; gap: 18px; }
+.cf-page .panel { background: #fff; border: 1px solid var(--brand-100); border-radius: 18px; box-shadow: var(--shadow-card); padding: 22px 24px; }
+.cf-page .panel-head { display: flex; align-items: center; gap: 10px; margin: 0 0 16px; }
+.cf-page .panel-head .n { width: 24px; height: 24px; border-radius: 9999px; flex-shrink: 0; background: var(--brand-50); border: 1px solid var(--brand-100); color: var(--brand-700); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.cf-page .panel-head h3 { font-family: var(--font-display); font-size: 15.5px; font-weight: 700; color: var(--ink-strong); margin: 0; }
+.cf-page .panel-head .head-action { margin-left: auto; }
+.cf-page .panel-body { display: flex; flex-direction: column; gap: 18px; }
+.cf-page .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.cf-page .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+
+.cf-page .form-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding-top: 4px; }
+.cf-page .form-actions .draft-note { margin-right: auto; font-size: 12.5px; color: var(--ink-subtle); }
+
+/* segment sub-card (cotravel) */
+.cf-page .segment { border: 1px solid var(--brand-100); border-radius: 14px; background: var(--bg-page); padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.cf-page .segment-head { display: flex; align-items: center; gap: 10px; }
+.cf-page .segment-head .seg-n { width: 22px; height: 22px; border-radius: 9999px; flex-shrink: 0; background: var(--brand-700); color: #fff; font-size: 11.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.cf-page .segment-head .seg-name { flex: 1; }
+.cf-page .segment-head .seg-name input { width: 100%; border: 1px solid var(--brand-100); background: #fff; border-radius: 9px; padding: 7px 11px; font-family: var(--font-body); font-size: 13.5px; font-weight: 600; color: var(--ink-strong); box-shadow: var(--shadow-sm); outline: none; }
+.cf-page .segment-head .seg-name input:focus { border-color: var(--brand-400); }
+.cf-page .segment-head .seg-remove { border: 1px solid var(--brand-100); background: #fff; color: var(--ink-muted); border-radius: 9999px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--font-body); }
+.cf-page .segment-head .seg-remove:hover { border-color: var(--brand-300); color: var(--ink-strong); }
+.cf-page .segment-head .seg-remove:disabled { cursor: not-allowed; opacity: .55; }
+.cf-page .seg-empty { font-size: 12.5px; color: var(--ink-subtle); margin: 0; padding: 6px 2px; }
+.cf-page .seg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.cf-page .seg-col { display: flex; flex-direction: column; gap: 8px; }
+.cf-page .seg-col-head { display: flex; align-items: center; justify-content: space-between; }
+.cf-page .seg-col-head .ttl { font-size: 13px; font-weight: 600; color: var(--ink-strong); }
+.cf-page .seg-col-head .cnt { font-size: 11.5px; color: var(--ink-subtle); }
+.cf-page .pick-list { max-height: 192px; overflow: auto; display: flex; flex-direction: column; gap: 8px; }
+.cf-page .pick { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--bg-inset); border: 1px solid rgba(15, 90, 50, .07); border-radius: 10px; padding: 8px 10px; }
+.cf-page .pick .p-name { font-size: 12.5px; font-weight: 600; color: var(--ink-strong); margin: 0; }
+.cf-page .pick .p-meta { font-size: 10.5px; color: var(--ink-subtle); margin: 0; }
+.cf-page .pick-btn { border: 1px solid var(--brand-100); background: #fff; color: var(--ink-strong); border-radius: 9999px; padding: 5px 11px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: var(--font-body); white-space: nowrap; }
+.cf-page .pick-btn:hover { border-color: var(--brand-300); }
+.cf-page .pick-btn.on { background: var(--brand-100); color: var(--brand-700); border-color: var(--brand-100); }
+
+/* preview rail */
+.cf-page .preview-rail { position: sticky; top: 86px; display: flex; flex-direction: column; gap: 12px; }
+.cf-page .preview-label { font-size: 11px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-subtle); margin: 0 0 2px; display: flex; align-items: center; gap: 7px; }
+.cf-page .preview-label .live { width: 7px; height: 7px; border-radius: 9999px; background: var(--brand-500); display: inline-block; }
+
+.cf-page .pv-card { background: #fff; border-radius: 16px; box-shadow: var(--shadow-card); overflow: hidden; border: 1px solid rgba(15, 23, 42, .04); }
+.cf-page .pv-img { height: 176px; position: relative;
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, .06) 0 14px, rgba(255, 255, 255, .12) 14px 28px),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, .15), transparent 50%),
+    linear-gradient(140deg, #2d7a47 0%, #135f30 55%, #062a15 100%);
+  background-size: cover; background-position: center;
+}
+.cf-page .pv-img.event {
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, .05) 0 14px, rgba(255, 255, 255, .11) 14px 28px),
+    radial-gradient(circle at 70% 22%, rgba(245, 158, 11, .28), transparent 55%),
+    linear-gradient(140deg, #d4a966 0%, #b07b34 55%, #5c3c14 100%);
+}
+.cf-page .pv-img.cotravel {
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, .05) 0 14px, rgba(255, 255, 255, .11) 14px 28px),
+    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, .18), transparent 52%),
+    linear-gradient(140deg, #4a7fb8 0%, #1f4c7a 55%, #0a1c30 100%);
+}
+.cf-page .pv-chip { position: absolute; padding: 4px 10px; border-radius: 9999px; background: rgba(255, 255, 255, .92); font-size: 11.5px; font-weight: 600; color: var(--ink-strong); box-shadow: var(--shadow-sm); display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.cf-page .pv-chip.tl { top: 12px; left: 12px; }
+.cf-page .pv-chip.tr { top: 12px; right: 12px; }
+.cf-page .pv-chip .star { color: #f59e0b; font-size: 11px; }
+.cf-page .pv-body { padding: 15px 16px 18px; display: flex; flex-direction: column; gap: 9px; }
+.cf-page .pv-row1 { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.cf-page .pv-title { font-family: var(--font-display); font-size: 17px; font-weight: 700; color: var(--ink-strong); letter-spacing: -.015em; line-height: 1.25; margin: 0; }
+.cf-page .pv-pill { background: var(--brand-50); color: var(--brand-700); border-radius: 9999px; padding: 3px 10px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+.cf-page .pv-desc { font-size: 13px; color: var(--ink-muted); line-height: 1.5; margin: 0; }
+.cf-page .pv-meta { font-size: 11.5px; color: var(--ink-subtle); margin: 0; }
+.cf-page .pv-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 3px; padding-top: 11px; border-top: 1px solid var(--brand-100); }
+.cf-page .pv-price { font-family: var(--font-display); font-size: 15px; font-weight: 700; color: var(--ink-strong); }
+.cf-page .pv-cap { font-size: 11.5px; font-weight: 600; color: var(--ink-subtle); }
+.cf-page .tag-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 3px; }
+.cf-page .tag-mini { background: #fff; border: 1px solid var(--brand-100); color: var(--ink-muted); border-radius: 9999px; padding: 2px 9px; font-size: 11px; font-weight: 600; }
+.cf-page .preview-tip { font-size: 12px; color: var(--ink-subtle); line-height: 1.5; margin: 4px 2px 0; }
+
+/* Responsive */
+@media (max-width: 960px) {
+  .cf-page .split { grid-template-columns: 1fr; }
+  .cf-page .preview-rail { position: static; order: -1; }
+  .cf-page .preview-rail .pv-card { max-width: 400px; }
+}
+@media (max-width: 560px) {
+  .cf-page .grid-2,
+  .cf-page .grid-3,
+  .cf-page .seg-grid { grid-template-columns: 1fr; }
+}
