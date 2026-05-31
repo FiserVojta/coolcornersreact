@@ -133,6 +133,14 @@
 .cf-page .upload-preview { height: 170px; width: 100%; border-radius: 16px; object-fit: cover; box-shadow: var(--shadow-sm); }
 .cf-page .upload-status { font-size: 11.5px; color: var(--ink-subtle); margin: 0; word-break: break-word; }
 
+/* gallery thumbnails (trip Photos) */
+.cf-page .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
+.cf-page .photo-thumb { position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--brand-100); background: var(--bg-inset); aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; }
+.cf-page .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cf-page .photo-thumb .photo-name { font-size: 10.5px; color: var(--ink-subtle); padding: 6px; text-align: center; word-break: break-word; }
+.cf-page .photo-thumb .photo-x { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 9999px; border: none; background: rgba(15, 23, 42, .6); color: #fff; cursor: pointer; font-size: 14px; line-height: 1; display: flex; align-items: center; justify-content: center; }
+.cf-page .photo-thumb .photo-x:hover { background: rgba(15, 23, 42, .82); }
+
 /* real Leaflet map frame (replaces the static .mapbox placeholder) */
 .cf-page .map-frame { border-radius: 14px; overflow: hidden; border: 1px solid var(--brand-100); position: relative; }
 .cf-page .map-frame .leaflet-container { font-family: var(--font-body); }

@@ -74,6 +74,7 @@ export const TripDetail = () => {
   const completedByUsers = data.completedByUsers ?? [];
   const userMarkedDone = hasUserMarkedDone(completedByUsers, [username, name, email]);
   const backgroundImageUrl = data.backgroundImage?.url ?? '';
+  const photos = buildTripPhotos(data);
   const heroTitleClass = 'text-white';
   const heroLabelClass = 'text-brand-200';
   const heroMetaClass = backgroundImageUrl ? 'text-white/80' : 'text-brand-100';
@@ -137,9 +138,9 @@ export const TripDetail = () => {
 
           <SurfaceCard padding="lg">
             <h3 className="text-lg font-semibold font-display text-ink-strong">Photos</h3>
-            {data.files?.length || data.images?.length ? (
+            {photos.length ? (
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                {buildTripPhotos(data).map((photo, idx) => (
+                {photos.map((photo, idx) => (
                   <img
                     key={`${photo.url}-${idx}`}
                     src={photo.url}
@@ -414,6 +415,9 @@ const extractMapyCoords = (places?: TripModel['googlePlaces']) =>
     .filter(Boolean) as Array<{ lat: number; lng: number; name: string }>;
 
 const buildTripPhotos = (trip: TripModel) => {
+  // The cover lives in backgroundImage (shown in the hero + list card), so keep
+  // it out of the Photos gallery — this section is for the rest of the photos.
+  const coverUrl = trip.backgroundImage?.url ?? undefined;
   const fromFiles =
     trip.files
       ?.map((file) => {
@@ -428,7 +432,7 @@ const buildTripPhotos = (trip: TripModel) => {
       .filter(Boolean) ?? [];
   const seen = new Set<string>();
   return [...fromFiles, ...fromImages].filter((photo) => {
-    if (!photo || seen.has(photo.url)) return false;
+    if (!photo || photo.url === coverUrl || seen.has(photo.url)) return false;
     seen.add(photo.url);
     return true;
   }) as { url: string; label: string }[];

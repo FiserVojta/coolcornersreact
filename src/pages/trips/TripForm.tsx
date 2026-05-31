@@ -49,8 +49,7 @@ export const TripForm = () => {
   const [searching, setSearching] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
-  const [imageUrl, setImageUrl] = useState<string>('');
-  const [uploadedFiles, setUploadedFiles] = useState<TripFileLinkRequest[]>([]);
+  const [galleryFiles, setGalleryFiles] = useState<Array<{ fileId: number; name: string; url?: string }>>([]);
   const [selectedBackgroundFile, setSelectedBackgroundFile] = useState<File | null>(null);
   const [backgroundUploadMessage, setBackgroundUploadMessage] = useState<string | null>(null);
   const [backgroundImageUrl, setBackgroundImageUrl] = useState<string>('');
@@ -113,7 +112,11 @@ export const TripForm = () => {
         tags: tripQuery.data.tags?.map((t) => t.id) ?? [],
         placeIds: tripQuery.data.places?.map((p) => p.id) ?? []
       });
-      setImageUrl(tripQuery.data.images?.[0] ?? '');
+      setGalleryFiles(
+        tripQuery.data.files
+          ?.filter((file) => Number.isFinite(file.id))
+          .map((file) => ({ fileId: file.id as number, name: file.name ?? 'Trip photo', url: file.url ?? undefined })) ?? []
+      );
       if (tripQuery.data.backgroundImage?.url) {
         setBackgroundImageUrl(tripQuery.data.backgroundImage.url);
       }
@@ -153,19 +156,14 @@ export const TripForm = () => {
     mutationFn: uploadFile,
     onSuccess: (res) => {
       const fileId = typeof res?.id === 'string' ? Number(res.id) : res?.id;
-      const fileName = res?.name ?? res?.filename;
-      if (Number.isFinite(fileId) && fileName) {
-        setUploadedFiles((prev) => {
+      const fileName = res?.name ?? res?.filename ?? 'Trip photo';
+      if (Number.isFinite(fileId)) {
+        setGalleryFiles((prev) => {
           if (prev.some((file) => file.fileId === fileId)) return prev;
-          return [...prev, { fileId: fileId as number, name: fileName }];
+          return [...prev, { fileId: fileId as number, name: fileName, url: res?.url ?? undefined }];
         });
       }
-      if (res?.url) {
-        setImageUrl(res.url);
-        setUploadMessage(`Uploaded: ${res.url}`);
-      } else {
-        setUploadMessage('File uploaded.');
-      }
+      setUploadMessage(res?.url ? 'Photo added.' : 'File uploaded.');
       setSelectedFile(null);
     },
     onError: () => setUploadMessage('Upload failed. Please try again.')
@@ -196,8 +194,7 @@ export const TripForm = () => {
       tags: normalizeNumberList(values.tags),
       placeIds: normalizeNumberList(values.placeIds),
       googlePlaces,
-      images: imageUrl ? [imageUrl] : undefined,
-      files: uploadedFiles.length ? uploadedFiles : undefined,
+      files: galleryFiles.length ? galleryFiles.map((file) => ({ fileId: file.fileId, name: file.name })) : undefined,
       backgroundImage: backgroundImageFile ?? undefined
     };
     if (isEdit) return updateMut.mutate(payload);
@@ -273,6 +270,10 @@ export const TripForm = () => {
       if (prev.some((place) => place.placeId === nextPlace.placeId)) return prev;
       return [...prev, nextPlace];
     });
+  };
+
+  const removeGalleryFile = (fileId: number) => {
+    setGalleryFiles((prev) => prev.filter((file) => file.fileId !== fileId));
   };
 
   const categories = categoriesQuery.data ?? [];
@@ -380,85 +381,96 @@ export const TripForm = () => {
               <h3>Photos</h3>
             </div>
             <div className="panel-body">
-              <div className="grid-2">
-                <div className="field">
-                  <span className="field-label">Cover photo</span>
-                  <label className="upload cover">
-                    <span className="glyph">{UPLOAD_GLYPH}</span>
-                    <span className="up-title">
-                      {selectedFile ? selectedFile.name : <>Drop cover or <b>browse</b></>}
-                    </span>
-                    <span className="up-mono">1600 × 900 · JPG or PNG</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="sr-only"
-                      onChange={(event) => {
-                        const file = event.target.files?.[0] ?? null;
-                        setSelectedFile(file);
-                        setUploadMessage(null);
-                      }}
-                    />
-                  </label>
-                  {selectedFile && (
-                    <button
-                      type="button"
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => uploadMut.mutate(selectedFile)}
-                      disabled={uploadMut.isPending}
-                    >
-                      {uploadMut.isPending ? 'Uploading…' : 'Upload selected file'}
-                    </button>
-                  )}
-                  {uploadMessage && <p className="upload-status">{uploadMessage}</p>}
-                  {uploadedFiles.length ? (
-                    <ul className="upload-status">
-                      {uploadedFiles.map((file) => (
-                        <li key={file.fileId}>{file.name}</li>
-                      ))}
-                    </ul>
-                  ) : null}
-                  {imageUrl && <img className="upload-preview" src={imageUrl} alt="Trip cover preview" loading="lazy" />}
-                  <p className="field-hint">Shown on the trip card across the app.</p>
-                </div>
-
-                <div className="field">
-                  <span className="field-label">
-                    Header background <span className="field-opt">Optional</span>
+              <div className="field" style={{ maxWidth: '360px' }}>
+                <span className="field-label">Cover photo</span>
+                <label className="upload cover">
+                  <span className="glyph">{UPLOAD_GLYPH}</span>
+                  <span className="up-title">
+                    {selectedBackgroundFile ? selectedBackgroundFile.name : <>Drop a cover or <b>browse</b></>}
                   </span>
-                  <label className="upload cover">
-                    <span className="glyph">{UPLOAD_GLYPH}</span>
-                    <span className="up-title">
-                      {selectedBackgroundFile ? selectedBackgroundFile.name : <>Drop banner or <b>browse</b></>}
-                    </span>
-                    <span className="up-mono">2400 × 800 · JPG or PNG</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="sr-only"
-                      onChange={(event) => {
-                        const file = event.target.files?.[0] ?? null;
-                        setSelectedBackgroundFile(file);
-                        setBackgroundUploadMessage(null);
-                      }}
-                    />
-                  </label>
-                  {selectedBackgroundFile && (
-                    <button
-                      type="button"
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => backgroundUploadMut.mutate(selectedBackgroundFile)}
-                      disabled={backgroundUploadMut.isPending}
-                    >
-                      {backgroundUploadMut.isPending ? 'Uploading…' : 'Upload selected file'}
-                    </button>
-                  )}
-                  {backgroundUploadMessage && <p className="upload-status">{backgroundUploadMessage}</p>}
-                  {backgroundImageUrl && (
-                    <img className="upload-preview" src={backgroundImageUrl} alt="Header background preview" loading="lazy" />
-                  )}
-                  <p className="field-hint">Sits behind the title on the trip's own page.</p>
-                </div>
+                  <span className="up-mono">1600 × 900 · JPG or PNG</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] ?? null;
+                      setSelectedBackgroundFile(file);
+                      setBackgroundUploadMessage(null);
+                    }}
+                  />
+                </label>
+                {selectedBackgroundFile && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => backgroundUploadMut.mutate(selectedBackgroundFile)}
+                    disabled={backgroundUploadMut.isPending}
+                  >
+                    {backgroundUploadMut.isPending ? 'Uploading…' : 'Upload selected file'}
+                  </button>
+                )}
+                {backgroundUploadMessage && <p className="upload-status">{backgroundUploadMessage}</p>}
+                {backgroundImageUrl && (
+                  <img className="upload-preview" src={backgroundImageUrl} alt="Cover preview" loading="lazy" />
+                )}
+                <p className="field-hint">Shown on the trip card and at the top of the trip page.</p>
+              </div>
+
+              <div className="field">
+                <span className="field-label">
+                  Photos <span className="field-opt">Optional</span>
+                </span>
+                <label className="upload wide">
+                  <span className="glyph">{UPLOAD_GLYPH}</span>
+                  <span className="up-title">
+                    {selectedFile ? selectedFile.name : <>Drop a photo or <b>browse</b></>}
+                  </span>
+                  <span className="up-mono">Add as many as you like · JPG or PNG</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] ?? null;
+                      setSelectedFile(file);
+                      setUploadMessage(null);
+                    }}
+                  />
+                </label>
+                {selectedFile && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => uploadMut.mutate(selectedFile)}
+                    disabled={uploadMut.isPending}
+                  >
+                    {uploadMut.isPending ? 'Uploading…' : 'Add photo'}
+                  </button>
+                )}
+                {uploadMessage && <p className="upload-status">{uploadMessage}</p>}
+                {galleryFiles.length ? (
+                  <div className="photo-grid">
+                    {galleryFiles.map((file) => (
+                      <div key={file.fileId} className="photo-thumb">
+                        {file.url ? (
+                          <img src={file.url} alt={file.name} loading="lazy" />
+                        ) : (
+                          <span className="photo-name">{file.name}</span>
+                        )}
+                        <button
+                          type="button"
+                          className="photo-x"
+                          onClick={() => removeGalleryFile(file.fileId)}
+                          aria-label="Remove photo"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+                <p className="field-hint">Extra photos appear in the trip's Photos section.</p>
               </div>
             </div>
           </section>
@@ -598,7 +610,7 @@ export const TripForm = () => {
             <span className="live" /> Live preview
           </p>
           <div className="pv-card">
-            <div className="pv-img" style={imageUrl ? { backgroundImage: `url(${imageUrl})` } : undefined}>
+            <div className="pv-img" style={backgroundImageUrl ? { backgroundImage: `url(${backgroundImageUrl})` } : undefined}>
               <span className="pv-chip tr">
                 <span className="star">★</span> New
               </span>
