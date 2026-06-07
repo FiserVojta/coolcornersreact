@@ -3,8 +3,18 @@ import { env } from '../config/env';
 export interface MapySearchResult {
   id: string;
   name: string;
+  /** Secondary line — usually the address/locality, when Mapy provides one. */
+  label?: string;
   lat: number;
   lng: number;
+}
+
+export interface MapySearchOptions {
+  /** Max results to return (Mapy caps this server-side). */
+  limit?: number;
+  /** Bias results toward this point — typically the current map view center. */
+  near?: { lat: number; lng: number } | null;
+  signal?: AbortSignal;
 }
 
 const pickString = (value: unknown) => (typeof value === 'string' ? value : null);
@@ -50,6 +60,12 @@ const extractName = (item: Record<string, unknown>) => {
 const extractId = (item: Record<string, unknown>, fallback: string) =>
   pickString(item.id) || pickString(item.placeId) || pickString(item.value) || fallback;
 
+const extractLabel = (item: Record<string, unknown>) =>
+  pickString(item.location) ||
+  pickString((item.address as { label?: unknown } | undefined)?.label) ||
+  pickString(item.label) ||
+  null;
+
 const parseResults = (data: unknown): MapySearchResult[] => {
   if (!data || typeof data !== 'object') return [];
   const record = data as Record<string, unknown>;
@@ -67,13 +83,18 @@ const parseResults = (data: unknown): MapySearchResult[] => {
       const coords = extractCoords(item);
       if (!coords) return null;
       const name = extractName(item);
+      const rawLabel = extractLabel(item);
+      const label = rawLabel && rawLabel !== name ? rawLabel : undefined;
       const id = extractId(item, `${coords.lat},${coords.lng}`);
-      return { id, name, ...coords };
+      return { id, name, label, ...coords };
     })
     .filter(Boolean) as MapySearchResult[];
 };
 
-export const searchMapyPlaces = async (query: string): Promise<MapySearchResult[]> => {
+export const searchMapyPlaces = async (
+  query: string,
+  options: MapySearchOptions = {}
+): Promise<MapySearchResult[]> => {
   if (!env.mapySearchUrl) return [];
   if (!env.mapyApiKey) throw new Error('Missing Mapy API key.');
   if (!query.trim()) return [];
@@ -81,9 +102,15 @@ export const searchMapyPlaces = async (query: string): Promise<MapySearchResult[
   const url = new URL(env.mapySearchUrl);
   url.searchParams.set('query', query.trim());
   url.searchParams.set('apikey', env.mapyApiKey);
-  url.searchParams.set('limit', '5');
+  url.searchParams.set('limit', String(options.limit ?? 15));
+  if (options.near) {
+    // Mapy expects "lon,lat"; this biases (not filters) results toward the
+    // point, so a category query like "coffee shops" surfaces nearby ones.
+    url.searchParams.set('preferNear', `${options.near.lng},${options.near.lat}`);
+    url.searchParams.set('preferNearPrecision', '5000');
+  }
 
-  const response = await fetch(url.toString());
+  const response = await fetch(url.toString(), { signal: options.signal });
   if (!response.ok) {
     throw new Error('Mapy search failed.');
   }

@@ -6,7 +6,7 @@ import { createTrip, fetchTrip, updateTrip } from '../../api/trips';
 import { fetchCategories } from '../../api/categories';
 import { fetchTags } from '../../api/tags';
 import { uploadFile } from '../../api/files';
-import { searchMapyPlaces } from '../../api/mapy';
+import { searchMapyPlaces, type MapySearchResult } from '../../api/mapy';
 import type { GooglePlaceInput, TripCreateRequest, TripFileLinkRequest } from '../../types/trip';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
@@ -14,6 +14,7 @@ import { env } from '../../config/env';
 import { CircleMarker, MapContainer, Tooltip, useMapEvents } from 'react-leaflet';
 import type { LeafletMouseEvent } from 'leaflet';
 import { MapyTileLayer } from '../../components/MapyTileLayer';
+import { MapViewTracker, SearchResultMarkers } from '../../components/mapSearchLayers';
 import { UploadDropzone } from '../../components/UploadDropzone';
 import '../../styles/create-form.css';
 
@@ -30,11 +31,10 @@ export const TripForm = () => {
   const queryClient = useQueryClient();
   const [googlePlaces, setGooglePlaces] = useState<GooglePlaceInput[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<
-    Array<{ id: string; name: string; lat: number; lng: number }>
-  >([]);
+  const [searchResults, setSearchResults] = useState<MapySearchResult[]>([]);
   const [searchMessage, setSearchMessage] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
+  const [mapView, setMapView] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
   const [galleryFiles, setGalleryFiles] = useState<Array<{ fileId: number; name: string; url?: string }>>([]);
@@ -217,18 +217,17 @@ export const TripForm = () => {
     setGooglePlaces((prev) => prev.filter((place) => place.placeId !== placeId));
   };
 
-  const addSearchResult = (result: { id: string; name: string; lat: number; lng: number }) => {
+  const addSearchResult = (result: MapySearchResult) => {
     const nextPlace: GooglePlaceInput = {
       placeId: result.id,
       name: result.name,
       geometry: { type: 'Point', coordinates: [result.lng, result.lat] }
     };
+    // Keep the results visible so several pins can be added in one search.
     setGooglePlaces((prev) => {
       if (prev.some((place) => place.placeId === nextPlace.placeId)) return prev;
       return [...prev, nextPlace];
     });
-    setSearchResults([]);
-    setSearchQuery('');
   };
 
   const handleSearch = async () => {
@@ -236,7 +235,7 @@ export const TripForm = () => {
     setSearchMessage(null);
     setSearching(true);
     try {
-      const results = await searchMapyPlaces(searchQuery);
+      const results = await searchMapyPlaces(searchQuery, { near: mapView ?? mapCenter, limit: 15 });
       setSearchResults(results);
       if (!results.length) setSearchMessage('No results found.');
     } catch (err) {
@@ -462,7 +461,13 @@ export const TripForm = () => {
                     className="input"
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder="Search for a place — town, trailhead, address"
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        handleSearch();
+                      }
+                    }}
+                    placeholder="Search a place or category — coffee shops, viewpoints, a town…"
                   />
                   <button
                     type="button"
@@ -482,19 +487,27 @@ export const TripForm = () => {
               {searchMessage && <p className="field-hint">{searchMessage}</p>}
               {searchResults.length ? (
                 <div className="rows">
-                  {searchResults.map((result) => (
-                    <div key={result.id} className="row-item">
-                      <div className="grow">
-                        <p className="r-name">{result.name}</p>
-                        <p className="r-meta mono">
-                          {result.lat.toFixed(5)}, {result.lng.toFixed(5)}
-                        </p>
+                  {searchResults.map((result) => {
+                    const added = googlePlaces.some((place) => place.placeId === result.id);
+                    return (
+                      <div key={result.id} className="row-item">
+                        <div className="grow">
+                          <p className="r-name">{result.name}</p>
+                          <p className={`r-meta${result.label ? '' : ' mono'}`}>
+                            {result.label ?? `${result.lat.toFixed(5)}, ${result.lng.toFixed(5)}`}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          className={`pick-btn${added ? ' on' : ''}`}
+                          onClick={() => addSearchResult(result)}
+                          disabled={added}
+                        >
+                          {added ? 'Added' : 'Add'}
+                        </button>
                       </div>
-                      <button type="button" className="pick-btn" onClick={() => addSearchResult(result)}>
-                        Add
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : null}
 
@@ -508,6 +521,13 @@ export const TripForm = () => {
                   >
                     <MapyTileLayer />
                     <MapClickHandler onClick={handleMapClick} />
+                    <MapViewTracker onChange={setMapView} />
+                    <SearchResultMarkers
+                      results={searchResults.filter(
+                        (result) => !googlePlaces.some((place) => place.placeId === result.id)
+                      )}
+                      onPick={addSearchResult}
+                    />
                     {googlePlaces
                       .map((place) => ({
                         place,
@@ -532,7 +552,9 @@ export const TripForm = () => {
                 </p>
               )}
 
-              {hasTiles && <p className="map-note">Mapy.cz map · click to add a stop.</p>}
+              {hasTiles && (
+                <p className="map-note">Mapy.cz map · amber pins are search results — click one (or anywhere on the map) to add a stop.</p>
+              )}
 
               {googlePlaces.length ? (
                 <div className="rows">

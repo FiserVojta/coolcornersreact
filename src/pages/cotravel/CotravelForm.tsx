@@ -8,7 +8,7 @@ import { fetchTags } from '../../api/tags';
 import { fetchTrips } from '../../api/trips';
 import { fetchPlaces } from '../../api/places';
 import { uploadFile } from '../../api/files';
-import { searchMapyPlaces } from '../../api/mapy';
+import { searchMapyPlaces, type MapySearchResult } from '../../api/mapy';
 import type { CotravelCreateRequest } from '../../types/cotravel';
 import type { GooglePlaceInput, TripFileLinkRequest } from '../../types/trip';
 import type { PlaceDetail } from '../../types/place';
@@ -17,6 +17,7 @@ import { ErrorState } from '../../components/ErrorState';
 import { env } from '../../config/env';
 import { CircleMarker, MapContainer, Tooltip, useMapEvents } from 'react-leaflet';
 import { MapyTileLayer } from '../../components/MapyTileLayer';
+import { MapViewTracker, SearchResultMarkers } from '../../components/mapSearchLayers';
 import { UploadDropzone } from '../../components/UploadDropzone';
 import '../../styles/create-form.css';
 
@@ -592,11 +593,10 @@ const SegmentEditor = ({
   const [tripQuery, setTripQuery] = useState('');
   const [placeQuery, setPlaceQuery] = useState('');
   const [mapyQuery, setMapyQuery] = useState('');
-  const [mapyResults, setMapyResults] = useState<
-    Array<{ id: string; name: string; lat: number; lng: number }>
-  >([]);
+  const [mapyResults, setMapyResults] = useState<MapySearchResult[]>([]);
   const [mapyMessage, setMapyMessage] = useState<string | null>(null);
   const [mapySearching, setMapySearching] = useState(false);
+  const [mapyView, setMapyView] = useState<{ lat: number; lng: number } | null>(null);
 
   const filteredTrips = useMemo(() => {
     const query = tripQuery.trim().toLowerCase();
@@ -634,7 +634,7 @@ const SegmentEditor = ({
     setMapyMessage(null);
     setMapySearching(true);
     try {
-      const results = await searchMapyPlaces(mapyQuery);
+      const results = await searchMapyPlaces(mapyQuery, { near: mapyView ?? mapyCenter, limit: 15 });
       setMapyResults(results);
       if (!results.length) setMapyMessage('No results found.');
     } catch (err) {
@@ -645,15 +645,14 @@ const SegmentEditor = ({
     }
   };
 
-  const handleAddMapy = (result: { id: string; name: string; lat: number; lng: number }) => {
+  const handleAddMapy = (result: MapySearchResult) => {
     const nextPlace: GooglePlaceInput = {
       placeId: result.id,
       name: result.name,
       geometry: { type: 'Point', coordinates: [result.lng, result.lat] }
     };
+    // Keep results on the map so several pins can be added from one search.
     onAddMapyPlace(segment.id, nextPlace);
-    setMapyResults([]);
-    setMapyQuery('');
   };
 
   return (
@@ -764,7 +763,13 @@ const SegmentEditor = ({
               className="input"
               value={mapyQuery}
               onChange={(event) => setMapyQuery(event.target.value)}
-              placeholder="Search Mapy places"
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  handleMapySearch();
+                }
+              }}
+              placeholder="Search a place or category — coffee shops, viewpoints, a town…"
             />
             <button
               type="button"
@@ -784,19 +789,27 @@ const SegmentEditor = ({
         {mapyMessage && <p className="field-hint">{mapyMessage}</p>}
         {mapyResults.length ? (
           <div className="rows">
-            {mapyResults.map((result) => (
-              <div key={result.id} className="row-item">
-                <div className="grow">
-                  <p className="r-name">{result.name}</p>
-                  <p className="r-meta mono">
-                    {result.lat.toFixed(5)}, {result.lng.toFixed(5)}
-                  </p>
+            {mapyResults.map((result) => {
+              const added = segment.googlePlaces.some((place) => place.placeId === result.id);
+              return (
+                <div key={result.id} className="row-item">
+                  <div className="grow">
+                    <p className="r-name">{result.name}</p>
+                    <p className={`r-meta${result.label ? '' : ' mono'}`}>
+                      {result.label ?? `${result.lat.toFixed(5)}, ${result.lng.toFixed(5)}`}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className={`pick-btn${added ? ' on' : ''}`}
+                    onClick={() => handleAddMapy(result)}
+                    disabled={added}
+                  >
+                    {added ? 'Added' : 'Add'}
+                  </button>
                 </div>
-                <button type="button" className="pick-btn" onClick={() => handleAddMapy(result)}>
-                  Add
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : null}
 
@@ -810,6 +823,13 @@ const SegmentEditor = ({
             >
               <MapyTileLayer />
               <SegmentMapClickHandler onClick={handleMapyMapClick} />
+              <MapViewTracker onChange={setMapyView} />
+              <SearchResultMarkers
+                results={mapyResults.filter(
+                  (result) => !segment.googlePlaces.some((place) => place.placeId === result.id)
+                )}
+                onPick={handleAddMapy}
+              />
               {mapyCoords.map((coords, idx) => (
                 <CircleMarker
                   key={`${coords.lat}-${coords.lng}-${idx}`}
@@ -827,7 +847,9 @@ const SegmentEditor = ({
             Provide <code>VITE_MAPY_API_KEY</code> to render the map.
           </p>
         )}
-        {hasMapTiles && <p className="map-note">Mapy.cz map · click to add a stop.</p>}
+        {hasMapTiles && (
+          <p className="map-note">Mapy.cz map · amber pins are search results — click one (or anywhere on the map) to add a stop.</p>
+        )}
 
         {segment.googlePlaces.length ? (
           <div className="rows">
