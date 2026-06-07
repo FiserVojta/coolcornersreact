@@ -16,6 +16,7 @@ import { MapyTileLayer } from '../../components/MapyTileLayer';
 import { Button } from '../../components/ui/Button';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { TextArea } from '../../components/ui/FormField';
+import { useFileDrop } from '../../hooks/useFileDrop';
 
 export const PlaceDetail = () => {
   const { id } = useParams();
@@ -35,6 +36,10 @@ export const PlaceDetail = () => {
   const { authenticated, initializing, login, canEdit } = useAuth();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  const { isDragging, dropProps } = useFileDrop((file) => {
+    setSelectedFile(file);
+    setUploadMessage(null);
+  }, 'image/*');
 
   const commentMut = useMutation({
     mutationFn: (payload: CommentModel) => addPlaceComment(placeId, payload),
@@ -231,7 +236,10 @@ export const PlaceDetail = () => {
             <h3 className="text-lg font-semibold font-display text-ink-strong">Upload a file</h3>
             {authenticated ? (
               <form
-                className="mt-3 space-y-3"
+                {...dropProps}
+                className={`mt-3 space-y-3 rounded-2xl border-2 border-dashed p-4 transition-colors ${
+                  isDragging ? 'border-brand-400 bg-brand-50' : 'border-brand-100'
+                }`}
                 onSubmit={(event) => {
                   event.preventDefault();
                   if (!selectedFile) return;
@@ -239,6 +247,7 @@ export const PlaceDetail = () => {
                   uploadMut.mutate(selectedFile);
                 }}
               >
+                <p className="text-sm font-label text-ink-muted">Drop an image here, or browse below.</p>
                 <input
                   type="file"
                   accept="image/*"

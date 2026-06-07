@@ -17,6 +17,7 @@ import { ErrorState } from '../../components/ErrorState';
 import { env } from '../../config/env';
 import { CircleMarker, MapContainer, Tooltip, useMapEvents } from 'react-leaflet';
 import { MapyTileLayer } from '../../components/MapyTileLayer';
+import { UploadDropzone } from '../../components/UploadDropzone';
 import '../../styles/create-form.css';
 
 type FormValues = CotravelCreateRequest;
@@ -27,19 +28,6 @@ type SegmentDraft = {
   placeIds: number[];
   googlePlaces: GooglePlaceInput[];
 };
-
-const UPLOAD_GLYPH = (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-    <path
-      d="M10 13V4M10 4L6.5 7.5M10 4l3.5 3.5"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path d="M4 13v2.5A1.5 1.5 0 005.5 17h9a1.5 1.5 0 001.5-1.5V13" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-  </svg>
-);
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -453,23 +441,16 @@ export const CotravelForm = () => {
                 <span className="field-label">
                   Cover image <span className="field-opt">Optional</span>
                 </span>
-                <label className="upload wide">
-                  <span className="glyph">{UPLOAD_GLYPH}</span>
-                  <span className="up-title">
-                    {selectedBackgroundFile ? selectedBackgroundFile.name : <>Drop a cover or <b>browse</b></>}
-                  </span>
-                  <span className="up-mono">2400 × 800 · JPG or PNG</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="sr-only"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0] ?? null;
-                      setSelectedBackgroundFile(file);
-                      setBackgroundUploadMessage(null);
-                    }}
-                  />
-                </label>
+                <UploadDropzone
+                  variant="wide"
+                  selectedFile={selectedBackgroundFile}
+                  placeholder={<>Drop a cover or <b>browse</b></>}
+                  hint="2400 × 800 · JPG or PNG"
+                  onFile={(file) => {
+                    setSelectedBackgroundFile(file);
+                    setBackgroundUploadMessage(null);
+                  }}
+                />
                 {selectedBackgroundFile && (
                   <button
                     type="button"

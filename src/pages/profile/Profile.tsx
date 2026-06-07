@@ -13,6 +13,7 @@ import { FormField, TextArea, TextInput } from '../../components/ui/FormField';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { Avatar } from '../../components/Avatar';
+import { useFileDrop } from '../../hooks/useFileDrop';
 
 export const Profile = () => {
   const queryClient = useQueryClient();
@@ -85,9 +86,7 @@ export const Profile = () => {
     onError: () => setUploadError('Failed to upload photo. Please try again.')
   });
 
-  const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
+  const handleAvatarFile = (file: File | undefined | null) => {
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       setUploadError('Please choose an image file.');
@@ -95,6 +94,14 @@ export const Profile = () => {
     }
     uploadAvatarMut.mutate(file);
   };
+
+  const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    handleAvatarFile(file);
+  };
+
+  const { isDragging, dropProps } = useFileDrop(handleAvatarFile, 'image/*');
 
   if (meQuery.isLoading) return <LoadingState label="Loading profile..." />;
   if (meQuery.error || !meQuery.data) return <ErrorState message="Failed to load profile." />;
@@ -119,7 +126,12 @@ export const Profile = () => {
       />
 
       <SurfaceCard className="mt-8 space-y-6">
-        <div className="flex items-center gap-5">
+        <div
+          {...dropProps}
+          className={`flex items-center gap-5 rounded-2xl border-2 border-dashed p-4 transition-colors ${
+            isDragging ? 'border-brand-400 bg-brand-50' : 'border-transparent'
+          }`}
+        >
           <Avatar user={meQuery.data} size="xl" />
           <div className="space-y-2">
             <input
@@ -141,7 +153,7 @@ export const Profile = () => {
             {uploadError ? (
               <p className="text-xs font-semibold text-rose-600">{uploadError}</p>
             ) : (
-              <p className="text-xs text-ink-muted">PNG or JPG, square images look best.</p>
+              <p className="text-xs text-ink-muted">Drop an image here, or browse. PNG or JPG, square images look best.</p>
             )}
           </div>
         </div>

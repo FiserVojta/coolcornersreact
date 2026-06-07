@@ -122,6 +122,7 @@
   cursor: pointer; transition: border-color .15s var(--ease-default), background .15s var(--ease-default);
 }
 .cf-page .upload:hover { border-color: var(--brand-300); background: #fffdf8; }
+.cf-page .upload.is-dragging { border-color: var(--brand-400); background: var(--brand-50); border-style: solid; }
 .cf-page .upload .glyph { width: 40px; height: 40px; border-radius: 11px; background: var(--brand-50); border: 1px solid var(--brand-100); display: flex; align-items: center; justify-content: center; color: var(--brand-700); }
 .cf-page .upload .glyph svg { display: block; }
 .cf-page .upload .up-title { font-size: 13.5px; font-weight: 600; color: var(--ink-strong); }

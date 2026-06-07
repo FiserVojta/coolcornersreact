@@ -14,20 +14,8 @@ import { env } from '../../config/env';
 import { CircleMarker, MapContainer, Tooltip, useMapEvents } from 'react-leaflet';
 import type { LeafletMouseEvent } from 'leaflet';
 import { MapyTileLayer } from '../../components/MapyTileLayer';
+import { UploadDropzone } from '../../components/UploadDropzone';
 import '../../styles/create-form.css';
-
-const UPLOAD_GLYPH = (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-    <path
-      d="M10 13V4M10 4L6.5 7.5M10 4l3.5 3.5"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path d="M4 13v2.5A1.5 1.5 0 005.5 17h9a1.5 1.5 0 001.5-1.5V13" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-  </svg>
-);
 
 const firstSentence = (text?: string | null) => {
   const first = (text?.split('. ')[0] ?? '').trim();
@@ -383,23 +371,16 @@ export const TripForm = () => {
             <div className="panel-body">
               <div className="field" style={{ maxWidth: '360px' }}>
                 <span className="field-label">Cover photo</span>
-                <label className="upload cover">
-                  <span className="glyph">{UPLOAD_GLYPH}</span>
-                  <span className="up-title">
-                    {selectedBackgroundFile ? selectedBackgroundFile.name : <>Drop a cover or <b>browse</b></>}
-                  </span>
-                  <span className="up-mono">1600 × 900 · JPG or PNG</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="sr-only"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0] ?? null;
-                      setSelectedBackgroundFile(file);
-                      setBackgroundUploadMessage(null);
-                    }}
-                  />
-                </label>
+                <UploadDropzone
+                  variant="cover"
+                  selectedFile={selectedBackgroundFile}
+                  placeholder={<>Drop a cover or <b>browse</b></>}
+                  hint="1600 × 900 · JPG or PNG"
+                  onFile={(file) => {
+                    setSelectedBackgroundFile(file);
+                    setBackgroundUploadMessage(null);
+                  }}
+                />
                 {selectedBackgroundFile && (
                   <button
                     type="button"
@@ -421,23 +402,16 @@ export const TripForm = () => {
                 <span className="field-label">
                   Photos <span className="field-opt">Optional</span>
                 </span>
-                <label className="upload wide">
-                  <span className="glyph">{UPLOAD_GLYPH}</span>
-                  <span className="up-title">
-                    {selectedFile ? selectedFile.name : <>Drop a photo or <b>browse</b></>}
-                  </span>
-                  <span className="up-mono">Add as many as you like · JPG or PNG</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="sr-only"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0] ?? null;
-                      setSelectedFile(file);
-                      setUploadMessage(null);
-                    }}
-                  />
-                </label>
+                <UploadDropzone
+                  variant="wide"
+                  selectedFile={selectedFile}
+                  placeholder={<>Drop a photo or <b>browse</b></>}
+                  hint="Add as many as you like · JPG or PNG"
+                  onFile={(file) => {
+                    setSelectedFile(file);
+                    setUploadMessage(null);
+                  }}
+                />
                 {selectedFile && (
                   <button
                     type="button"
