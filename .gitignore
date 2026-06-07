@@ -1,3 +1,7 @@
 node_modules/
 dist/
 .DS_Store
+
+# local env files (may contain secrets — never commit)
+.env.local
+.env.*.local

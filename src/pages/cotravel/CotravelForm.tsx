@@ -17,7 +17,7 @@ import { ErrorState } from '../../components/ErrorState';
 import { env } from '../../config/env';
 import { CircleMarker, MapContainer, Tooltip, useMapEvents } from 'react-leaflet';
 import { MapyTileLayer } from '../../components/MapyTileLayer';
-import { MapViewTracker, SearchResultMarkers } from '../../components/mapSearchLayers';
+import { FitBounds, MapViewTracker, SearchResultMarkers } from '../../components/mapSearchLayers';
 import { UploadDropzone } from '../../components/UploadDropzone';
 import '../../styles/create-form.css';
 
@@ -619,6 +619,12 @@ const SegmentEditor = ({
   );
   const mapyCenter = mapyCoords[0] ?? { lat: 50.0755, lng: 14.4378 };
 
+  // Added stops plus search-result pins — used to auto-fit the view.
+  const mapyPoints = useMemo(
+    () => [...mapyCoords, ...mapyResults.map((result) => ({ lat: result.lat, lng: result.lng }))],
+    [mapyCoords, mapyResults]
+  );
+
   const handleMapyMapClick = (coords: { lat: number; lng: number }) => {
     const id = `segment-map-click-${coords.lat}-${coords.lng}`;
     const nextPlace: GooglePlaceInput = {
@@ -788,29 +794,9 @@ const SegmentEditor = ({
 
         {mapyMessage && <p className="field-hint">{mapyMessage}</p>}
         {mapyResults.length ? (
-          <div className="rows">
-            {mapyResults.map((result) => {
-              const added = segment.googlePlaces.some((place) => place.placeId === result.id);
-              return (
-                <div key={result.id} className="row-item">
-                  <div className="grow">
-                    <p className="r-name">{result.name}</p>
-                    <p className={`r-meta${result.label ? '' : ' mono'}`}>
-                      {result.label ?? `${result.lat.toFixed(5)}, ${result.lng.toFixed(5)}`}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    className={`pick-btn${added ? ' on' : ''}`}
-                    onClick={() => handleAddMapy(result)}
-                    disabled={added}
-                  >
-                    {added ? 'Added' : 'Add'}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
+          <p className="field-hint">
+            {mapyResults.length} result{mapyResults.length === 1 ? '' : 's'} shown as amber pins on the map — click one to add it.
+          </p>
         ) : null}
 
         {hasMapTiles ? (
@@ -824,6 +810,7 @@ const SegmentEditor = ({
               <MapyTileLayer />
               <SegmentMapClickHandler onClick={handleMapyMapClick} />
               <MapViewTracker onChange={setMapyView} />
+              <FitBounds points={mapyPoints} />
               <SearchResultMarkers
                 results={mapyResults.filter(
                   (result) => !segment.googlePlaces.some((place) => place.placeId === result.id)

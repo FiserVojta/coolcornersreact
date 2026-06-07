@@ -14,7 +14,7 @@ import { env } from '../../config/env';
 import { CircleMarker, MapContainer, Tooltip, useMapEvents } from 'react-leaflet';
 import type { LeafletMouseEvent } from 'leaflet';
 import { MapyTileLayer } from '../../components/MapyTileLayer';
-import { MapViewTracker, SearchResultMarkers } from '../../components/mapSearchLayers';
+import { FitBounds, MapViewTracker, SearchResultMarkers } from '../../components/mapSearchLayers';
 import { UploadDropzone } from '../../components/UploadDropzone';
 import '../../styles/create-form.css';
 
@@ -209,6 +209,16 @@ export const TripForm = () => {
     if (firstCoords) return firstCoords;
     return { lat: 50.0755, lng: 14.4378 };
   }, [googlePlaces]);
+
+  // Every point currently on the map — added stops plus search-result pins —
+  // used to auto-fit the view so they're all visible.
+  const mapPoints = useMemo(() => {
+    const stopCoords = googlePlaces
+      .map((place) => getCoordsFromGeometry(place.geometry))
+      .filter((coords): coords is { lat: number; lng: number } => !!coords);
+    const resultCoords = searchResults.map((result) => ({ lat: result.lat, lng: result.lng }));
+    return [...stopCoords, ...resultCoords];
+  }, [googlePlaces, searchResults]);
 
   if (isEdit && tripQuery.isLoading) return <LoadingState label="Loading trip..." />;
   if (isEdit && tripQuery.error) return <ErrorState message="Failed to load trip for editing." />;
@@ -486,29 +496,9 @@ export const TripForm = () => {
 
               {searchMessage && <p className="field-hint">{searchMessage}</p>}
               {searchResults.length ? (
-                <div className="rows">
-                  {searchResults.map((result) => {
-                    const added = googlePlaces.some((place) => place.placeId === result.id);
-                    return (
-                      <div key={result.id} className="row-item">
-                        <div className="grow">
-                          <p className="r-name">{result.name}</p>
-                          <p className={`r-meta${result.label ? '' : ' mono'}`}>
-                            {result.label ?? `${result.lat.toFixed(5)}, ${result.lng.toFixed(5)}`}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          className={`pick-btn${added ? ' on' : ''}`}
-                          onClick={() => addSearchResult(result)}
-                          disabled={added}
-                        >
-                          {added ? 'Added' : 'Add'}
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
+                <p className="field-hint">
+                  {searchResults.length} result{searchResults.length === 1 ? '' : 's'} shown as amber pins on the map — click one to add it.
+                </p>
               ) : null}
 
               {hasTiles ? (
@@ -522,6 +512,7 @@ export const TripForm = () => {
                     <MapyTileLayer />
                     <MapClickHandler onClick={handleMapClick} />
                     <MapViewTracker onChange={setMapView} />
+                    <FitBounds points={mapPoints} />
                     <SearchResultMarkers
                       results={searchResults.filter(
                         (result) => !googlePlaces.some((place) => place.placeId === result.id)
