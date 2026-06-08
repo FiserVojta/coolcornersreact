@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { CircleMarker, Tooltip, useMap, useMapEvents } from 'react-leaflet';
+import { Marker, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import type { MapySearchResult } from '../api/mapy';
+import { categoryPinIcon } from './mapyIcons';
 
 type LatLng = { lat: number; lng: number };
 
@@ -50,8 +51,9 @@ export const MapViewTracker = ({ onChange }: { onChange: (center: { lat: number;
 };
 
 /**
- * Renders Mapy search results as amber pins on the map. Clicking a pin adds
- * that result (via `onPick`); the name shows on hover.
+ * Renders Mapy search results as category pins on the map (☕ for coffee
+ * houses, 🏛️ for museums, …). Clicking a pin adds that result (via `onPick`);
+ * the name and category show on hover.
  */
 export const SearchResultMarkers = ({
   results,
@@ -62,20 +64,17 @@ export const SearchResultMarkers = ({
 }) => (
   <>
     {results.map((result) => (
-      <CircleMarker
+      <Marker
         key={`search-${result.id}`}
-        center={{ lat: result.lat, lng: result.lng }}
-        radius={7}
-        pathOptions={{ color: '#b45309', weight: 2, fillColor: '#f59e0b', fillOpacity: 0.95 }}
-        // Stop the click bubbling to the map, so picking a pin adds only this
-        // place and not an extra freeform "Selected location" stop.
-        bubblingMouseEvents={false}
+        position={{ lat: result.lat, lng: result.lng }}
+        icon={categoryPinIcon(result.category)}
         eventHandlers={{ click: () => onPick(result) }}
       >
-        <Tooltip direction="top" offset={[0, -8]}>
+        <Tooltip direction="top">
           {result.name}
+          {result.category ? ` · ${result.category}` : ''}
         </Tooltip>
-      </CircleMarker>
+      </Marker>
     ))}
   </>
 );

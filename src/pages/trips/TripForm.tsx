@@ -11,10 +11,11 @@ import type { GooglePlaceInput, TripCreateRequest, TripFileLinkRequest } from '.
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { env } from '../../config/env';
-import { CircleMarker, MapContainer, Tooltip, useMapEvents } from 'react-leaflet';
+import { MapContainer, Marker, Tooltip, useMapEvents } from 'react-leaflet';
 import type { LeafletMouseEvent } from 'leaflet';
 import { MapyTileLayer } from '../../components/MapyTileLayer';
 import { FitBounds, MapViewTracker, SearchResultMarkers } from '../../components/mapSearchLayers';
+import { stopPinIcon } from '../../components/mapyIcons';
 import { UploadDropzone } from '../../components/UploadDropzone';
 import '../../styles/create-form.css';
 
@@ -526,14 +527,13 @@ export const TripForm = () => {
                       }))
                       .filter((entry) => !!entry.coords)
                       .map((place, idx) => (
-                        <CircleMarker
+                        <Marker
                           key={place.place.placeId}
-                          center={place.coords as { lat: number; lng: number }}
-                          radius={7}
-                          pathOptions={{ color: '#0f172a', weight: 2, fillColor: '#ffffff', fillOpacity: 1 }}
+                          position={place.coords as { lat: number; lng: number }}
+                          icon={stopPinIcon}
                         >
-                          <Tooltip direction="top" offset={[0, -8]}>{`${idx + 1}`}</Tooltip>
-                        </CircleMarker>
+                          <Tooltip direction="top">{`${idx + 1}`}</Tooltip>
+                        </Marker>
                       ))}
                   </MapContainer>
                 </div>
@@ -544,7 +544,7 @@ export const TripForm = () => {
               )}
 
               {hasTiles && (
-                <p className="map-note">Mapy.cz map · amber pins are search results — click one (or anywhere on the map) to add a stop.</p>
+                <p className="map-note">Mapy.cz map · category pins (☕, 🏛️, …) are search results — click one to add it (blue pins are your stops), or click anywhere to add a location.</p>
               )}
 
               {googlePlaces.length ? (

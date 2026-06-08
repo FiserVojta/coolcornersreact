@@ -15,9 +15,10 @@ import type { PlaceDetail } from '../../types/place';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { env } from '../../config/env';
-import { CircleMarker, MapContainer, Tooltip, useMapEvents } from 'react-leaflet';
+import { MapContainer, Marker, Tooltip, useMapEvents } from 'react-leaflet';
 import { MapyTileLayer } from '../../components/MapyTileLayer';
 import { FitBounds, MapViewTracker, SearchResultMarkers } from '../../components/mapSearchLayers';
+import { stopPinIcon } from '../../components/mapyIcons';
 import { UploadDropzone } from '../../components/UploadDropzone';
 import '../../styles/create-form.css';
 
@@ -818,14 +819,9 @@ const SegmentEditor = ({
                 onPick={handleAddMapy}
               />
               {mapyCoords.map((coords, idx) => (
-                <CircleMarker
-                  key={`${coords.lat}-${coords.lng}-${idx}`}
-                  center={coords}
-                  radius={6}
-                  pathOptions={{ color: '#0f172a', weight: 2, fillColor: '#ffffff', fillOpacity: 1 }}
-                >
-                  <Tooltip direction="top" offset={[0, -6]}>{`${idx + 1}`}</Tooltip>
-                </CircleMarker>
+                <Marker key={`${coords.lat}-${coords.lng}-${idx}`} position={coords} icon={stopPinIcon}>
+                  <Tooltip direction="top">{`${idx + 1}`}</Tooltip>
+                </Marker>
               ))}
             </MapContainer>
           </div>
@@ -835,7 +831,7 @@ const SegmentEditor = ({
           </p>
         )}
         {hasMapTiles && (
-          <p className="map-note">Mapy.cz map · amber pins are search results — click one (or anywhere on the map) to add a stop.</p>
+          <p className="map-note">Mapy.cz map · category pins (☕, 🏛️, …) are search results — click one to add it (blue pins are your stops), or click anywhere to add a location.</p>
         )}
 
         {segment.googlePlaces.length ? (

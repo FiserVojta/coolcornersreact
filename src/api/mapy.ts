@@ -3,8 +3,8 @@ import { env } from '../config/env';
 export interface MapySearchResult {
   id: string;
   name: string;
-  /** Secondary line — usually the address/locality, when Mapy provides one. */
-  label?: string;
+  /** Mapy place category, e.g. "Coffee house" or "Museum" — used to pick a map sign. */
+  category?: string;
   lat: number;
   lng: number;
 }
@@ -60,11 +60,8 @@ const extractName = (item: Record<string, unknown>) => {
 const extractId = (item: Record<string, unknown>, fallback: string) =>
   pickString(item.id) || pickString(item.placeId) || pickString(item.value) || fallback;
 
-const extractLabel = (item: Record<string, unknown>) =>
-  pickString(item.location) ||
-  pickString((item.address as { label?: unknown } | undefined)?.label) ||
-  pickString(item.label) ||
-  null;
+// Mapy returns the place category in `label` (e.g. "Coffee house", "Museum").
+const extractCategory = (item: Record<string, unknown>) => pickString(item.label);
 
 const parseResults = (data: unknown): MapySearchResult[] => {
   if (!data || typeof data !== 'object') return [];
@@ -83,10 +80,10 @@ const parseResults = (data: unknown): MapySearchResult[] => {
       const coords = extractCoords(item);
       if (!coords) return null;
       const name = extractName(item);
-      const rawLabel = extractLabel(item);
-      const label = rawLabel && rawLabel !== name ? rawLabel : undefined;
+      const rawCategory = extractCategory(item);
+      const category = rawCategory && rawCategory !== name ? rawCategory : undefined;
       const id = extractId(item, `${coords.lat},${coords.lng}`);
-      return { id, name, label, ...coords };
+      return { id, name, category, ...coords };
     })
     .filter(Boolean) as MapySearchResult[];
 };

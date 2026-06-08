@@ -145,6 +145,10 @@
 /* real Leaflet map frame (replaces the static .mapbox placeholder) */
 .cf-page .map-frame { border-radius: 14px; overflow: hidden; border: 1px solid var(--brand-100); position: relative; }
 .cf-page .map-frame .leaflet-container { font-family: var(--font-body); }
+
+/* Mapy POI category pins (search results) — a teardrop with a category sign */
+.mapy-poi-pin-wrap { background: none; border: none; }
+.mapy-poi-pin { display: block; filter: drop-shadow(0 1px 1px rgba(15, 23, 42, .4)); }
 .cf-page .map-note { font-size: 11.5px; color: var(--ink-subtle); margin: 0; }
 
 /* item rows (stops / picked trips+places / mapy results) */
