@@ -3,6 +3,10 @@ export interface Category {
   name: string;
   main: boolean;
   title: string;
+  /** Map glyph key (see mapyIcons.ts); when absent the renderer uses the 'default' glyph. */
+  icon?: string;
+  /** Optional pin colour as hex (e.g. "#c2410c"). */
+  color?: string;
 }
 
 export interface City {

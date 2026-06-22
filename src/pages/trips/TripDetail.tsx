@@ -8,8 +8,9 @@ import { RatingBadge } from '../../components/RatingBadge';
 import { TagList } from '../../components/TagList';
 import { useAuth } from '../../auth/AuthContext';
 import { env } from '../../config/env';
-import { CircleMarker, MapContainer, Polyline, Tooltip } from 'react-leaflet';
+import { CircleMarker, MapContainer, Marker, Polyline, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
+import { stopCategoryIcon } from '../../components/mapyIcons';
 import type { GeometryPoint, TripModel } from '../../types/trip';
 import type { PlaceDetail } from '../../types/place';
 import type { CommentModel } from '../../types/place';
@@ -191,7 +192,9 @@ export const TripDetail = () => {
                       </div>
                       <div>
                         <p className="text-sm font-semibold font-label text-ink-strong">{place.name}</p>
-                        <p className="text-xs font-label text-ink-muted">Place ID: {place.id}</p>
+                        <p className="text-xs font-label text-ink-muted">
+                          {place.category?.title || place.category?.name || `Place ID: ${place.id}`}
+                        </p>
                       </div>
                     </li>
                   ))}
@@ -374,14 +377,13 @@ const TripMap = ({ trip }: { trip: TripModel }) => {
           </CircleMarker>
         ))}
         {mapyCoords.map((pos, idx) => (
-          <CircleMarker
+          <Marker
             key={`m-${pos.lat}-${pos.lng}-${idx}`}
-            center={pos}
-            radius={7}
-            pathOptions={{ color: '#1d4ed8', weight: 2, fillColor: '#ffffff', fillOpacity: 1 }}
+            position={pos}
+            icon={stopCategoryIcon(pos.icon)}
           >
-            <Tooltip direction="top" offset={[0, -8]}>{`M${idx + 1}`}</Tooltip>
-          </CircleMarker>
+            <Tooltip direction="top">{pos.name || `Stop ${idx + 1}`}</Tooltip>
+          </Marker>
         ))}
         {coords.length > 1 && <Polyline positions={coords} pathOptions={{ color: '#2d75f5', weight: 4 }} />}
       </MapContainer>
@@ -410,9 +412,9 @@ const extractMapyCoords = (places?: TripModel['googlePlaces']) =>
     .map((place) => {
       const coords = getCoordsFromGeometry(place.geometry);
       if (!coords) return null;
-      return { ...coords, name: place.name };
+      return { ...coords, name: place.name, icon: place.category?.icon };
     })
-    .filter(Boolean) as Array<{ lat: number; lng: number; name: string }>;
+    .filter(Boolean) as Array<{ lat: number; lng: number; name: string; icon?: string }>;
 
 const buildTripPhotos = (trip: TripModel) => {
   // The cover lives in backgroundImage (shown in the hero + list card), so keep

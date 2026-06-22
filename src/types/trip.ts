@@ -63,12 +63,14 @@ export interface GooglePlaceInput {
   placeId: string;
   name?: string | null;
   geometry?: GeometryPoint | null;
+  categoryId?: number | null;
 }
 
 export interface GooglePlaceSummary {
   id: string;
   name: string;
   geometry?: GeometryPoint | null;
+  category?: Category | null;
 }
 
 export interface GeometryPoint {

@@ -100,6 +100,10 @@ export const searchMapyPlaces = async (
   url.searchParams.set('query', query.trim());
   url.searchParams.set('apikey', env.mapyApiKey);
   url.searchParams.set('limit', String(options.limit ?? 15));
+  // Request English place labels. Mapy localises `label` (e.g. "Coffee shop" vs
+  // the Czech "Obchod s kávou"); our category→glyph rules are English-only, so
+  // without this the glyph falls back to the default dot for non-English locales.
+  url.searchParams.set('lang', 'en');
   if (options.near) {
     // Mapy expects "lon,lat"; this biases (not filters) results toward the
     // point, so a category query like "coffee shops" surfaces nearby ones.

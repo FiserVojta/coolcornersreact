@@ -18,7 +18,8 @@ import { env } from '../../config/env';
 import { MapContainer, Marker, Tooltip, useMapEvents } from 'react-leaflet';
 import { MapyTileLayer } from '../../components/MapyTileLayer';
 import { FitBounds, MapViewTracker, SearchResultMarkers } from '../../components/mapSearchLayers';
-import { stopPinIcon } from '../../components/mapyIcons';
+import { guessCategoryId, stopCategoryIcon } from '../../components/mapyIcons';
+import type { Category } from '../../types/place';
 import { UploadDropzone } from '../../components/UploadDropzone';
 import '../../styles/create-form.css';
 
@@ -80,6 +81,12 @@ export const CotravelForm = () => {
     queryFn: () => fetchCategories('COTRAVEL')
   });
 
+  // PLACE categories drive the per-stop category dropdown + the label→category guess.
+  const placeCategoriesQuery = useQuery({
+    queryKey: ['categories', 'PLACE'],
+    queryFn: () => fetchCategories('PLACE')
+  });
+
   const tagsQuery = useQuery({
     queryKey: ['tags'],
     queryFn: fetchTags
@@ -126,7 +133,8 @@ export const CotravelForm = () => {
           part.googlePlaces?.map((place) => ({
             placeId: place.id,
             name: place.name,
-            geometry: place.geometry ?? null
+            geometry: place.geometry ?? null,
+            categoryId: place.category?.id ?? null
           })) ?? []
       })) ?? [];
 
@@ -321,6 +329,21 @@ export const CotravelForm = () => {
     );
   };
 
+  const setSegmentGooglePlaceCategory = (segmentId: string, placeId: string, categoryId: number | null) => {
+    updateSegments((current) =>
+      current.map((segment) =>
+        segment.id === segmentId
+          ? {
+              ...segment,
+              googlePlaces: segment.googlePlaces.map((place) =>
+                place.placeId === placeId ? { ...place, categoryId } : place
+              )
+            }
+          : segment
+      )
+    );
+  };
+
   const toggleTag = (id: number) => {
     const normalized = normalizeNumberList(selectedTags);
     const next = normalized.includes(id) ? normalized.filter((item) => item !== id) : [...normalized, id];
@@ -328,6 +351,7 @@ export const CotravelForm = () => {
   };
 
   const categories = categoriesQuery.data ?? [];
+  const placeCategories = placeCategoriesQuery.data ?? [];
   const tags = tagsQuery.data ?? [];
   const activeCategory = categories.find((cat) => cat.id === Number(watchedCategory));
   const categoryLabel = activeCategory?.title || activeCategory?.name || 'Uncategorised';
@@ -501,6 +525,8 @@ export const CotravelForm = () => {
                     onTogglePlace={toggleSegmentPlace}
                     onAddMapyPlace={addSegmentGooglePlace}
                     onRemoveMapyPlace={removeSegmentGooglePlace}
+                    onSetMapyCategory={setSegmentGooglePlaceCategory}
+                    placeCategories={placeCategories}
                     onRemove={removeSegment}
                     canRemove={segments.length > 1}
                   />
@@ -572,6 +598,8 @@ const SegmentEditor = ({
   onTogglePlace,
   onAddMapyPlace,
   onRemoveMapyPlace,
+  onSetMapyCategory,
+  placeCategories,
   onRemove,
   canRemove
 }: {
@@ -588,6 +616,8 @@ const SegmentEditor = ({
   onTogglePlace: (segmentId: string, placeId: number) => void;
   onAddMapyPlace: (segmentId: string, place: GooglePlaceInput) => void;
   onRemoveMapyPlace: (segmentId: string, placeId: string) => void;
+  onSetMapyCategory: (segmentId: string, placeId: string, categoryId: number | null) => void;
+  placeCategories: Category[];
   onRemove: (segmentId: string) => void;
   canRemove: boolean;
 }) => {
@@ -656,7 +686,9 @@ const SegmentEditor = ({
     const nextPlace: GooglePlaceInput = {
       placeId: result.id,
       name: result.name,
-      geometry: { type: 'Point', coordinates: [result.lng, result.lat] }
+      geometry: { type: 'Point', coordinates: [result.lng, result.lat] },
+      // Guess a category from the Mapy label; the creator can correct it below.
+      categoryId: guessCategoryId(result.category, placeCategories) ?? null
     };
     // Keep results on the map so several pins can be added from one search.
     onAddMapyPlace(segment.id, nextPlace);
@@ -818,11 +850,21 @@ const SegmentEditor = ({
                 )}
                 onPick={handleAddMapy}
               />
-              {mapyCoords.map((coords, idx) => (
-                <Marker key={`${coords.lat}-${coords.lng}-${idx}`} position={coords} icon={stopPinIcon}>
-                  <Tooltip direction="top">{`${idx + 1}`}</Tooltip>
-                </Marker>
-              ))}
+              {segment.googlePlaces
+                .map((place) => ({ place, coords: getCoordsFromGeometry(place.geometry) }))
+                .filter((entry) => !!entry.coords)
+                .map((entry, idx) => {
+                  const icon = placeCategories.find((c) => c.id === entry.place.categoryId)?.icon;
+                  return (
+                    <Marker
+                      key={entry.place.placeId}
+                      position={entry.coords as { lat: number; lng: number }}
+                      icon={stopCategoryIcon(icon)}
+                    >
+                      <Tooltip direction="top">{entry.place.name || `Stop ${idx + 1}`}</Tooltip>
+                    </Marker>
+                  );
+                })}
             </MapContainer>
           </div>
         ) : (
@@ -847,6 +889,21 @@ const SegmentEditor = ({
                       {coords ? `${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}` : `Place ID: ${place.placeId}`}
                     </p>
                   </div>
+                  <select
+                    className="select-native"
+                    aria-label="Stop category"
+                    value={place.categoryId ?? ''}
+                    onChange={(e) =>
+                      onSetMapyCategory(segment.id, place.placeId, e.target.value ? Number(e.target.value) : null)
+                    }
+                  >
+                    <option value="">No category</option>
+                    {placeCategories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.title || cat.name}
+                      </option>
+                    ))}
+                  </select>
                   <button type="button" className="x" onClick={() => onRemoveMapyPlace(segment.id, place.placeId)}>
                     ×
                   </button>

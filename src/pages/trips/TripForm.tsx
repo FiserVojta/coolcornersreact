@@ -15,7 +15,7 @@ import { MapContainer, Marker, Tooltip, useMapEvents } from 'react-leaflet';
 import type { LeafletMouseEvent } from 'leaflet';
 import { MapyTileLayer } from '../../components/MapyTileLayer';
 import { FitBounds, MapViewTracker, SearchResultMarkers } from '../../components/mapSearchLayers';
-import { stopPinIcon } from '../../components/mapyIcons';
+import { guessCategoryId, stopCategoryIcon } from '../../components/mapyIcons';
 import { UploadDropzone } from '../../components/UploadDropzone';
 import '../../styles/create-form.css';
 
@@ -55,6 +55,12 @@ export const TripForm = () => {
     queryFn: () => fetchCategories('TRIP')
   });
 
+  // PLACE categories drive the per-stop category dropdown + the label→category guess.
+  const placeCategoriesQuery = useQuery({
+    queryKey: ['categories', 'PLACE'],
+    queryFn: () => fetchCategories('PLACE')
+  });
+
   const tagsQuery = useQuery({
     queryKey: ['tags'],
     queryFn: fetchTags
@@ -87,7 +93,8 @@ export const TripForm = () => {
         tripQuery.data.googlePlaces?.map((place) => ({
           placeId: place.id,
           name: place.name,
-          geometry: place.geometry ?? null
+          geometry: place.geometry ?? null,
+          categoryId: place.category?.id ?? null
         })) ?? [];
       const categoryId =
         (tripQuery.data.category?.id ?? (tripQuery.data as { categoryId?: number }).categoryId) ?? 1;
@@ -228,11 +235,19 @@ export const TripForm = () => {
     setGooglePlaces((prev) => prev.filter((place) => place.placeId !== placeId));
   };
 
+  const setGooglePlaceCategory = (placeId: string, categoryId: number | null) => {
+    setGooglePlaces((prev) =>
+      prev.map((place) => (place.placeId === placeId ? { ...place, categoryId } : place))
+    );
+  };
+
   const addSearchResult = (result: MapySearchResult) => {
     const nextPlace: GooglePlaceInput = {
       placeId: result.id,
       name: result.name,
-      geometry: { type: 'Point', coordinates: [result.lng, result.lat] }
+      geometry: { type: 'Point', coordinates: [result.lng, result.lat] },
+      // Guess a category from the Mapy label; the creator can correct it below.
+      categoryId: guessCategoryId(result.category, placeCategoriesQuery.data ?? []) ?? null
     };
     // Keep the results visible so several pins can be added in one search.
     setGooglePlaces((prev) => {
@@ -275,6 +290,7 @@ export const TripForm = () => {
   };
 
   const categories = categoriesQuery.data ?? [];
+  const placeCategories = placeCategoriesQuery.data ?? [];
   const tags = tagsQuery.data ?? [];
   const watchedName = watch('name');
   const watchedDescription = watch('description');
@@ -526,15 +542,18 @@ export const TripForm = () => {
                         coords: getCoordsFromGeometry(place.geometry)
                       }))
                       .filter((entry) => !!entry.coords)
-                      .map((place, idx) => (
-                        <Marker
-                          key={place.place.placeId}
-                          position={place.coords as { lat: number; lng: number }}
-                          icon={stopPinIcon}
-                        >
-                          <Tooltip direction="top">{`${idx + 1}`}</Tooltip>
-                        </Marker>
-                      ))}
+                      .map((entry, idx) => {
+                        const icon = placeCategories.find((c) => c.id === entry.place.categoryId)?.icon;
+                        return (
+                          <Marker
+                            key={entry.place.placeId}
+                            position={entry.coords as { lat: number; lng: number }}
+                            icon={stopCategoryIcon(icon)}
+                          >
+                            <Tooltip direction="top">{entry.place.name || `Stop ${idx + 1}`}</Tooltip>
+                          </Marker>
+                        );
+                      })}
                   </MapContainer>
                 </div>
               ) : (
@@ -560,6 +579,21 @@ export const TripForm = () => {
                             {coords ? `${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}` : `Place ID: ${place.placeId}`}
                           </p>
                         </div>
+                        <select
+                          className="select-native"
+                          aria-label="Stop category"
+                          value={place.categoryId ?? ''}
+                          onChange={(e) =>
+                            setGooglePlaceCategory(place.placeId, e.target.value ? Number(e.target.value) : null)
+                          }
+                        >
+                          <option value="">No category</option>
+                          {placeCategories.map((cat) => (
+                            <option key={cat.id} value={cat.id}>
+                              {cat.title || cat.name}
+                            </option>
+                          ))}
+                        </select>
                         <button type="button" className="x" onClick={() => removeGooglePlace(place.placeId)}>
                           ×
                         </button>

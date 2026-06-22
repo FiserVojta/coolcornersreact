@@ -11,8 +11,9 @@ import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { CommentModel } from '../../types/place';
 import { fetchFiles, uploadFile } from '../../api/files';
-import { CircleMarker, MapContainer } from 'react-leaflet';
+import { MapContainer, Marker } from 'react-leaflet';
 import { MapyTileLayer } from '../../components/MapyTileLayer';
+import { categoryPinIconByKey } from '../../components/mapyIcons';
 import { Button } from '../../components/ui/Button';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { TextArea } from '../../components/ui/FormField';
@@ -165,7 +166,11 @@ export const PlaceDetail = () => {
         </div>
 
         <aside className="space-y-6">
-          <LocationMap featureCoords={data.feature?.geometry.coordinates} />
+          <LocationMap
+            featureCoords={data.feature?.geometry.coordinates}
+            iconKey={data.category?.icon}
+            iconColor={data.category?.color}
+          />
           <SurfaceCard>
             <h3 className="text-lg font-semibold font-display text-ink-strong">Comments</h3>
             {data.comments?.length ? (
@@ -343,7 +348,15 @@ const Detail = ({ label, value }: { label: string; value?: string }) => (
 
 const mapContainerStyle = { width: '100%', height: '280px', borderRadius: '16px', overflow: 'hidden' };
 
-const LocationMap = ({ featureCoords }: { featureCoords?: [number, number] }) => {
+const LocationMap = ({
+  featureCoords,
+  iconKey,
+  iconColor,
+}: {
+  featureCoords?: [number, number];
+  iconKey?: string;
+  iconColor?: string;
+}) => {
   const needsTileKey =
     env.mapyTilesUrl.includes('{apikey}') ||
     env.mapyTilesUrl.includes('{API_KEY}') ||
@@ -380,11 +393,7 @@ const LocationMap = ({ featureCoords }: { featureCoords?: [number, number] }) =>
     <div className="overflow-hidden rounded-2xl bg-white shadow-card">
       <MapContainer center={coords} zoom={14} style={mapContainerStyle} scrollWheelZoom={false}>
         <MapyTileLayer />
-        <CircleMarker
-          center={coords}
-          radius={7}
-          pathOptions={{ color: '#0f172a', weight: 2, fillColor: '#ffffff', fillOpacity: 1 }}
-        />
+        <Marker position={coords} icon={categoryPinIconByKey(iconKey, iconColor)} />
       </MapContainer>
     </div>
   );

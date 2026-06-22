@@ -351,7 +351,7 @@ const CotravelMap = ({
             radius={7}
             pathOptions={{ color: '#0f172a', weight: 2, fillColor: '#ffffff', fillOpacity: 1 }}
           >
-            <Tooltip direction="top" offset={[0, -8]}>{`${idx + 1}`}</Tooltip>
+            <Tooltip direction="top" offset={[0, -8]}>{pos.name || `Stop ${idx + 1}`}</Tooltip>
           </CircleMarker>
         ))}
         {googleCoords.map((pos, idx) => (
@@ -361,7 +361,7 @@ const CotravelMap = ({
             radius={7}
             pathOptions={{ color: '#1d4ed8', weight: 2, fillColor: '#ffffff', fillOpacity: 1 }}
           >
-            <Tooltip direction="top" offset={[0, -8]}>{`M${idx + 1}`}</Tooltip>
+            <Tooltip direction="top" offset={[0, -8]}>{pos.name || `Stop ${idx + 1}`}</Tooltip>
           </CircleMarker>
         ))}
         {coords.length > 1 && <Polyline positions={coords} pathOptions={{ color: '#2d75f5', weight: 4 }} />}
@@ -408,7 +408,7 @@ const SegmentMap = ({ part }: { part: WanderPart }) => {
             radius={6}
             pathOptions={{ color: '#0f172a', weight: 2, fillColor: '#ffffff', fillOpacity: 1 }}
           >
-            <Tooltip direction="top" offset={[0, -6]}>{`${idx + 1}`}</Tooltip>
+            <Tooltip direction="top" offset={[0, -6]}>{pos.name || `Stop ${idx + 1}`}</Tooltip>
           </CircleMarker>
         ))}
         {coords.length > 1 && <Polyline positions={coords} pathOptions={{ color: '#2d75f5', weight: 3 }} />}
@@ -423,9 +423,9 @@ const extractCoords = (parts?: Cotravel['wanderParts']) =>
     .map((place) => {
       if (!place.feature?.geometry?.coordinates) return null;
       const [lng, lat] = place.feature.geometry.coordinates;
-      return { lat, lng };
+      return { lat, lng, name: place.name };
     })
-    .filter(Boolean) as { lat: number; lng: number }[];
+    .filter(Boolean) as Array<{ lat: number; lng: number; name?: string | null }>;
 
 const extractPartCoords = (part: WanderPart) => {
   const placeCoords = extractPlacesCoords(part.places);
@@ -438,9 +438,9 @@ const extractPlacesCoords = (places?: WanderPart['places']) =>
     .map((place) => {
       if (!place.feature?.geometry?.coordinates) return null;
       const [lng, lat] = place.feature.geometry.coordinates;
-      return { lat, lng };
+      return { lat, lng, name: place.name };
     })
-    .filter(Boolean) as { lat: number; lng: number }[];
+    .filter(Boolean) as Array<{ lat: number; lng: number; name?: string | null }>;
 
 const extractTripCoords = (trips?: TripModel[]) =>
   (trips ?? [])
@@ -448,16 +448,24 @@ const extractTripCoords = (trips?: TripModel[]) =>
       ...(trip.places ?? []).map((place) => {
         if (!place.feature?.geometry?.coordinates) return null;
         const [lng, lat] = place.feature.geometry.coordinates;
-        return { lat, lng };
+        return { lat, lng, name: place.name };
       }),
-      ...(trip.googlePlaces ?? []).map((place) => getCoordsFromGeometry(place.geometry))
+      ...(trip.googlePlaces ?? []).map((place) => {
+        const coords = getCoordsFromGeometry(place.geometry);
+        if (!coords) return null;
+        return { ...coords, name: place.name };
+      })
     ])
-    .filter(Boolean) as { lat: number; lng: number }[];
+    .filter(Boolean) as Array<{ lat: number; lng: number; name?: string | null }>;
 
 const extractGoogleCoords = (places?: Cotravel['googlePlaces']) =>
   (places ?? [])
-    .map((place) => getCoordsFromGeometry(place.geometry))
-    .filter(Boolean) as { lat: number; lng: number }[];
+    .map((place) => {
+      const coords = getCoordsFromGeometry(place.geometry);
+      if (!coords) return null;
+      return { ...coords, name: place.name };
+    })
+    .filter(Boolean) as Array<{ lat: number; lng: number; name?: string | null }>;
 
 const getDisplayName = (user: User) =>
   user.displayName || user.name || [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username || 'Traveler';
