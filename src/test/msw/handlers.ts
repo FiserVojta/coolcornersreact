@@ -219,5 +219,83 @@ export const handlers = [
       id: 999,
       name: payload.name ?? 'Created place'
     });
-  })
+  }),
+  http.get(`${apiUrl}/travels/my`, () =>
+    HttpResponse.json([
+      {
+        id: 501,
+        title: 'Patagonia 2026',
+        location: 'Argentina',
+        startDate: '2026-01-10',
+        endDate: '2026-01-20',
+        visibility: 'PRIVATE',
+        coverImage: { id: 1, url: 'https://example.com/cover.jpg', name: 'cover.jpg' },
+        photoCount: 2,
+        owner: { id: 99, name: 'Test Me', displayName: 'Test Me', profilePictureUrl: null }
+      }
+    ])
+  ),
+  http.get(`${apiUrl}/travels/:id`, () =>
+    HttpResponse.json({
+      id: 501,
+      title: 'Patagonia 2026',
+      description: 'Two weeks hiking the southern Andes.',
+      location: 'Argentina',
+      startDate: '2026-01-10',
+      endDate: '2026-01-20',
+      visibility: 'PRIVATE',
+      shareToken: 'share-token-501',
+      owner: { id: 99, name: 'Test Me', displayName: 'Test Me', profilePictureUrl: null },
+      coverImage: { id: 1, url: 'https://example.com/cover.jpg', name: 'cover.jpg' },
+      photos: [
+        {
+          id: 2,
+          fileId: 2,
+          url: 'https://example.com/photo.jpg',
+          name: 'photo.jpg',
+          latitude: 34.6937,
+          longitude: 135.5023,
+          takenOn: '2026-01-12'
+        }
+      ],
+      createdAt: '2026-02-01T10:00:00Z'
+    })
+  ),
+  http.get(`${apiUrl}/public/travels/share/:token`, () =>
+    HttpResponse.json({
+      id: 501,
+      title: 'Patagonia 2026',
+      description: 'Two weeks hiking the southern Andes.',
+      location: 'Argentina',
+      startDate: '2026-01-10',
+      endDate: '2026-01-20',
+      visibility: 'PRIVATE',
+      shareToken: null,
+      owner: { id: 99, name: 'Test Me', displayName: 'Test Me', profilePictureUrl: null },
+      coverImage: { id: 1, url: 'https://example.com/cover.jpg', name: 'cover.jpg' },
+      photos: [
+        {
+          id: 2,
+          fileId: 2,
+          url: 'https://example.com/photo.jpg',
+          name: 'photo.jpg',
+          latitude: 34.6937,
+          longitude: 135.5023,
+          takenOn: '2026-01-12'
+        }
+      ],
+      createdAt: '2026-02-01T10:00:00Z'
+    })
+  ),
+  http.post(`${apiUrl}/travels`, async ({ request }) => {
+    const payload = (await request.json()) as Record<string, unknown>;
+    return HttpResponse.json({
+      id: 777,
+      title: payload.title ?? 'Created travel',
+      visibility: payload.visibility ?? 'PRIVATE',
+      shareToken: 'share-token-777',
+      photos: []
+    });
+  }),
+  http.delete(`${apiUrl}/travels/:id`, () => new HttpResponse(null, { status: 204 }))
 ];

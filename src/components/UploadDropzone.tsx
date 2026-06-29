@@ -16,8 +16,11 @@ const UPLOAD_GLYPH = (
 
 type UploadDropzoneProps = {
   variant?: 'cover' | 'wide';
-  selectedFile: File | null;
-  onFile: (file: File | null) => void;
+  selectedFile?: File | null;
+  onFile?: (file: File | null) => void;
+  /** Enable selecting/dropping multiple files at once; results are delivered via `onFiles`. */
+  multiple?: boolean;
+  onFiles?: (files: File[]) => void;
   placeholder: ReactNode;
   hint: string;
   accept?: string;
@@ -25,28 +28,44 @@ type UploadDropzoneProps = {
 
 /**
  * The dashed "Drop … or browse" upload box used across the create/edit forms.
- * Supports both click-to-browse and drag-and-drop.
+ * Supports click-to-browse and drag-and-drop, single or (with `multiple`) many files.
  */
 export const UploadDropzone = ({
   variant = 'wide',
   selectedFile,
   onFile,
+  multiple = false,
+  onFiles,
   placeholder,
   hint,
   accept = 'image/*',
 }: UploadDropzoneProps) => {
-  const { isDragging, dropProps } = useFileDrop((file) => onFile(file), accept);
+  const { isDragging, dropProps } = useFileDrop(
+    (file) => onFile?.(file),
+    accept,
+    multiple ? (files) => onFiles?.(files) : undefined
+  );
 
   return (
     <label className={`upload ${variant}${isDragging ? ' is-dragging' : ''}`} {...dropProps}>
       <span className="glyph">{UPLOAD_GLYPH}</span>
-      <span className="up-title">{selectedFile ? selectedFile.name : placeholder}</span>
+      <span className="up-title">{!multiple && selectedFile ? selectedFile.name : placeholder}</span>
       <span className="up-mono">{hint}</span>
       <input
         type="file"
         accept={accept}
+        multiple={multiple}
         className="sr-only"
-        onChange={(event) => onFile(event.target.files?.[0] ?? null)}
+        onChange={(event) => {
+          const list = event.target.files;
+          if (multiple) {
+            if (list && list.length) onFiles?.(Array.from(list));
+          } else {
+            onFile?.(list?.[0] ?? null);
+          }
+          // Reset so picking the same file(s) again still fires onChange.
+          event.target.value = '';
+        }}
       />
     </label>
   );

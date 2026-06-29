@@ -18,17 +18,24 @@ const fileMatchesAccept = (file: File, accept?: string) => {
  * same value passed to the underlying <input>), since `accept` only filters
  * the browse dialog and not native file drops.
  */
-export const useFileDrop = (onFile: (file: File) => void, accept?: string) => {
+export const useFileDrop = (
+  onFile: (file: File) => void,
+  accept?: string,
+  /** When provided, all dropped files (filtered by `accept`) are passed at once instead of just the first. */
+  onFiles?: (files: File[]) => void
+) => {
   const [isDragging, setIsDragging] = useState(false);
 
   const onDrop = useCallback(
     (event: DragEvent) => {
       event.preventDefault();
       setIsDragging(false);
-      const file = event.dataTransfer.files?.[0];
-      if (file && fileMatchesAccept(file, accept)) onFile(file);
+      const dropped = Array.from(event.dataTransfer.files ?? []).filter((file) => fileMatchesAccept(file, accept));
+      if (!dropped.length) return;
+      if (onFiles) onFiles(dropped);
+      else onFile(dropped[0]);
     },
-    [onFile, accept]
+    [onFile, onFiles, accept]
   );
 
   const dropProps = {

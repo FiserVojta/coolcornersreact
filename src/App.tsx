@@ -16,6 +16,11 @@ import { EventForm } from './pages/events/EventForm';
 import { UsersList } from './pages/users/UsersList';
 import { UserDetail } from './pages/users/UserDetail';
 import { Profile } from './pages/profile/Profile';
+import { MyTravelsList } from './pages/travels/MyTravelsList';
+import { TravelDetail } from './pages/travels/TravelDetail';
+import { TravelForm } from './pages/travels/TravelForm';
+import { SharedTravel } from './pages/travels/SharedTravel';
+import { TravelPhotoPage } from './pages/travels/TravelPhotoPage';
 import { ProtectedRoute } from './auth/ProtectedRoute';
 
 function App() {
@@ -94,6 +99,48 @@ function App() {
           element={
             <ProtectedRoute>
               <EventForm />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/travels/share/:token" element={<SharedTravel />} />
+        <Route path="/travels/share/:token/photos/:photoId" element={<TravelPhotoPage />} />
+        <Route
+          path="/travels"
+          element={
+            <ProtectedRoute>
+              <MyTravelsList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/travels/create"
+          element={
+            <ProtectedRoute>
+              <TravelForm />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/travels/:id"
+          element={
+            <ProtectedRoute>
+              <TravelDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/travels/:id/edit"
+          element={
+            <ProtectedRoute>
+              <TravelForm />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/travels/:id/photos/:photoId"
+          element={
+            <ProtectedRoute>
+              <TravelPhotoPage />
             </ProtectedRoute>
           }
         />
