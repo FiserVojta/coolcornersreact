@@ -40,7 +40,12 @@ export const TravelView = ({ travel, actions, showVisibility, getPhotoHref }: Pr
   const renderPhoto = (photo: TravelPhoto) => {
     const href = getPhotoHref?.(photo);
     const inner = photo.url ? (
-      <img src={photo.url} alt={photo.name ?? 'Travel photo'} className="h-40 w-full object-cover" loading="lazy" />
+      <img
+        src={photo.thumbnailUrl ?? photo.url}
+        alt={photo.name ?? 'Travel photo'}
+        className="h-40 w-full object-cover"
+        loading="lazy"
+      />
     ) : (
       <div className="flex h-40 w-full items-center justify-center text-sm text-slate-400">{photo.name}</div>
     );

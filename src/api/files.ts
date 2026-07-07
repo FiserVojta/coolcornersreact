@@ -2,6 +2,7 @@ import { apiClient } from './client';
 
 export interface UploadedFile {
   url?: string;
+  thumbnailUrl?: string;
   id?: string | number;
   name?: string;
   filename?: string;
@@ -11,6 +12,7 @@ export interface UploadedFile {
 export interface FileItem {
   id: number;
   url: string;
+  thumbnailUrl?: string | null;
 }
 
 export interface FileListResponse {

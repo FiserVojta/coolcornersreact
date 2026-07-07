@@ -46,7 +46,15 @@ export const TravelForm = () => {
   const [photoMessage, setPhotoMessage] = useState<string | null>(null);
   const [photosUploading, setPhotosUploading] = useState(false);
   const [galleryFiles, setGalleryFiles] = useState<
-    Array<{ fileId: number; name: string; url?: string; latitude?: number; longitude?: number; takenOn?: string }>
+    Array<{
+      fileId: number;
+      name: string;
+      url?: string;
+      thumbnailUrl?: string;
+      latitude?: number;
+      longitude?: number;
+      takenOn?: string;
+    }>
   >([]);
   // The photo currently being placed on the map (the next map click sets its coordinates).
   const [placingFileId, setPlacingFileId] = useState<number | null>(null);
@@ -101,6 +109,7 @@ export const TravelForm = () => {
             fileId: photo.fileId,
             name: photo.name ?? 'Travel photo',
             url: photo.url ?? undefined,
+            thumbnailUrl: photo.thumbnailUrl ?? undefined,
             latitude: photo.latitude ?? undefined,
             longitude: photo.longitude ?? undefined,
             takenOn: photo.takenOn ?? undefined
@@ -161,6 +170,7 @@ export const TravelForm = () => {
         fileId: number;
         name: string;
         url?: string;
+        thumbnailUrl?: string;
         latitude?: number;
         longitude?: number;
         takenOn?: string;
@@ -186,6 +196,7 @@ export const TravelForm = () => {
           fileId: fileId as number,
           name: uploaded?.name ?? uploaded?.filename ?? files[index]?.name ?? 'Travel photo',
           url: uploaded?.url ?? undefined,
+          thumbnailUrl: uploaded?.thumbnailUrl ?? undefined,
           latitude,
           longitude,
           takenOn
@@ -421,7 +432,7 @@ export const TravelForm = () => {
                         <div key={file.fileId} className="row-item">
                           {file.url ? (
                             <img
-                              src={file.url}
+                              src={file.thumbnailUrl ?? file.url}
                               alt={file.name}
                               loading="lazy"
                               style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 8 }}

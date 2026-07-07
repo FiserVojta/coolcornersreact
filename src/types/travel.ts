@@ -3,6 +3,7 @@ export type TravelVisibility = 'PRIVATE' | 'FOLLOWERS' | 'PUBLIC';
 export interface TravelFile {
   id: number;
   url?: string | null;
+  thumbnailUrl?: string | null;
   name?: string | null;
 }
 
@@ -25,6 +26,8 @@ export interface TravelPhoto {
   fileId: number;
   name?: string | null;
   url?: string | null;
+  /** Downscaled preview used in gallery grids; falls back to `url` when absent (e.g. older photos). */
+  thumbnailUrl?: string | null;
   latitude?: number | null;
   longitude?: number | null;
   /** Date the photo was taken (ISO yyyy-MM-dd), from EXIF or set manually. */
