@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import { compressImageForUpload } from '../lib/imageCompression';
 
 export interface UploadedFile {
   url?: string;
@@ -21,8 +22,9 @@ export interface FileListResponse {
 }
 
 export const uploadFile = async (file: File) => {
+  const upload = await compressImageForUpload(file);
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append('file', upload);
 
   const { data } = await apiClient.post<UploadedFile>('/files', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
