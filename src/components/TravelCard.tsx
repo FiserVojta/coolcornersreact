@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import type { TravelSummary } from '../types/travel';
 import { VisibilityBadge } from './VisibilityBadge';
+import { RatingBadge } from './RatingBadge';
 import { formatTravelDates } from '../lib/travelFormat';
 
 interface Props {
@@ -9,6 +10,7 @@ interface Props {
 
 export const TravelCard = ({ travel }: Props) => {
   const image = travel.coverImage?.url ?? undefined;
+  const ownerName = travel.owner?.displayName ?? travel.owner?.name ?? null;
 
   return (
     <Link
@@ -31,11 +33,14 @@ export const TravelCard = ({ travel }: Props) => {
         <div className="absolute left-3 top-3">
           <VisibilityBadge visibility={travel.visibility} />
         </div>
-        {travel.photoCount > 0 ? (
-          <div className="absolute right-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold font-label text-ink-default shadow-sm backdrop-blur-sm">
-            📷 {travel.photoCount}
-          </div>
-        ) : null}
+        <div className="absolute right-3 top-3 flex items-center gap-2">
+          {travel.rating != null ? <RatingBadge rating={travel.rating} /> : null}
+          {travel.photoCount > 0 ? (
+            <div className="rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold font-label text-ink-default shadow-sm backdrop-blur-sm">
+              📷 {travel.photoCount}
+            </div>
+          ) : null}
+        </div>
       </div>
       <div className="flex flex-1 flex-col gap-2 px-4 pb-4 pt-3">
         <h3 className="font-display text-lg font-semibold text-ink-strong">{travel.title}</h3>
@@ -43,6 +48,7 @@ export const TravelCard = ({ travel }: Props) => {
           <p className="text-sm font-label text-ink-muted">📍 {travel.location}</p>
         ) : null}
         <p className="text-xs font-label text-ink-subtle">{formatTravelDates(travel.startDate, travel.endDate)}</p>
+        {ownerName ? <p className="text-xs font-label text-ink-subtle">by {ownerName}</p> : null}
       </div>
     </Link>
   );

@@ -104,6 +104,18 @@ export const handlers = [
       }
     ])
   ),
+  http.get(`${apiUrl}/public/travels/user/:id`, () =>
+    HttpResponse.json([
+      {
+        id: 501,
+        title: 'Patagonia 2026',
+        location: 'Argentina',
+        visibility: 'PUBLIC',
+        photoCount: 2,
+        owner: { id: 1, displayName: 'Ada Lovelace' }
+      }
+    ])
+  ),
   http.get(`${apiUrl}/public/events`, () =>
     HttpResponse.json({
       totalItems: 2,
@@ -220,7 +232,7 @@ export const handlers = [
       name: payload.name ?? 'Created place'
     });
   }),
-  http.get(`${apiUrl}/travels/my`, () =>
+  http.get(`${apiUrl}/public/travels/accessible`, () =>
     HttpResponse.json([
       {
         id: 501,
@@ -235,7 +247,7 @@ export const handlers = [
       }
     ])
   ),
-  http.get(`${apiUrl}/travels/:id`, () =>
+  http.get(`${apiUrl}/public/travels/:id`, () =>
     HttpResponse.json({
       id: 501,
       title: 'Patagonia 2026',

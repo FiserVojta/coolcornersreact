@@ -4,17 +4,17 @@ import {
   fetchCurrentUser,
   fetchUser,
   fetchUserPlaces,
-  fetchUserTrips,
   followUsers,
   unfollowUsers,
   addUserRating
 } from '../../api/users';
+import { fetchUserTravels } from '../../api/travels';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { useAuth } from '../../auth/AuthContext';
 import type { UserDetail as UserDetailModel } from '../../types/user';
 import type { Place, Tag } from '../../types/place';
-import type { Trip } from '../../types/trip';
+import type { TravelSummary } from '../../types/travel';
 import { TagList } from '../../components/TagList';
 import { Avatar } from '../../components/Avatar';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -38,9 +38,9 @@ export const UserDetail = () => {
     enabled: validId
   });
 
-  const tripsQuery = useQuery({
-    queryKey: ['user-trips', userId],
-    queryFn: () => fetchUserTrips(userId),
+  const travelsQuery = useQuery({
+    queryKey: ['user-travels', userId],
+    queryFn: () => fetchUserTravels(userId),
     enabled: validId
   });
 
@@ -85,8 +85,8 @@ export const UserDetail = () => {
   const attendedWanders = user.wandersAttended ?? [];
   const organizedWanders = user.wandersOrganized ?? [];
   const places = placesQuery.data ?? [];
-  const trips = tripsQuery.data ?? [];
-  const uniqueTags = collectTags(places, trips);
+  const travels = travelsQuery.data ?? [];
+  const uniqueTags = collectTags(places);
   const isCurrent = authenticated && meQuery.data?.id === user.id;
 
   return (
@@ -170,24 +170,27 @@ export const UserDetail = () => {
             )}
           </div>
           <div className="rounded-2xl bg-white p-5 shadow-card">
-            <h3 className="text-lg font-semibold font-display text-ink-strong">Trips</h3>
-            {tripsQuery.isLoading ? (
+            <h3 className="text-lg font-semibold font-display text-ink-strong">Travels</h3>
+            {travelsQuery.isLoading ? (
               <p className="text-sm text-ink-muted">Loading...</p>
-            ) : trips.length ? (
+            ) : travels.length ? (
               <ul className="mt-3 space-y-2 text-sm text-ink-strong">
-                {trips.map((t: Trip) => (
-                  <li key={t.id} className="rounded-xl bg-brand-50 border border-brand-50 px-3 py-2">
+                {travels.map((travel: TravelSummary) => (
+                  <li key={travel.id} className="rounded-xl bg-brand-50 border border-brand-50 px-3 py-2">
                     <Link
-                      to={`/trips/${t.id}`}
+                      to={`/travels/${travel.id}`}
                       className="font-semibold font-label text-ink-strong transition hover:text-brand-700"
                     >
-                      {t.name}
+                      {travel.title}
                     </Link>
+                    {travel.location ? (
+                      <span className="ml-2 text-xs font-label text-ink-muted">📍 {travel.location}</span>
+                    ) : null}
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="mt-2 text-sm text-ink-muted">No trips yet.</p>
+              <p className="mt-2 text-sm text-ink-muted">No travels yet.</p>
             )}
           </div>
         </div>
@@ -218,7 +221,7 @@ export const UserDetail = () => {
           )}
           <div className="rounded-2xl bg-white p-5 shadow-card">
             <h3 className="text-lg font-semibold font-display text-ink-strong">Tags</h3>
-            <p className="mt-2 text-sm font-label text-ink-muted">Interests pulled from associated trips/places.</p>
+            <p className="mt-2 text-sm font-label text-ink-muted">Interests pulled from associated places.</p>
             {uniqueTags.length ? (
               <div className="mt-3">
                 <TagList tags={uniqueTags} />
@@ -243,9 +246,9 @@ export const UserDetail = () => {
   );
 };
 
-const collectTags = (places: Place[], trips: Trip[]): Tag[] => {
+const collectTags = (places: Place[]): Tag[] => {
   const seen = new Map<number, Tag>();
-  for (const source of [...places, ...trips]) {
+  for (const source of places) {
     for (const tag of source.tags ?? []) {
       if (!seen.has(tag.id)) seen.set(tag.id, tag);
     }

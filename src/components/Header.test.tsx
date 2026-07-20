@@ -10,7 +10,10 @@ describe('Header', () => {
     });
 
     expect(screen.getByRole('button', { name: 'Login' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Places' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Travels' })).toBeInTheDocument();
+    // Places and Trips are hidden from the top menu.
+    expect(screen.queryByRole('link', { name: 'Places' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Trips' })).not.toBeInTheDocument();
   });
 
   it('shows greeting and logout action when authenticated', () => {

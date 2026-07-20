@@ -104,14 +104,7 @@ function App() {
         />
         <Route path="/travels/share/:token" element={<SharedTravel />} />
         <Route path="/travels/share/:token/photos/:photoId" element={<TravelPhotoPage />} />
-        <Route
-          path="/travels"
-          element={
-            <ProtectedRoute>
-              <MyTravelsList />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/travels" element={<MyTravelsList />} />
         <Route
           path="/travels/create"
           element={
@@ -120,14 +113,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/travels/:id"
-          element={
-            <ProtectedRoute>
-              <TravelDetail />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/travels/:id" element={<TravelDetail />} />
         <Route
           path="/travels/:id/edit"
           element={
@@ -136,14 +122,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/travels/:id/photos/:photoId"
-          element={
-            <ProtectedRoute>
-              <TravelPhotoPage />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/travels/:id/photos/:photoId" element={<TravelPhotoPage />} />
         <Route path="/users" element={<UsersList />} />
         <Route path="/users/:id" element={<UserDetail />} />
         <Route

@@ -20,8 +20,11 @@ describe('UserDetail', () => {
     expect(await screen.findByRole('heading', { name: 'Ada Lovelace' })).toBeInTheDocument();
     expect(screen.queryByText('ada@example.com')).not.toBeInTheDocument();
     expect(screen.getByText('Profile')).toBeInTheDocument();
-    expect(screen.getByText('Hidden Courtyard')).toBeInTheDocument();
-    expect(screen.getByText('Prague Dawn Walk')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Travels' })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'Patagonia 2026' })).toHaveAttribute('href', '/travels/501');
+    // The Trips section was replaced by Travels.
+    expect(screen.queryByRole('heading', { name: 'Trips' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Prague Dawn Walk')).not.toBeInTheDocument();
     expect(screen.getByText('Weekend riverside wander')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Signed-up CoTravels' })).toBeInTheDocument();
   });

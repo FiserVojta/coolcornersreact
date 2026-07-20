@@ -1,11 +1,10 @@
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 
+// Places and Trips are intentionally hidden from the menu; their routes still work via direct links.
 const navItems = [
   { to: '/', label: 'Home' },
-  { to: '/places', label: 'Places' },
-  { to: '/trips', label: 'Trips' },
-  { to: '/travels', label: 'My Travels' },
+  { to: '/travels', label: 'Travels' },
   { to: '/cotravel', label: 'CoTravel' },
   { to: '/events', label: 'Events' },
   { to: '/users', label: 'Users' }

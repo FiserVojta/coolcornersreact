@@ -328,11 +328,11 @@ export const TravelForm = () => {
   return (
     <main className="cf-page">
       <p className="crumbs">
-        <Link to="/travels">My Travels</Link>
+        <Link to="/travels">Travels</Link>
         <span className="sep">/</span>
         <span className="here">{isEdit ? 'Edit' : 'New'}</span>
       </p>
-      <p className="page-eyebrow">My Travels</p>
+      <p className="page-eyebrow">Travels</p>
       <h1 className="page-h1">{isEdit ? 'Edit travel' : 'Add a travel'}</h1>
       <p className="page-desc">Record a trip you've done, add your photos, and choose who can see it.</p>
 

@@ -44,6 +44,8 @@ export interface TravelSummary {
   coverImage?: TravelFile | null;
   photoCount: number;
   owner?: TravelOwner | null;
+  /** Average of all user ratings; null until the travel is first rated. */
+  rating?: number | null;
 }
 
 export interface TravelDetail {
@@ -60,6 +62,10 @@ export interface TravelDetail {
   coverImage?: TravelFile | null;
   photos?: TravelPhoto[];
   places?: TravelPlace[];
+  /** Average of all user ratings; null until the travel is first rated. */
+  rating?: number | null;
+  /** The current viewer's own rating, when they have rated this travel. */
+  myRating?: number | null;
   createdAt?: string | null;
 }
 
