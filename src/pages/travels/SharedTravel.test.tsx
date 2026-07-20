@@ -13,7 +13,7 @@ vi.mock('react-leaflet', () => ({
   Tooltip: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   Popup: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   TileLayer: () => null,
-  useMap: () => ({}),
+  useMap: () => ({ setView: vi.fn(), fitBounds: vi.fn() }),
   useMapEvents: () => null
 }));
 

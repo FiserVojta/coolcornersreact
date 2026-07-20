@@ -64,6 +64,8 @@ export const TravelForm = () => {
   const [placeSearching, setPlaceSearching] = useState(false);
   const [placeMessage, setPlaceMessage] = useState<string | null>(null);
   const [mapView, setMapView] = useState<{ lat: number; lng: number } | null>(null);
+  // Index of the place row currently being dragged (null when no drag is in progress).
+  const [draggedPlaceIndex, setDraggedPlaceIndex] = useState<number | null>(null);
 
   const travelQuery = useQuery({
     queryKey: ['travel', travelId],
@@ -272,6 +274,16 @@ export const TravelForm = () => {
 
   const removePlace = (index: number) => {
     setPlaces((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const movePlace = (from: number, to: number) => {
+    setPlaces((prev) => {
+      if (from === to || from < 0 || to < 0 || from >= prev.length || to >= prev.length) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
   };
 
   const handlePlaceSearch = async () => {
@@ -606,7 +618,28 @@ export const TravelForm = () => {
               {places.length ? (
                 <div className="rows">
                   {places.map((place, idx) => (
-                    <div key={`${place.latitude}-${place.longitude}-${idx}`} className="row-item">
+                    <div
+                      key={`${place.latitude}-${place.longitude}`}
+                      className={`row-item row-draggable${draggedPlaceIndex === idx ? ' dragging' : ''}`}
+                      draggable
+                      onDragStart={(event) => {
+                        event.dataTransfer.effectAllowed = 'move';
+                        setDraggedPlaceIndex(idx);
+                      }}
+                      onDragOver={(event) => {
+                        event.preventDefault();
+                        event.dataTransfer.dropEffect = 'move';
+                        if (draggedPlaceIndex !== null && draggedPlaceIndex !== idx) {
+                          movePlace(draggedPlaceIndex, idx);
+                          setDraggedPlaceIndex(idx);
+                        }
+                      }}
+                      onDrop={(event) => event.preventDefault()}
+                      onDragEnd={() => setDraggedPlaceIndex(null)}
+                    >
+                      <span className="drag-handle" aria-hidden="true" title="Drag to reorder">
+                        ⠿
+                      </span>
                       <span className="num">{idx + 1}</span>
                       <div className="grow">
                         <p className="r-name">{place.name || 'Visited place'}</p>

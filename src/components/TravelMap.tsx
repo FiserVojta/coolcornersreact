@@ -1,12 +1,26 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { CircleMarker, MapContainer, Polyline, Popup, Tooltip } from 'react-leaflet';
+import { CircleMarker, MapContainer, Polyline, Popup, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { MapyTileLayer } from './MapyTileLayer';
 import { env } from '../config/env';
 import type { TravelPhoto, TravelPlace } from '../types/travel';
 
 const mapContainerStyle = { width: '100%', height: '280px', borderRadius: '16px', overflow: 'hidden' };
+
+/** Keeps the map fitted to all points; MapContainer only honors center/bounds on mount. */
+const FitToPoints = ({ points }: { points: { lat: number; lng: number }[] }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (!points.length) return;
+    if (points.length === 1) {
+      map.setView([points[0].lat, points[0].lng], 13);
+      return;
+    }
+    map.fitBounds(L.latLngBounds(points.map((p) => [p.lat, p.lng])), { padding: [24, 24] });
+  }, [map, points]);
+  return null;
+};
 
 /** Read-only map of a travel: visited-place pins (dark) + geotagged photo markers (amber, with thumbnail). */
 export const TravelMap = ({
@@ -63,20 +77,13 @@ export const TravelMap = ({
   }
 
   const center = all[0];
-  const bounds = all.length > 1 ? L.latLngBounds(all.map((c) => [c.lat, c.lng])) : undefined;
 
   return (
     <Section>
       <div className="overflow-hidden rounded-2xl bg-white shadow-card">
-        <MapContainer
-          center={center}
-          zoom={10}
-          style={mapContainerStyle}
-          bounds={bounds}
-          boundsOptions={{ padding: [24, 24] }}
-          scrollWheelZoom={false}
-        >
+        <MapContainer center={center} zoom={10} style={mapContainerStyle} scrollWheelZoom={false}>
           <MapyTileLayer />
+          <FitToPoints points={all} />
           {placeCoords.map((pos, idx) => (
             <CircleMarker
               key={`place-${pos.lat}-${pos.lng}-${idx}`}
