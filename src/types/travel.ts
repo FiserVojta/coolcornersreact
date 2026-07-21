@@ -1,3 +1,5 @@
+import type { Category, Tag } from './place';
+
 export type TravelVisibility = 'PRIVATE' | 'FOLLOWERS' | 'PUBLIC';
 
 export interface TravelFile {
@@ -46,6 +48,8 @@ export interface TravelSummary {
   owner?: TravelOwner | null;
   /** Average of all user ratings; null until the travel is first rated. */
   rating?: number | null;
+  category?: Category | null;
+  tags?: Tag[];
 }
 
 export interface TravelDetail {
@@ -66,6 +70,8 @@ export interface TravelDetail {
   rating?: number | null;
   /** The current viewer's own rating, when they have rated this travel. */
   myRating?: number | null;
+  category?: Category | null;
+  tags?: Tag[];
   createdAt?: string | null;
 }
 
@@ -76,6 +82,8 @@ export interface TravelCreateRequest {
   startDate?: string | null;
   endDate?: string | null;
   visibility: TravelVisibility;
+  categoryId?: number | null;
+  tags?: number[];
   coverImageId?: number | null;
   photos?: { fileId: number; latitude?: number | null; longitude?: number | null; takenOn?: string | null }[];
   places?: TravelPlace[];

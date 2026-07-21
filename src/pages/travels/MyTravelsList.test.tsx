@@ -169,6 +169,118 @@ describe('MyTravelsList', () => {
     expect(screen.getByText('Iceland Ring Road')).toBeInTheDocument();
   });
 
+  it('filters travels by category and tags', async () => {
+    server.use(
+      http.get('http://localhost:8080/api/public/travels/accessible', () =>
+        HttpResponse.json([
+          {
+            id: 501,
+            title: 'Patagonia 2026',
+            visibility: 'PRIVATE',
+            photoCount: 0,
+            owner: { id: 99, displayName: 'Test Me' },
+            category: { id: 1, name: 'place', main: true, title: 'Place' },
+            tags: [{ id: 11, name: 'quiet', title: 'Quiet', value: 'quiet', creator: 'test' }]
+          },
+          {
+            id: 502,
+            title: 'Iceland Ring Road',
+            visibility: 'PUBLIC',
+            photoCount: 0,
+            owner: { id: 1, displayName: 'Ada Lovelace' },
+            category: { id: 2, name: 'trip', main: true, title: 'Trip' },
+            tags: []
+          }
+        ])
+      )
+    );
+
+    renderWithProviders(<MyTravelsList />, {
+      route: '/travels',
+      authValue: { authenticated: true, email: 'me@example.com' }
+    });
+
+    expect(await screen.findByText('Patagonia 2026')).toBeInTheDocument();
+    expect(screen.getByText('Iceland Ring Road')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Select categories'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Place' }));
+
+    expect(screen.getByText('Patagonia 2026')).toBeInTheDocument();
+    expect(screen.queryByText('Iceland Ring Road')).not.toBeInTheDocument();
+
+    // Deselect the category, then narrow by tag instead.
+    fireEvent.click(screen.getByRole('button', { name: 'Place' }));
+    expect(screen.getByText('Iceland Ring Road')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Select tags'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Quiet' }));
+
+    expect(screen.getByText('Patagonia 2026')).toBeInTheDocument();
+    expect(screen.queryByText('Iceland Ring Road')).not.toBeInTheDocument();
+  });
+
+  it('orders travels by rating and by travel date', async () => {
+    server.use(
+      http.get('http://localhost:8080/api/public/travels/accessible', () =>
+        HttpResponse.json([
+          {
+            id: 501,
+            title: 'Patagonia 2026',
+            startDate: '2026-01-10',
+            visibility: 'PRIVATE',
+            photoCount: 0,
+            owner: { id: 99, displayName: 'Test Me' },
+            rating: 3.0
+          },
+          {
+            id: 502,
+            title: 'Iceland Ring Road',
+            startDate: '2025-06-01',
+            visibility: 'PUBLIC',
+            photoCount: 0,
+            owner: { id: 1, displayName: 'Ada Lovelace' },
+            rating: 4.5
+          },
+          {
+            id: 503,
+            title: 'Sahara Crossing',
+            startDate: '2026-03-05',
+            visibility: 'PUBLIC',
+            photoCount: 0,
+            owner: { id: 1, displayName: 'Ada Lovelace' },
+            rating: null
+          }
+        ])
+      )
+    );
+
+    renderWithProviders(<MyTravelsList />, {
+      route: '/travels',
+      authValue: { authenticated: true, email: 'me@example.com' }
+    });
+
+    expect(await screen.findByText('Patagonia 2026')).toBeInTheDocument();
+
+    const titles = () => screen.getAllByRole('heading', { level: 3 }).map((el) => el.textContent);
+
+    // Default keeps the API order.
+    expect(titles()).toEqual(['Patagonia 2026', 'Iceland Ring Road', 'Sahara Crossing']);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sort by' }));
+    fireEvent.click(screen.getByRole('option', { name: 'Highest rated' }));
+    // Unrated travels go last.
+    expect(titles()).toEqual(['Iceland Ring Road', 'Patagonia 2026', 'Sahara Crossing']);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sort by' }));
+    fireEvent.click(screen.getByRole('option', { name: 'Travel date — newest' }));
+    expect(titles()).toEqual(['Sahara Crossing', 'Patagonia 2026', 'Iceland Ring Road']);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sort by' }));
+    fireEvent.click(screen.getByRole('option', { name: 'Travel date — oldest' }));
+    expect(titles()).toEqual(['Iceland Ring Road', 'Patagonia 2026', 'Sahara Crossing']);
+  });
+
   it('shows an anonymous empty state without create actions', async () => {
     server.use(http.get('http://localhost:8080/api/public/travels/accessible', () => HttpResponse.json([])));
 

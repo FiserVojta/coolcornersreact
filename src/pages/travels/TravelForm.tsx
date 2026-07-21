@@ -3,6 +3,8 @@ import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { createTravel, fetchTravel, updateTravel } from '../../api/travels';
+import { fetchCategories } from '../../api/categories';
+import { fetchTags } from '../../api/tags';
 import { uploadFile } from '../../api/files';
 import { searchMapyPlaces, type MapySearchResult } from '../../api/mapy';
 import type { TravelCreateRequest, TravelPlace, TravelVisibility } from '../../types/travel';
@@ -25,6 +27,8 @@ type FormValues = {
   startDate: string;
   endDate: string;
   visibility: TravelVisibility;
+  /** Category id as string; '' means no category. */
+  categoryId: string;
 };
 
 const VISIBILITY_OPTIONS: { value: TravelVisibility; label: string; hint: string }[] = [
@@ -66,11 +70,22 @@ export const TravelForm = () => {
   const [mapView, setMapView] = useState<{ lat: number; lng: number } | null>(null);
   // Index of the place row currently being dragged (null when no drag is in progress).
   const [draggedPlaceIndex, setDraggedPlaceIndex] = useState<number | null>(null);
+  const [selectedTags, setSelectedTags] = useState<number[]>([]);
 
   const travelQuery = useQuery({
     queryKey: ['travel', travelId],
     queryFn: () => fetchTravel(travelId),
     enabled: isEdit && Number.isFinite(travelId)
+  });
+
+  const categoriesQuery = useQuery({
+    queryKey: ['categories', 'TRAVEL'],
+    queryFn: () => fetchCategories('TRAVEL')
+  });
+
+  const tagsQuery = useQuery({
+    queryKey: ['tags'],
+    queryFn: fetchTags
   });
 
   const {
@@ -86,7 +101,8 @@ export const TravelForm = () => {
       description: '',
       startDate: '',
       endDate: '',
-      visibility: 'PRIVATE'
+      visibility: 'PRIVATE',
+      categoryId: ''
     }
   });
 
@@ -99,8 +115,10 @@ export const TravelForm = () => {
         description: t.description ?? '',
         startDate: t.startDate ?? '',
         endDate: t.endDate ?? '',
-        visibility: t.visibility ?? 'PRIVATE'
+        visibility: t.visibility ?? 'PRIVATE',
+        categoryId: t.category?.id != null ? String(t.category.id) : ''
       });
+      setSelectedTags(t.tags?.map((tag) => tag.id) ?? []);
       if (t.coverImage && Number.isFinite(t.coverImage.id)) {
         setCoverImage({ fileId: t.coverImage.id, url: t.coverImage.url ?? undefined });
       }
@@ -244,6 +262,8 @@ export const TravelForm = () => {
       startDate: values.startDate || null,
       endDate: values.endDate || null,
       visibility: values.visibility,
+      categoryId: values.categoryId ? Number(values.categoryId) : null,
+      tags: selectedTags,
       coverImageId: coverImage?.fileId ?? null,
       photos: galleryFiles.map((file) => ({
         fileId: file.fileId,
@@ -263,6 +283,10 @@ export const TravelForm = () => {
 
   const removeGalleryFile = (fileId: number) => {
     setGalleryFiles((prev) => prev.filter((file) => file.fileId !== fileId));
+  };
+
+  const toggleTag = (id: number) => {
+    setSelectedTags((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
   };
 
   const addPlace = (place: TravelPlace) => {
@@ -372,6 +396,42 @@ export const TravelForm = () => {
                   {...register('description')}
                 />
               </label>
+              <label className="field">
+                <span className="field-label">
+                  Category <span className="field-opt">Optional</span>
+                </span>
+                <select className="select-native" {...register('categoryId')}>
+                  <option value="">No category</option>
+                  {(categoriesQuery.data ?? []).map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.title || cat.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="field">
+                <span className="field-label">
+                  Tags <span className="field-opt">Optional</span>
+                </span>
+                <div className="chips">
+                  {(tagsQuery.data ?? []).map((tag) => {
+                    const on = selectedTags.includes(tag.id);
+                    return (
+                      <button
+                        key={tag.id}
+                        type="button"
+                        className={`chip-toggle${on ? ' on' : ''}`}
+                        onClick={() => toggleTag(tag.id)}
+                      >
+                        <span className="dot">{on ? '✓' : '+'}</span>
+                        {tag.title || tag.name}
+                      </button>
+                    );
+                  })}
+                  {!(tagsQuery.data ?? []).length && <p className="field-hint">No tags available.</p>}
+                </div>
+                <p className="field-hint">Pick a few that fit. Tags power filtering on the travels list.</p>
+              </div>
               <label className="field">
                 <span className="field-label">Who can see this?</span>
                 <select className="select-native" {...register('visibility')}>

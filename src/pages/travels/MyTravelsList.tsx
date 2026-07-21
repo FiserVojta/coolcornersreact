@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchAccessibleTravels } from '../../api/travels';
+import { fetchCategories } from '../../api/categories';
+import { fetchTags } from '../../api/tags';
 import { useAuth } from '../../auth/AuthContext';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
@@ -8,16 +10,72 @@ import { TravelCard } from '../../components/TravelCard';
 import { PageContainer } from '../../components/layout/PageContainer';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/ui/Button';
-import { FilterShell, MultiSelectFilter, RatingThreshold, SearchInput } from '../../components/filters';
+import {
+  FilterShell,
+  MultiSelectFilter,
+  RatingThreshold,
+  SearchInput,
+  SortSelect,
+  type SortOption
+} from '../../components/filters';
+import type { TravelSummary } from '../../types/travel';
+
+type SortKey = 'recent' | 'date_desc' | 'date_asc' | 'rating_desc' | 'rating_asc';
+
+const SORT_OPTIONS: (SortOption & { value: SortKey })[] = [
+  { value: 'recent', label: 'Most recent' },
+  { value: 'date_desc', label: 'Travel date — newest' },
+  { value: 'date_asc', label: 'Travel date — oldest' },
+  { value: 'rating_desc', label: 'Highest rated' },
+  { value: 'rating_asc', label: 'Lowest rated' }
+];
+
+/** Sort key for travel dates; travels without dates sort last in either direction. */
+const travelDate = (travel: TravelSummary) => travel.startDate ?? travel.endDate ?? null;
+
+const sortTravels = (travels: TravelSummary[], sortKey: SortKey): TravelSummary[] => {
+  if (sortKey === 'recent') return travels; // Keep the API order: newest created first.
+  const sorted = [...travels];
+  sorted.sort((a, b) => {
+    if (sortKey === 'rating_desc' || sortKey === 'rating_asc') {
+      const aRating = a.rating;
+      const bRating = b.rating;
+      if (aRating == null && bRating == null) return 0;
+      if (aRating == null) return 1; // Unrated travels go last.
+      if (bRating == null) return -1;
+      return sortKey === 'rating_desc' ? bRating - aRating : aRating - bRating;
+    }
+    const aDate = travelDate(a);
+    const bDate = travelDate(b);
+    if (aDate == null && bDate == null) return 0;
+    if (aDate == null) return 1; // Undated travels go last.
+    if (bDate == null) return -1;
+    return sortKey === 'date_desc' ? bDate.localeCompare(aDate) : aDate.localeCompare(bDate);
+  });
+  return sorted;
+};
 
 export const MyTravelsList = () => {
   const { authenticated, email } = useAuth();
   const [search, setSearch] = useState('');
   const [minRating, setMinRating] = useState(0);
   const [selectedAuthors, setSelectedAuthors] = useState<number[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
+  const [selectedTags, setSelectedTags] = useState<number[]>([]);
+  const [sortKey, setSortKey] = useState<SortKey>('recent');
   const { data, isLoading, error } = useQuery({
     queryKey: ['travels', 'accessible', email ?? 'anonymous'],
     queryFn: fetchAccessibleTravels
+  });
+
+  const categoriesQuery = useQuery({
+    queryKey: ['categories', 'TRAVEL'],
+    queryFn: () => fetchCategories('TRAVEL')
+  });
+
+  const tagsQuery = useQuery({
+    queryKey: ['tags'],
+    queryFn: fetchTags
   });
 
   const travels = useMemo(() => data ?? [], [data]);
@@ -44,22 +102,52 @@ export const MyTravelsList = () => {
       ) {
         return false;
       }
+      if (
+        selectedCategories.length > 0 &&
+        (travel.category?.id == null || !selectedCategories.includes(travel.category.id))
+      ) {
+        return false;
+      }
+      if (
+        selectedTags.length > 0 &&
+        !(travel.tags ?? []).some((tag) => selectedTags.includes(tag.id))
+      ) {
+        return false;
+      }
       if (!query) return true;
       const ownerName = travel.owner?.displayName ?? travel.owner?.name ?? '';
       const haystack = `${travel.title} ${travel.location ?? ''} ${ownerName}`.toLowerCase();
       return haystack.includes(query);
     });
-  }, [travels, search, minRating, selectedAuthors]);
+  }, [travels, search, minRating, selectedAuthors, selectedCategories, selectedTags]);
+
+  const sortedTravels = useMemo(() => sortTravels(filteredTravels, sortKey), [filteredTravels, sortKey]);
 
   const toggleAuthor = (id: number) => {
     setSelectedAuthors((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
+  };
+
+  const toggleCategory = (id: number) => {
+    setSelectedCategories((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
+  };
+
+  const toggleTag = (id: number) => {
+    setSelectedTags((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
   };
 
   const clearFilters = () => {
     setSearch('');
     setMinRating(0);
     setSelectedAuthors([]);
+    setSelectedCategories([]);
+    setSelectedTags([]);
   };
+
+  const categoryOptions = (categoriesQuery.data ?? []).map((category) => ({
+    id: category.id,
+    label: category.title || category.name
+  }));
+  const tagOptions = (tagsQuery.data ?? []).map((tag) => ({ id: tag.id, label: tag.title || tag.name }));
 
   if (isLoading) return <LoadingState label="Loading travels..." />;
   if (error) return <ErrorState message="Unable to load travels right now." />;
@@ -87,6 +175,24 @@ export const MyTravelsList = () => {
         />
         <div className="mt-3.5 flex flex-wrap items-end gap-4">
           <MultiSelectFilter
+            label="Categories"
+            placeholder="Select categories"
+            options={categoryOptions}
+            selectedIds={selectedCategories}
+            onToggle={toggleCategory}
+            countNoun={{ singular: 'category', plural: 'categories' }}
+            emptyMessage="No categories available."
+          />
+          <MultiSelectFilter
+            label="Tags"
+            placeholder="Select tags"
+            options={tagOptions}
+            selectedIds={selectedTags}
+            onToggle={toggleTag}
+            countNoun={{ singular: 'tag', plural: 'tags' }}
+            emptyMessage="No tags available."
+          />
+          <MultiSelectFilter
             label="Authors"
             placeholder="Select authors"
             options={authorOptions}
@@ -96,6 +202,13 @@ export const MyTravelsList = () => {
             emptyMessage="No authors available."
           />
           <RatingThreshold value={minRating} onChange={setMinRating} />
+          <div className="ml-auto pb-0.5">
+            <SortSelect
+              value={sortKey}
+              options={SORT_OPTIONS}
+              onChange={(value) => setSortKey(value as SortKey)}
+            />
+          </div>
         </div>
       </FilterShell>
 
@@ -123,7 +236,7 @@ export const MyTravelsList = () => {
         </div>
       ) : (
         <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredTravels.map((travel) => (
+          {sortedTravels.map((travel) => (
             <TravelCard key={travel.id} travel={travel} />
           ))}
         </div>

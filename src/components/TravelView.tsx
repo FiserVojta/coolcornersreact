@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import type { TravelDetail, TravelPhoto } from '../types/travel';
 import { SurfaceCard } from './ui/SurfaceCard';
 import { VisibilityBadge } from './VisibilityBadge';
+import { TagList } from './TagList';
 import { TravelMap } from './TravelMap';
 import { formatTravelDates, formatTravelDay } from '../lib/travelFormat';
 
@@ -85,8 +86,14 @@ export const TravelView = ({ travel, actions, showVisibility, getPhotoHref }: Pr
           <p className="mt-2 font-label text-ink-muted">
             {travel.location ? `📍 ${travel.location} · ` : ''}
             {formatTravelDates(travel.startDate, travel.endDate)}
+            {travel.category ? ` · ${travel.category.title || travel.category.name}` : ''}
           </p>
           {ownerName ? <p className="mt-1 text-sm font-label text-ink-subtle">By {ownerName}</p> : null}
+          {travel.tags?.length ? (
+            <div className="mt-2">
+              <TagList tags={travel.tags} />
+            </div>
+          ) : null}
         </div>
         {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
       </div>
