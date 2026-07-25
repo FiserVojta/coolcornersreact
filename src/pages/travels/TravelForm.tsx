@@ -31,6 +31,44 @@ type FormValues = {
   categoryId: string;
 };
 
+type GalleryFile = {
+  fileId: number;
+  name: string;
+  url?: string;
+  thumbnailUrl?: string;
+  latitude?: number;
+  longitude?: number;
+  takenOn?: string;
+  note?: string;
+};
+
+/** Enumerate ISO `yyyy-MM-dd` days from start to end inclusive; empty when the range is invalid. */
+const enumerateDays = (start?: string, end?: string): string[] => {
+  if (!start || !end) return [];
+  const startMs = Date.parse(`${start}T00:00:00Z`);
+  const endMs = Date.parse(`${end}T00:00:00Z`);
+  if (Number.isNaN(startMs) || Number.isNaN(endMs) || endMs < startMs) return [];
+  const days: string[] = [];
+  const dayMs = 24 * 60 * 60 * 1000;
+  // Cap at ~2 years so a typo in the year can't blow up the DOM.
+  for (let ms = startMs; ms <= endMs && days.length < 750; ms += dayMs) {
+    days.push(new Date(ms).toISOString().slice(0, 10));
+  }
+  return days;
+};
+
+const formatDayLabel = (iso: string): string => {
+  const ms = Date.parse(`${iso}T00:00:00Z`);
+  if (Number.isNaN(ms)) return iso;
+  return new Date(ms).toLocaleDateString(undefined, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC'
+  });
+};
+
 const VISIBILITY_OPTIONS: { value: TravelVisibility; label: string; hint: string }[] = [
   { value: 'PRIVATE', label: 'Private — only me', hint: 'Only you can see this travel.' },
   { value: 'FOLLOWERS', label: 'Followers', hint: 'People who follow you can see it.' },
@@ -49,17 +87,9 @@ export const TravelForm = () => {
   const [coverImage, setCoverImage] = useState<{ fileId: number; url?: string } | null>(null);
   const [photoMessage, setPhotoMessage] = useState<string | null>(null);
   const [photosUploading, setPhotosUploading] = useState(false);
-  const [galleryFiles, setGalleryFiles] = useState<
-    Array<{
-      fileId: number;
-      name: string;
-      url?: string;
-      thumbnailUrl?: string;
-      latitude?: number;
-      longitude?: number;
-      takenOn?: string;
-    }>
-  >([]);
+  const [galleryFiles, setGalleryFiles] = useState<GalleryFile[]>([]);
+  // Per-day notes keyed by ISO `yyyy-MM-dd`. Empty strings are treated as "no note" on submit.
+  const [dayNotes, setDayNotes] = useState<Record<string, string>>({});
   // The photo currently being placed on the map (the next map click sets its coordinates).
   const [placingFileId, setPlacingFileId] = useState<number | null>(null);
   const [places, setPlaces] = useState<TravelPlace[]>([]);
@@ -132,10 +162,18 @@ export const TravelForm = () => {
             thumbnailUrl: photo.thumbnailUrl ?? undefined,
             latitude: photo.latitude ?? undefined,
             longitude: photo.longitude ?? undefined,
-            takenOn: photo.takenOn ?? undefined
+            takenOn: photo.takenOn ?? undefined,
+            note: photo.note ?? undefined
           }))
       );
       setPlaces(t.places ?? []);
+      setDayNotes(
+        Object.fromEntries(
+          (t.dayNotes ?? [])
+            .filter((dayNote) => typeof dayNote.day === 'string' && dayNote.day)
+            .map((dayNote) => [dayNote.day, dayNote.note ?? ''])
+        )
+      );
     }
   }, [travelQuery.data, reset]);
 
@@ -186,15 +224,7 @@ export const TravelForm = () => {
           return { uploaded, gps, meta };
         })
       );
-      const added: Array<{
-        fileId: number;
-        name: string;
-        url?: string;
-        thumbnailUrl?: string;
-        latitude?: number;
-        longitude?: number;
-        takenOn?: string;
-      }> = [];
+      const added: GalleryFile[] = [];
       let failed = 0;
       let located = 0;
       let dated = 0;
@@ -254,6 +284,16 @@ export const TravelForm = () => {
     );
   };
 
+  const setPhotoNote = (fileId: number, note: string) => {
+    setGalleryFiles((prev) =>
+      prev.map((file) => (file.fileId === fileId ? { ...file, note } : file))
+    );
+  };
+
+  const setDayNote = (day: string, note: string) => {
+    setDayNotes((prev) => ({ ...prev, [day]: note }));
+  };
+
   const onSubmit = (values: FormValues) => {
     const payload: TravelCreateRequest = {
       title: values.title,
@@ -269,13 +309,17 @@ export const TravelForm = () => {
         fileId: file.fileId,
         latitude: file.latitude ?? null,
         longitude: file.longitude ?? null,
-        takenOn: file.takenOn ?? null
+        takenOn: file.takenOn ?? null,
+        note: file.note?.trim() ? file.note.trim() : null
       })),
       places: places.map((place) => ({
         name: place.name ?? null,
         latitude: place.latitude,
         longitude: place.longitude
-      }))
+      })),
+      dayNotes: Object.entries(dayNotes)
+        .filter(([, note]) => note.trim().length > 0)
+        .map(([day, note]) => ({ day, note: note.trim() }))
     };
     if (isEdit) return updateMut.mutate(payload);
     return createMut.mutate(payload);
@@ -331,6 +375,19 @@ export const TravelForm = () => {
 
   const selectedVisibility = watch('visibility');
   const visibilityHint = VISIBILITY_OPTIONS.find((opt) => opt.value === selectedVisibility)?.hint;
+
+  // Days shown in the "Day notes" section: the start–end range, plus any day that already has
+  // a note or a photo, so notes stay visible even when they fall outside the current date range.
+  const startDate = watch('startDate');
+  const endDate = watch('endDate');
+  const dayList = (() => {
+    const days = new Set<string>(enumerateDays(startDate, endDate));
+    galleryFiles.forEach((file) => {
+      if (file.takenOn) days.add(file.takenOn);
+    });
+    Object.keys(dayNotes).forEach((day) => days.add(day));
+    return Array.from(days).sort();
+  })();
 
   const needsTileKey =
     env.mapyTilesUrl.includes('{apikey}') ||
@@ -529,6 +586,14 @@ export const TravelForm = () => {
                                 onChange={(event) => setPhotoDate(file.fileId, event.target.value)}
                               />
                             </label>
+                            <textarea
+                              className="textarea"
+                              rows={2}
+                              style={{ marginTop: 6 }}
+                              placeholder="Add a note for this photo…"
+                              value={file.note ?? ''}
+                              onChange={(event) => setPhotoNote(file.fileId, event.target.value)}
+                            />
                           </div>
                           <button
                             type="button"
@@ -715,6 +780,39 @@ export const TravelForm = () => {
                 </div>
               ) : (
                 <p className="seg-empty">No places added yet — search or click the map to add them.</p>
+              )}
+            </div>
+          </section>
+
+          <section className="panel">
+            <div className="panel-head">
+              <span className="n">4</span>
+              <h3>Day notes</h3>
+            </div>
+            <div className="panel-body">
+              <p className="field-hint">
+                Jot down what happened each day. Days come from the trip's start and end dates, plus any
+                day that has photos.
+              </p>
+              {dayList.length ? (
+                <div className="rows">
+                  {dayList.map((day) => (
+                    <label key={day} className="field">
+                      <span className="field-label">{formatDayLabel(day)}</span>
+                      <textarea
+                        className="textarea"
+                        rows={2}
+                        placeholder="What did you do this day?"
+                        value={dayNotes[day] ?? ''}
+                        onChange={(event) => setDayNote(day, event.target.value)}
+                      />
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <p className="seg-empty">
+                  Set a start and end date in “Basics” (or add dated photos) to add notes for each day.
+                </p>
               )}
             </div>
           </section>

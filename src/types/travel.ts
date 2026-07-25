@@ -34,6 +34,15 @@ export interface TravelPhoto {
   longitude?: number | null;
   /** Date the photo was taken (ISO yyyy-MM-dd), from EXIF or set manually. */
   takenOn?: string | null;
+  /** Optional free-text note/caption for this photo. */
+  note?: string | null;
+}
+
+export interface TravelDayNote {
+  id?: number;
+  /** The day this note is about (ISO yyyy-MM-dd). */
+  day: string;
+  note?: string | null;
 }
 
 export interface TravelSummary {
@@ -66,6 +75,8 @@ export interface TravelDetail {
   coverImage?: TravelFile | null;
   photos?: TravelPhoto[];
   places?: TravelPlace[];
+  /** Per-day notes for this travel. */
+  dayNotes?: TravelDayNote[];
   /** Average of all user ratings; null until the travel is first rated. */
   rating?: number | null;
   /** The current viewer's own rating, when they have rated this travel. */
@@ -85,8 +96,15 @@ export interface TravelCreateRequest {
   categoryId?: number | null;
   tags?: number[];
   coverImageId?: number | null;
-  photos?: { fileId: number; latitude?: number | null; longitude?: number | null; takenOn?: string | null }[];
+  photos?: {
+    fileId: number;
+    latitude?: number | null;
+    longitude?: number | null;
+    takenOn?: string | null;
+    note?: string | null;
+  }[];
   places?: TravelPlace[];
+  dayNotes?: { day: string; note?: string | null }[];
 }
 
 export const VISIBILITY_LABELS: Record<TravelVisibility, string> = {

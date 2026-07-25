@@ -21,10 +21,20 @@ export const TravelView = ({ travel, actions, showVisibility, getPhotoHref }: Pr
   const photos = travel.photos ?? [];
   const ownerName = travel.owner?.displayName ?? travel.owner?.name;
 
-  // Group photos by the day they were taken; dated groups first (chronological), undated last.
-  // `takenOn` is an ISO `yyyy-MM-dd` string; coerce anything else to "" (undated) so we never crash.
+  // A day's note keyed by its ISO `yyyy-MM-dd`, ignoring blank ones.
+  const dayNoteByDay = new Map<string, string>();
+  for (const dayNote of travel.dayNotes ?? []) {
+    if (typeof dayNote.day === 'string' && (dayNote.note ?? '').trim().length > 0) {
+      dayNoteByDay.set(dayNote.day, (dayNote.note ?? '').trim());
+    }
+  }
+
+  // Group photos by the day they were taken and attach that day's note, so the note sits with
+  // its photos. Dated groups come first (chronological), undated last. `takenOn` is an ISO
+  // `yyyy-MM-dd` string; coerce anything else to "" (undated) so we never crash. Days that have
+  // a note but no photos still appear, so no note is lost.
   const dayKey = (photo: TravelPhoto) => (typeof photo.takenOn === 'string' ? photo.takenOn : '');
-  const hasAnyDate = photos.some((photo) => dayKey(photo) !== '');
+  const hasAnyDate = photos.some((photo) => dayKey(photo) !== '') || dayNoteByDay.size > 0;
   const photoGroups = (() => {
     const byDay = new Map<string, TravelPhoto[]>();
     for (const photo of photos) {
@@ -33,9 +43,18 @@ export const TravelView = ({ travel, actions, showVisibility, getPhotoHref }: Pr
       group.push(photo);
       byDay.set(key, group);
     }
+    // Ensure days that only have a note (no photos) still get a group.
+    for (const day of dayNoteByDay.keys()) {
+      if (!byDay.has(day)) byDay.set(day, []);
+    }
     return Array.from(byDay.keys())
       .sort((a, b) => (a === '' ? 1 : b === '' ? -1 : a < b ? -1 : a > b ? 1 : 0))
-      .map((key) => ({ key, label: formatTravelDay(key || undefined), items: byDay.get(key) ?? [] }));
+      .map((key) => ({
+        key,
+        label: formatTravelDay(key || undefined),
+        items: byDay.get(key) ?? [],
+        note: key ? dayNoteByDay.get(key) : undefined
+      }));
   })();
 
   const renderPhoto = (photo: TravelPhoto) => {
@@ -50,6 +69,9 @@ export const TravelView = ({ travel, actions, showVisibility, getPhotoHref }: Pr
     ) : (
       <div className="flex h-40 w-full items-center justify-center text-sm text-slate-400">{photo.name}</div>
     );
+    const caption = photo.note ? (
+      <p className="px-2 py-1.5 text-xs font-label text-ink-default">{photo.note}</p>
+    ) : null;
     return href ? (
       <Link
         key={photo.id}
@@ -57,10 +79,12 @@ export const TravelView = ({ travel, actions, showVisibility, getPhotoHref }: Pr
         className="block overflow-hidden rounded-xl bg-brand-50 transition hover:-translate-y-0.5 hover:shadow-card"
       >
         {inner}
+        {caption}
       </Link>
     ) : (
       <div key={photo.id} className="overflow-hidden rounded-xl bg-brand-50">
         {inner}
+        {caption}
       </div>
     );
   };
@@ -106,16 +130,21 @@ export const TravelView = ({ travel, actions, showVisibility, getPhotoHref }: Pr
 
       <TravelMap places={travel.places} photos={travel.photos} getPhotoHref={getPhotoHref} />
 
-      {photos.length ? (
+      {photos.length || dayNoteByDay.size ? (
         <section className="flex flex-col gap-4">
-          <h2 className="font-display text-xl font-semibold text-ink-strong">Photos</h2>
+          <h2 className="font-display text-xl font-semibold text-ink-strong">Day by day</h2>
           {hasAnyDate ? (
             photoGroups.map((group) => (
               <div key={group.key || 'undated'} className="flex flex-col gap-2">
                 <h3 className="text-sm font-semibold font-label uppercase tracking-[0.12em] text-brand-700">
                   {group.label}
                 </h3>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{group.items.map(renderPhoto)}</div>
+                {group.note ? (
+                  <p className="whitespace-pre-line font-label text-ink-default">{group.note}</p>
+                ) : null}
+                {group.items.length ? (
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{group.items.map(renderPhoto)}</div>
+                ) : null}
               </div>
             ))
           ) : (
