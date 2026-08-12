@@ -107,6 +107,7 @@ export const CotravelForm = () => {
     handleSubmit,
     reset,
     setValue,
+    getValues,
     control,
     formState: { errors, isSubmitting }
   } = useForm<FormValues>({
@@ -179,6 +180,18 @@ export const CotravelForm = () => {
     }
   }, [detailQuery.data, reset]);
 
+  // On create, default the category to the first real COTRAVEL category once they load, unless
+  // the current value is already a valid option (don't clobber a choice the user just made).
+  useEffect(() => {
+    if (isEdit) return;
+    const cats = categoriesQuery.data;
+    if (!cats?.length) return;
+    const current = Number(getValues('category'));
+    if (!cats.some((cat) => cat.id === current)) {
+      setValue('category', cats[0].id);
+    }
+  }, [categoriesQuery.data, isEdit, getValues, setValue]);
+
   const selectedTags = useWatch({ control, name: 'tags' }) ?? [];
   const watchedDescription = useWatch({ control, name: 'description' });
   const watchedCategory = useWatch({ control, name: 'category' });
@@ -225,7 +238,9 @@ export const CotravelForm = () => {
   if (isEdit && detailQuery.error) return <ErrorState message="Failed to load co-travel for editing." />;
 
   const onSubmit = (values: FormValues) => {
-    const preparedSegments = segments.filter((segment) => segment.tripIds.length || segment.placeIds.length);
+    const preparedSegments = segments.filter(
+      (segment) => segment.tripIds.length || segment.placeIds.length || segment.googlePlaces.length
+    );
     const payload: FormValues = {
       ...values,
       wanderers: normalizeNumberList(values.wanderers),

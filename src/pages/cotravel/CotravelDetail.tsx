@@ -186,6 +186,12 @@ export const CotravelDetail = () => {
                           <p className="text-xs text-ink-muted">Trip</p>
                         </Link>
                       ))}
+                      {part.googlePlaces?.map((place) => (
+                        <div key={`g-${place.id}`} className="rounded-lg bg-brand-50 px-3 py-2">
+                          <p className="font-semibold text-ink-strong">{place.name}</p>
+                          <p className="text-xs text-ink-muted">Place</p>
+                        </div>
+                      ))}
                     </div>
                     <SegmentMap part={part} />
                   </li>
@@ -418,19 +424,16 @@ const SegmentMap = ({ part }: { part: WanderPart }) => {
 };
 
 const extractCoords = (parts?: Cotravel['wanderParts']) =>
-  (parts ?? [])
-    .flatMap((part) => part.places ?? [])
-    .map((place) => {
-      if (!place.feature?.geometry?.coordinates) return null;
-      const [lng, lat] = place.feature.geometry.coordinates;
-      return { lat, lng, name: place.name };
-    })
-    .filter(Boolean) as Array<{ lat: number; lng: number; name?: string | null }>;
+  (parts ?? []).flatMap((part) => [
+    ...extractPlacesCoords(part.places),
+    ...extractGoogleCoords(part.googlePlaces)
+  ]);
 
 const extractPartCoords = (part: WanderPart) => {
   const placeCoords = extractPlacesCoords(part.places);
   const tripCoords = extractTripCoords(part.trips);
-  return [...placeCoords, ...tripCoords];
+  const googleCoords = extractGoogleCoords(part.googlePlaces);
+  return [...placeCoords, ...tripCoords, ...googleCoords];
 };
 
 const extractPlacesCoords = (places?: WanderPart['places']) =>

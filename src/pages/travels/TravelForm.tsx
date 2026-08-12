@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { createTravel, fetchTravel, updateTravel } from '../../api/travels';
 import { fetchCategories } from '../../api/categories';
 import { fetchTags } from '../../api/tags';
@@ -81,6 +81,12 @@ export const TravelForm = () => {
   const travelId = Number(id);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
+
+  // `?basedOn=<travelId>` means "Make a copy": the new travel is registered as another
+  // version of that one, seeded with its route and labels but with the creator's own photos.
+  const basedOnId = Number(searchParams.get('basedOn'));
+  const isVersion = !isEdit && Number.isFinite(basedOnId) && basedOnId > 0;
 
   const [selectedCover, setSelectedCover] = useState<File | null>(null);
   const [coverMessage, setCoverMessage] = useState<string | null>(null);
@@ -106,6 +112,12 @@ export const TravelForm = () => {
     queryKey: ['travel', travelId],
     queryFn: () => fetchTravel(travelId),
     enabled: isEdit && Number.isFinite(travelId)
+  });
+
+  const basedOnQuery = useQuery({
+    queryKey: ['travel', basedOnId],
+    queryFn: () => fetchTravel(basedOnId),
+    enabled: isVersion
   });
 
   const categoriesQuery = useQuery({
@@ -176,6 +188,24 @@ export const TravelForm = () => {
       );
     }
   }, [travelQuery.data, reset]);
+
+  // Seed a new version from the trip it is based on: same route, labels and destination, but the
+  // story, dates and photos are the new traveller's own to fill in.
+  useEffect(() => {
+    if (!isVersion || !basedOnQuery.data) return;
+    const source = basedOnQuery.data;
+    reset({
+      title: source.title ?? '',
+      location: source.location ?? '',
+      description: '',
+      startDate: '',
+      endDate: '',
+      visibility: 'PRIVATE',
+      categoryId: source.category?.id != null ? String(source.category.id) : ''
+    });
+    setSelectedTags(source.tags?.map((tag) => tag.id) ?? []);
+    setPlaces(source.places ?? []);
+  }, [isVersion, basedOnQuery.data, reset]);
 
   const createMut = useMutation({
     mutationFn: (payload: TravelCreateRequest) => createTravel(payload),
@@ -319,7 +349,8 @@ export const TravelForm = () => {
       })),
       dayNotes: Object.entries(dayNotes)
         .filter(([, note]) => note.trim().length > 0)
-        .map(([day, note]) => ({ day, note: note.trim() }))
+        .map(([day, note]) => ({ day, note: note.trim() })),
+      originTravelId: isVersion ? basedOnId : null
     };
     if (isEdit) return updateMut.mutate(payload);
     return createMut.mutate(payload);
@@ -414,8 +445,12 @@ export const TravelForm = () => {
         <span className="here">{isEdit ? 'Edit' : 'New'}</span>
       </p>
       <p className="page-eyebrow">Travels</p>
-      <h1 className="page-h1">{isEdit ? 'Edit travel' : 'Add a travel'}</h1>
-      <p className="page-desc">Record a trip you've done, add your photos, and choose who can see it.</p>
+      <h1 className="page-h1">{isEdit ? 'Edit travel' : isVersion ? 'Add your version' : 'Add a travel'}</h1>
+      <p className="page-desc">
+        {isVersion
+          ? `Your own run of ${basedOnQuery.data?.title ?? 'this trip'} — the route and tags are prefilled, add your dates and photos.`
+          : "Record a trip you've done, add your photos, and choose who can see it."}
+      </p>
 
       <form className="split" onSubmit={handleSubmit(onSubmit)}>
         <div className="stack">

@@ -61,6 +61,18 @@ export interface TravelSummary {
   tags?: Tag[];
 }
 
+/** Another run of the same trip — somebody's own version, with their own photos. */
+export interface TravelVersion {
+  id: number;
+  title: string;
+  startDate?: string | null;
+  endDate?: string | null;
+  coverImage?: TravelFile | null;
+  photoCount: number;
+  owner?: TravelOwner | null;
+  rating?: number | null;
+}
+
 export interface TravelDetail {
   id: number;
   title: string;
@@ -84,6 +96,12 @@ export interface TravelDetail {
   category?: Category | null;
   tags?: Tag[];
   createdAt?: string | null;
+  /** Set when this travel is somebody's own version of an earlier travel. */
+  originTravelId?: number | null;
+  /** How many times this trip was done in total — the original plus every version of it. */
+  timesDone?: number | null;
+  /** Versions of the same trip the viewer may open; never includes this travel. */
+  otherVersions?: TravelVersion[];
 }
 
 export interface TravelCreateRequest {
@@ -105,6 +123,8 @@ export interface TravelCreateRequest {
   }[];
   places?: TravelPlace[];
   dayNotes?: { day: string; note?: string | null }[];
+  /** Registers the new travel as another version of that travel. Only honoured on create. */
+  originTravelId?: number | null;
 }
 
 export const VISIBILITY_LABELS: Record<TravelVisibility, string> = {
