@@ -128,7 +128,12 @@ export const TravelView = ({ travel, actions, showVisibility, getPhotoHref }: Pr
         </SurfaceCard>
       ) : null}
 
-      <TravelMap places={travel.places} photos={travel.photos} getPhotoHref={getPhotoHref} />
+      <TravelMap
+        places={travel.places}
+        photos={travel.photos}
+        transportMode={travel.transportMode}
+        getPhotoHref={getPhotoHref}
+      />
 
       {photos.length || dayNoteByDay.size ? (
         <section className="flex flex-col gap-4">

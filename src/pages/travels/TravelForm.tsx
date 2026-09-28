@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -7,7 +7,13 @@ import { fetchCategories } from '../../api/categories';
 import { fetchTags } from '../../api/tags';
 import { uploadFile } from '../../api/files';
 import { searchMapyPlaces, type MapySearchResult } from '../../api/mapy';
-import type { TravelCreateRequest, TravelPlace, TravelVisibility } from '../../types/travel';
+import {
+  TRANSPORT_MODE_LABELS,
+  type TravelCreateRequest,
+  type TravelPlace,
+  type TravelTransportMode,
+  type TravelVisibility
+} from '../../types/travel';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { UploadDropzone } from '../../components/UploadDropzone';
@@ -18,6 +24,7 @@ import type { LeafletMouseEvent } from 'leaflet';
 import { MapyTileLayer } from '../../components/MapyTileLayer';
 import { FitBounds, MapViewTracker, SearchResultMarkers } from '../../components/mapSearchLayers';
 import { env } from '../../config/env';
+import { cachedRoutesOf, withRouteGeometry } from '../../lib/travelRoutes';
 import '../../styles/create-form.css';
 
 type FormValues = {
@@ -29,6 +36,8 @@ type FormValues = {
   visibility: TravelVisibility;
   /** Category id as string; '' means no category. */
   categoryId: string;
+  /** '' means not specified — the map then draws straight lines between places. */
+  transportMode: TravelTransportMode | '';
 };
 
 type GalleryFile = {
@@ -107,6 +116,9 @@ export const TravelForm = () => {
   // Index of the place row currently being dragged (null when no drag is in progress).
   const [draggedPlaceIndex, setDraggedPlaceIndex] = useState<number | null>(null);
   const [selectedTags, setSelectedTags] = useState<number[]>([]);
+  // Leg routes already known (loaded with the travel or fetched on an earlier save attempt), so
+  // saving only calls the routing API for legs that are new or changed.
+  const routeCache = useRef(cachedRoutesOf([], null));
 
   const travelQuery = useQuery({
     queryKey: ['travel', travelId],
@@ -144,7 +156,8 @@ export const TravelForm = () => {
       startDate: '',
       endDate: '',
       visibility: 'PRIVATE',
-      categoryId: ''
+      categoryId: '',
+      transportMode: ''
     }
   });
 
@@ -158,7 +171,8 @@ export const TravelForm = () => {
         startDate: t.startDate ?? '',
         endDate: t.endDate ?? '',
         visibility: t.visibility ?? 'PRIVATE',
-        categoryId: t.category?.id != null ? String(t.category.id) : ''
+        categoryId: t.category?.id != null ? String(t.category.id) : '',
+        transportMode: t.transportMode ?? ''
       });
       setSelectedTags(t.tags?.map((tag) => tag.id) ?? []);
       if (t.coverImage && Number.isFinite(t.coverImage.id)) {
@@ -179,6 +193,7 @@ export const TravelForm = () => {
           }))
       );
       setPlaces(t.places ?? []);
+      routeCache.current = cachedRoutesOf(t.places ?? [], t.transportMode);
       setDayNotes(
         Object.fromEntries(
           (t.dayNotes ?? [])
@@ -201,10 +216,12 @@ export const TravelForm = () => {
       startDate: '',
       endDate: '',
       visibility: 'PRIVATE',
-      categoryId: source.category?.id != null ? String(source.category.id) : ''
+      categoryId: source.category?.id != null ? String(source.category.id) : '',
+      transportMode: source.transportMode ?? ''
     });
     setSelectedTags(source.tags?.map((tag) => tag.id) ?? []);
     setPlaces(source.places ?? []);
+    routeCache.current = cachedRoutesOf(source.places ?? [], source.transportMode);
   }, [isVersion, basedOnQuery.data, reset]);
 
   const createMut = useMutation({
@@ -324,7 +341,9 @@ export const TravelForm = () => {
     setDayNotes((prev) => ({ ...prev, [day]: note }));
   };
 
-  const onSubmit = (values: FormValues) => {
+  const onSubmit = async (values: FormValues) => {
+    // Route each leg once here and store it with the travel, so viewing it never hits Mapy.
+    const routedPlaces = await withRouteGeometry(places, values.transportMode || null, routeCache.current);
     const payload: TravelCreateRequest = {
       title: values.title,
       description: values.description || null,
@@ -342,15 +361,18 @@ export const TravelForm = () => {
         takenOn: file.takenOn ?? null,
         note: file.note?.trim() ? file.note.trim() : null
       })),
-      places: places.map((place) => ({
+      places: routedPlaces.map((place) => ({
         name: place.name ?? null,
         latitude: place.latitude,
-        longitude: place.longitude
+        longitude: place.longitude,
+        transportMode: place.transportMode ?? null,
+        routeGeometry: place.routeGeometry ?? null
       })),
       dayNotes: Object.entries(dayNotes)
         .filter(([, note]) => note.trim().length > 0)
         .map(([day, note]) => ({ day, note: note.trim() })),
-      originTravelId: isVersion ? basedOnId : null
+      originTravelId: isVersion ? basedOnId : null,
+      transportMode: values.transportMode || null
     };
     if (isEdit) return updateMut.mutate(payload);
     return createMut.mutate(payload);
@@ -369,6 +391,10 @@ export const TravelForm = () => {
       if (prev.some((p) => p.latitude === place.latitude && p.longitude === place.longitude)) return prev;
       return [...prev, place];
     });
+  };
+
+  const setPlaceTransportMode = (index: number, mode: TravelTransportMode | null) => {
+    setPlaces((prev) => prev.map((place, i) => (i === index ? { ...place, transportMode: mode } : place)));
   };
 
   const removePlace = (index: number) => {
@@ -405,6 +431,7 @@ export const TravelForm = () => {
   if (isEdit && travelQuery.error) return <ErrorState message="Failed to load travel for editing." />;
 
   const selectedVisibility = watch('visibility');
+  const defaultTransportMode = watch('transportMode');
   const visibilityHint = VISIBILITY_OPTIONS.find((opt) => opt.value === selectedVisibility)?.hint;
 
   // Days shown in the "Day notes" section: the start–end range, plus any day that already has
@@ -705,6 +732,23 @@ export const TravelForm = () => {
               <h3>Visited places</h3>
             </div>
             <div className="panel-body">
+              <label className="field">
+                <span className="field-label">
+                  How did you usually get around? <span className="field-opt">Optional</span>
+                </span>
+                <select className="select-native" {...register('transportMode')}>
+                  <option value="">Not specified</option>
+                  {(Object.keys(TRANSPORT_MODE_LABELS) as TravelTransportMode[]).map((mode) => (
+                    <option key={mode} value={mode}>
+                      {TRANSPORT_MODE_LABELS[mode]}
+                    </option>
+                  ))}
+                </select>
+                <p className="field-hint">
+                  Shapes the route between your places on the travel map. You can change it for a single leg
+                  in the list below.
+                </p>
+              </label>
               {canSearch ? (
                 <div className="search-row">
                   <input
@@ -807,6 +851,26 @@ export const TravelForm = () => {
                           {place.latitude.toFixed(5)}, {place.longitude.toFixed(5)}
                         </p>
                       </div>
+                      {idx > 0 && (
+                        <select
+                          className="select-native"
+                          title="How you got here from the previous place"
+                          aria-label={`How you got to ${place.name || `place ${idx + 1}`}`}
+                          value={place.transportMode ?? ''}
+                          onChange={(event) =>
+                            setPlaceTransportMode(idx, (event.target.value || null) as TravelTransportMode | null)
+                          }
+                        >
+                          <option value="">
+                            {defaultTransportMode ? `Default (${TRANSPORT_MODE_LABELS[defaultTransportMode]})` : 'Default'}
+                          </option>
+                          {(Object.keys(TRANSPORT_MODE_LABELS) as TravelTransportMode[]).map((mode) => (
+                            <option key={mode} value={mode}>
+                              {TRANSPORT_MODE_LABELS[mode]}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                       <button type="button" className="x" onClick={() => removePlace(idx)}>
                         ×
                       </button>
@@ -862,10 +926,10 @@ export const TravelForm = () => {
               disabled={isSubmitting || createMut.isPending || updateMut.isPending}
             >
               {isEdit
-                ? updateMut.isPending
+                ? isSubmitting || updateMut.isPending
                   ? 'Saving…'
                   : 'Save travel'
-                : createMut.isPending
+                : isSubmitting || createMut.isPending
                   ? 'Creating…'
                   : 'Create travel'}
             </button>

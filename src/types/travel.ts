@@ -2,6 +2,9 @@ import type { Category, Tag } from './place';
 
 export type TravelVisibility = 'PRIVATE' | 'FOLLOWERS' | 'PUBLIC';
 
+/** How the travel was done; drives how the route between visited places is drawn. */
+export type TravelTransportMode = 'WALKING' | 'DRIVING' | 'PUBLIC_TRANSPORT' | 'FLYING';
+
 export interface TravelFile {
   id: number;
   url?: string | null;
@@ -21,6 +24,10 @@ export interface TravelPlace {
   name?: string | null;
   latitude: number;
   longitude: number;
+  /** How the traveller got here from the previous place; null uses the travel's own mode. */
+  transportMode?: TravelTransportMode | null;
+  /** Routed line of the leg arriving here as [lat, lng] pairs, cached when the travel is saved. */
+  routeGeometry?: [number, number][] | null;
 }
 
 export interface TravelPhoto {
@@ -102,6 +109,8 @@ export interface TravelDetail {
   timesDone?: number | null;
   /** Versions of the same trip the viewer may open; never includes this travel. */
   otherVersions?: TravelVersion[];
+  /** Null when unspecified — the map then draws straight lines between places. */
+  transportMode?: TravelTransportMode | null;
 }
 
 export interface TravelCreateRequest {
@@ -125,10 +134,18 @@ export interface TravelCreateRequest {
   dayNotes?: { day: string; note?: string | null }[];
   /** Registers the new travel as another version of that travel. Only honoured on create. */
   originTravelId?: number | null;
+  transportMode?: TravelTransportMode | null;
 }
 
 export const VISIBILITY_LABELS: Record<TravelVisibility, string> = {
   PRIVATE: 'Private',
   FOLLOWERS: 'Followers',
   PUBLIC: 'Public'
+};
+
+export const TRANSPORT_MODE_LABELS: Record<TravelTransportMode, string> = {
+  WALKING: 'Walking',
+  DRIVING: 'Driving',
+  PUBLIC_TRANSPORT: 'Public transport',
+  FLYING: 'Flying'
 };

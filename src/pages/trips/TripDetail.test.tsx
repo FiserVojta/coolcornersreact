@@ -10,14 +10,18 @@ import { server } from '../../test/msw/server';
 vi.mock('react-leaflet', () => ({
   MapContainer: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   CircleMarker: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  Marker: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   Polyline: () => null,
   Tooltip: ({ children }: { children: ReactNode }) => <div>{children}</div>
 }));
 
+// mapyIcons builds its pins with `new Icon(...)` / `new DivIcon(...)` at import time.
 vi.mock('leaflet', () => ({
   default: {
     latLngBounds: () => ({})
-  }
+  },
+  Icon: class {},
+  DivIcon: class {}
 }));
 
 describe('TripDetail', () => {
