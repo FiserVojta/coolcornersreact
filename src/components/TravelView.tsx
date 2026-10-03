@@ -15,9 +15,11 @@ interface Props {
   showVisibility?: boolean;
   /** Builds the link to a photo's full-page view; when omitted, photos aren't clickable. */
   getPhotoHref?: (photo: TravelPhoto) => string | undefined;
+  /** Optional compact block shown on the right of the title header, under the actions (e.g. rating). */
+  summary?: ReactNode;
 }
 
-export const TravelView = ({ travel, actions, showVisibility, getPhotoHref }: Props) => {
+export const TravelView = ({ travel, actions, showVisibility, getPhotoHref, summary }: Props) => {
   const photos = travel.photos ?? [];
   const ownerName = travel.owner?.displayName ?? travel.owner?.name;
 
@@ -49,13 +51,24 @@ export const TravelView = ({ travel, actions, showVisibility, getPhotoHref }: Pr
     }
     return Array.from(byDay.keys())
       .sort((a, b) => (a === '' ? 1 : b === '' ? -1 : a < b ? -1 : a > b ? 1 : 0))
-      .map((key) => ({
+      .map((key, index) => ({
         key,
         label: formatTravelDay(key || undefined),
+        dayNumber: key ? dayNumberOf(key, index) : undefined,
         items: byDay.get(key) ?? [],
         note: key ? dayNoteByDay.get(key) : undefined
       }));
   })();
+
+  // "Day N" counted from the trip's start date; falls back to the group's position when the
+  // start date is missing or the day falls before it.
+  function dayNumberOf(day: string, index: number) {
+    const toUtcMs = (iso?: string | null) => (iso ? Date.parse(`${iso.slice(0, 10)}T00:00:00Z`) : NaN);
+    const dayMs = toUtcMs(day);
+    const startMs = toUtcMs(travel.startDate);
+    if (Number.isNaN(dayMs) || Number.isNaN(startMs) || dayMs < startMs) return index + 1;
+    return Math.round((dayMs - startMs) / (24 * 60 * 60 * 1000)) + 1;
+  }
 
   const renderPhoto = (photo: TravelPhoto) => {
     const href = getPhotoHref?.(photo);
@@ -119,7 +132,12 @@ export const TravelView = ({ travel, actions, showVisibility, getPhotoHref }: Pr
             </div>
           ) : null}
         </div>
-        {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+        {actions || summary ? (
+          <div className="flex flex-col gap-3 md:items-end">
+            {actions ? <div className="flex flex-wrap items-center gap-2 md:justify-end">{actions}</div> : null}
+            {summary}
+          </div>
+        ) : null}
       </div>
 
       {travel.description ? (
@@ -140,17 +158,33 @@ export const TravelView = ({ travel, actions, showVisibility, getPhotoHref }: Pr
           <h2 className="font-display text-xl font-semibold text-ink-strong">Day by day</h2>
           {hasAnyDate ? (
             photoGroups.map((group) => (
-              <div key={group.key || 'undated'} className="flex flex-col gap-2">
-                <h3 className="text-sm font-semibold font-label uppercase tracking-[0.12em] text-brand-700">
-                  {group.label}
-                </h3>
+              <SurfaceCard
+                key={group.key || 'undated'}
+                as="div"
+                className="flex flex-col gap-4 border-l-4 border-brand-500"
+              >
+                <div className="flex flex-wrap items-center gap-3 border-b border-brand-100 pb-3">
+                  <span className="rounded-full bg-brand-600 px-3 py-1 text-sm font-semibold font-label text-white">
+                    {group.dayNumber ? `Day ${group.dayNumber}` : 'Undated'}
+                  </span>
+                  {group.key ? (
+                    <h3 className="font-display text-lg font-semibold text-ink-strong">{group.label}</h3>
+                  ) : null}
+                  {group.items.length ? (
+                    <span className="ml-auto text-xs font-label text-ink-subtle">
+                      {group.items.length} {group.items.length === 1 ? 'photo' : 'photos'}
+                    </span>
+                  ) : null}
+                </div>
                 {group.note ? (
-                  <p className="whitespace-pre-line font-label text-ink-default">{group.note}</p>
+                  <p className="whitespace-pre-line rounded-xl bg-brand-50 px-4 py-3 font-label text-ink-default">
+                    {group.note}
+                  </p>
                 ) : null}
                 {group.items.length ? (
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{group.items.map(renderPhoto)}</div>
                 ) : null}
-              </div>
+              </SurfaceCard>
             ))
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{photos.map(renderPhoto)}</div>

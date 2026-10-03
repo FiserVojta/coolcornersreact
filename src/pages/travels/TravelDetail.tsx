@@ -154,12 +154,52 @@ export const TravelDetail = () => {
       </>
     ) : null;
 
+  const ratingSection = (
+    <section className="w-fit rounded-xl border border-brand-100 bg-white px-3 py-2 shadow-sm">
+      <div className="flex items-center gap-2">
+        <h3 className="text-sm font-semibold font-display text-ink-strong">Rate this travel</h3>
+        <RatingBadge rating={travel.rating ?? undefined} />
+      </div>
+      {authenticated ? (
+        <>
+          <div className="mt-2 flex gap-1">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                type="button"
+                onClick={() => rateMut.mutate(star)}
+                disabled={rateMut.isPending}
+                aria-label={`Rate ${star} out of 5`}
+                aria-pressed={travel.myRating === star}
+                className={`h-7 w-7 rounded-full text-xs font-semibold transition ${
+                  travel.myRating != null && travel.myRating >= star
+                    ? 'border border-brand-100 bg-brand-600 text-white'
+                    : 'border border-brand-100 bg-white text-ink-strong hover:border-brand-300'
+                }`}
+              >
+                {star}
+              </button>
+            ))}
+          </div>
+          {rateMut.isPending || travel.myRating != null ? (
+            <p className="mt-1 text-xs text-ink-muted">
+              {rateMut.isPending ? 'Submitting...' : `You rated this travel ${travel.myRating}/5.`}
+            </p>
+          ) : null}
+        </>
+      ) : (
+        <p className="mt-1 text-xs text-ink-muted">Log in to rate this travel.</p>
+      )}
+    </section>
+  );
+
   return (
     <PageContainer>
       <TravelView
         travel={travel}
         actions={actions}
         showVisibility={isOwner}
+        summary={ratingSection}
         getPhotoHref={(photo) => (photo.id != null ? `/travels/${travel.id}/photos/${photo.id}` : undefined)}
       />
       {shareMessage ? (
@@ -227,45 +267,6 @@ export const TravelDetail = () => {
           )}
         </section>
       ) : null}
-
-      <section className="mt-6 rounded-2xl border border-brand-100 bg-white p-5 shadow-sm">
-        <div className="flex items-center gap-3">
-          <h3 className="text-lg font-semibold font-display text-ink-strong">Rate this travel</h3>
-          <RatingBadge rating={travel.rating ?? undefined} />
-        </div>
-        {authenticated ? (
-          <>
-            <div className="mt-3 flex gap-2">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  type="button"
-                  onClick={() => rateMut.mutate(star)}
-                  disabled={rateMut.isPending}
-                  aria-label={`Rate ${star} out of 5`}
-                  aria-pressed={travel.myRating === star}
-                  className={`h-9 w-9 rounded-full text-sm font-semibold transition ${
-                    travel.myRating != null && travel.myRating >= star
-                      ? 'border border-brand-100 bg-brand-600 text-white'
-                      : 'border border-brand-100 bg-white text-ink-strong hover:border-brand-300'
-                  }`}
-                >
-                  {star}
-                </button>
-              ))}
-            </div>
-            <p className="mt-2 text-xs text-ink-muted">
-              {rateMut.isPending
-                ? 'Submitting...'
-                : travel.myRating != null
-                  ? `You rated this travel ${travel.myRating}/5.`
-                  : 'Tap a number to rate this travel.'}
-            </p>
-          </>
-        ) : (
-          <p className="mt-2 text-xs text-ink-muted">Log in to rate this travel.</p>
-        )}
-      </section>
     </PageContainer>
   );
 };
