@@ -27,6 +27,13 @@ export interface EventCreateRequest {
 }
 
 export interface EventSearchRequest {
+  search?: string;
+  /** ISO date-time with offset, inclusive. */
+  startsFrom?: string;
+  /** ISO date-time with offset, inclusive. */
+  startsUntil?: string;
+  /** Organizer email. */
+  createdBy?: string;
   categories: number[];
   page?: number;
   size?: number;

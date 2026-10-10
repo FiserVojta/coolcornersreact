@@ -14,6 +14,8 @@ import { PaginationControls } from '../../components/ui/PaginationControls';
 import { TagInput } from '../../components/TagInput';
 import { useTagFilter } from '../../hooks/useTagFilter';
 import { tagLabel } from '../../lib/tagNames';
+import { getUserLabel } from '../../lib/userLabel';
+import { formatDateChip } from '../../lib/dateFilter';
 import type { Tag } from '../../types/place';
 import {
   FilterChip,
@@ -40,28 +42,6 @@ const SORT_SELECT_OPTIONS: SortOption[] = SORT_OPTIONS.map(({ key, label }) => (
 
 const toStartOfDay = (date: string) => (date ? `${date}T00:00:00` : undefined);
 const toEndOfDay = (date: string) => (date ? `${date}T23:59:59` : undefined);
-
-const getUserLabel = (user: {
-  displayName?: string;
-  name?: string;
-  firstName?: string;
-  lastName?: string;
-  username?: string;
-}) =>
-  user.displayName ||
-  user.name ||
-  [user.firstName, user.lastName].filter(Boolean).join(' ') ||
-  user.username ||
-  'Traveler';
-
-const formatDateChip = (value: string) => {
-  if (!value) return '';
-  try {
-    return new Date(`${value}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  } catch {
-    return value;
-  }
-};
 
 export const CotravelList = () => {
   const { authenticated, login } = useAuth();

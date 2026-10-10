@@ -10,6 +10,10 @@ export const fetchEvents = async (filters?: Partial<EventSearchRequest>) => {
   const request = { ...defaultSearch, ...filters };
   const params = new URLSearchParams();
 
+  if (request.search) params.append('search', request.search);
+  if (request.startsFrom) params.append('startsFrom', request.startsFrom);
+  if (request.startsUntil) params.append('startsUntil', request.startsUntil);
+  if (request.createdBy) params.append('createdBy', request.createdBy);
   request.categories.forEach((id) => params.append('categories', String(id)));
   if (Number.isFinite(request.page)) params.append('page', String(request.page));
   if (Number.isFinite(request.size)) params.append('size', String(request.size));
