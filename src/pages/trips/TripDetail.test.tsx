@@ -111,4 +111,16 @@ describe('TripDetail', () => {
     expect(await screen.findByRole('button', { name: 'Marked as done' })).toBeDisabled();
     expect(screen.getByText('1 traveler has marked this trip as done.')).toBeInTheDocument();
   });
+
+  it('links each tag to the trips list filtered by that tag', async () => {
+    renderWithProviders(
+      <Routes>
+        <Route path="/trips/:id" element={<TripDetail />} />
+      </Routes>,
+      { route: '/trips/301' }
+    );
+
+    const tagLink = await screen.findByRole('link', { name: 'Quiet' });
+    expect(tagLink).toHaveAttribute('href', '/trips?tags=quiet');
+  });
 });

@@ -4,10 +4,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { createTrip, fetchTrip, updateTrip } from '../../api/trips';
 import { fetchCategories } from '../../api/categories';
-import { fetchTags } from '../../api/tags';
 import { uploadFile } from '../../api/files';
 import { searchMapyPlaces, type MapySearchResult } from '../../api/mapy';
 import type { GooglePlaceInput, TripCreateRequest, TripFileLinkRequest } from '../../types/trip';
+import type { Tag } from '../../types/place';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { env } from '../../config/env';
@@ -17,6 +17,7 @@ import { MapyTileLayer } from '../../components/MapyTileLayer';
 import { FitBounds, MapViewTracker, SearchResultMarkers } from '../../components/mapSearchLayers';
 import { guessCategoryId, stopCategoryIcon } from '../../components/mapyIcons';
 import { UploadDropzone } from '../../components/UploadDropzone';
+import { TagInput } from '../../components/TagInput';
 import '../../styles/create-form.css';
 
 const firstSentence = (text?: string | null) => {
@@ -61,10 +62,9 @@ export const TripForm = () => {
     queryFn: () => fetchCategories('PLACE')
   });
 
-  const tagsQuery = useQuery({
-    queryKey: ['tags'],
-    queryFn: fetchTags
-  });
+  // Selected tag objects (for display); null until the user edits, so edit mode shows the loaded tags.
+  const [tagsOverride, setTagsOverride] = useState<Tag[] | null>(null);
+  const selectedTags = tagsOverride ?? tripQuery.data?.tags ?? [];
 
   const {
     register,
@@ -128,8 +128,6 @@ export const TripForm = () => {
       }
     }
   }, [tripQuery.data, reset, setValue]);
-
-  const selectedTags = watch('tags') ?? [];
 
   const createMut = useMutation({
     mutationFn: (payload: TripCreateRequest) => createTrip(payload),
@@ -197,10 +195,13 @@ export const TripForm = () => {
     return createMut.mutate(payload);
   };
 
-  const toggleTag = (id: number) => {
-    const normalized = normalizeNumberList(selectedTags);
-    const next = normalized.includes(id) ? normalized.filter((item) => item !== id) : [...normalized, id];
-    setValue('tags', next, { shouldValidate: true, shouldDirty: true });
+  const changeTags = (next: Tag[]) => {
+    setTagsOverride(next);
+    setValue(
+      'tags',
+      next.map((tag) => tag.id),
+      { shouldValidate: true, shouldDirty: true }
+    );
   };
 
   const needsTileKey =
@@ -291,14 +292,13 @@ export const TripForm = () => {
 
   const categories = categoriesQuery.data ?? [];
   const placeCategories = placeCategoriesQuery.data ?? [];
-  const tags = tagsQuery.data ?? [];
   const watchedName = watch('name');
   const watchedDescription = watch('description');
   const watchedDuration = watch('duration');
   const watchedCategoryId = watch('categoryId');
   const activeCategory = categories.find((cat) => cat.id === Number(watchedCategoryId));
   const categoryLabel = activeCategory?.title || activeCategory?.name || 'Uncategorised';
-  const previewTags = tags.filter((tag) => selectedTags.includes(tag.id));
+  const previewTags = selectedTags;
   const stopCount = googlePlaces.length;
 
   return (
@@ -365,24 +365,7 @@ export const TripForm = () => {
                 </label>
               </div>
               <div className="field">
-                <span className="field-label">Tags</span>
-                <div className="chips">
-                  {tags.map((tag) => {
-                    const on = selectedTags.includes(tag.id);
-                    return (
-                      <button
-                        key={tag.id}
-                        type="button"
-                        className={`chip-toggle${on ? ' on' : ''}`}
-                        onClick={() => toggleTag(tag.id)}
-                      >
-                        <span className="dot">{on ? '✓' : '+'}</span>
-                        {tag.title || tag.name}
-                      </button>
-                    );
-                  })}
-                  {!tags.length && <p className="field-hint">No tags available.</p>}
-                </div>
+                <TagInput value={selectedTags} onChange={changeTags} />
                 <p className="field-hint">Pick a few that fit. Tags power filtering on the trips list.</p>
               </div>
             </div>

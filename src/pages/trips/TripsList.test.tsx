@@ -4,6 +4,7 @@ import { http, HttpResponse } from 'msw';
 import { TripsList } from './TripsList';
 import { renderWithProviders } from '../../test/renderWithProviders';
 import { server } from '../../test/msw/server';
+import { LocationProbe, currentSearchParams } from '../../test/LocationProbe';
 
 describe('TripsList', () => {
   it('renders trips from the mocked backend API', async () => {
@@ -15,7 +16,7 @@ describe('TripsList', () => {
     expect(screen.getByText('Found 1 trips.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Login to create' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /select categories/i })).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.getByRole('button', { name: /select tags/i })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('combobox', { name: 'Tags' })).toBeInTheDocument();
   });
 
   it('shows create action for authenticated users', async () => {
@@ -152,11 +153,15 @@ describe('TripsList', () => {
     expect(await screen.findByText('Prague Dawn Walk')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /select categories/i }));
     fireEvent.click(screen.getByRole('button', { name: 'Weekend' }));
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /select tags/i })).toBeInTheDocument();
-    });
-    fireEvent.click(screen.getByRole('button', { name: /select tags/i }));
-    fireEvent.click(screen.getByRole('button', { name: 'Food' }));
+    server.use(
+      http.get('http://localhost:8080/api/public/tags/search', () =>
+        HttpResponse.json([{ id: 12, name: 'Food', normalizedName: 'food', usageCount: 1 }])
+      )
+    );
+    const tagInput = screen.getByRole('combobox', { name: 'Tags' });
+    fireEvent.focus(tagInput);
+    fireEvent.change(tagInput, { target: { value: 'foo' } });
+    fireEvent.click(await screen.findByRole('option', { name: /food/i }));
 
     await waitFor(() => {
       expect(screen.queryByText('Prague Dawn Walk')).not.toBeInTheDocument();
@@ -165,9 +170,89 @@ describe('TripsList', () => {
       expect(
         screen.getAllByRole('button', { name: 'Weekend' }).some((button) => button.getAttribute('aria-pressed') === 'true')
       ).toBe(true);
-      expect(
-        screen.getAllByRole('button', { name: 'Food' }).some((button) => button.getAttribute('aria-pressed') === 'true')
-      ).toBe(true);
+      expect(screen.getByRole('button', { name: 'Remove Food' })).toBeInTheDocument();
+    });
+  });
+
+  describe('tag filter in the URL', () => {
+    const lowCost = { id: 2, name: 'LowCost', normalizedName: 'lowcost' };
+    const quiet = { id: 11, name: 'quiet', normalizedName: 'quiet' };
+
+    it('resolves ?tags= names and sends every selected tag id to the trips search', async () => {
+      const resolvedNames: string[][] = [];
+      const tagParams: string[][] = [];
+      server.use(
+        http.get('http://localhost:8080/api/public/tags/resolve', ({ request }) => {
+          const names = new URL(request.url).searchParams.getAll('names').flatMap((value) => value.split(','));
+          resolvedNames.push(names);
+          return HttpResponse.json([lowCost, quiet].filter((tag) => names.includes(tag.normalizedName)));
+        }),
+        http.get('http://localhost:8080/api/public/trips', ({ request }) => {
+          tagParams.push(new URL(request.url).searchParams.getAll('tags'));
+          return HttpResponse.json({ totalItems: 0, data: [] });
+        })
+      );
+
+      renderWithProviders(<TripsList />, { route: '/trips?tags=lowcost,quiet' });
+
+      expect(await screen.findByRole('button', { name: 'Remove LowCost' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Remove quiet' })).toBeInTheDocument();
+      expect(resolvedNames.some((names) => names.includes('lowcost') && names.includes('quiet'))).toBe(true);
+      await waitFor(() => expect(tagParams.at(-1)?.slice().sort()).toEqual(['11', '2']));
+    });
+
+    it('removing a tag chip removes it from the URL and from the search', async () => {
+      const tagParams: string[][] = [];
+      server.use(
+        http.get('http://localhost:8080/api/public/tags/resolve', () => HttpResponse.json([lowCost])),
+        http.get('http://localhost:8080/api/public/trips', ({ request }) => {
+          tagParams.push(new URL(request.url).searchParams.getAll('tags'));
+          return HttpResponse.json({ totalItems: 0, data: [] });
+        })
+      );
+
+      renderWithProviders(
+        <>
+          <TripsList />
+          <LocationProbe />
+        </>,
+        { route: '/trips?tags=lowcost' }
+      );
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Remove LowCost' }));
+
+      await waitFor(() => expect(currentSearchParams(screen.getByTestId('location-search')).get('tags')).toBeNull());
+      await waitFor(() => expect(tagParams.at(-1)).toEqual([]));
+    });
+
+    it('picking a tag writes its normalized name to the URL and never offers to create tags', async () => {
+      server.use(
+        http.get('http://localhost:8080/api/public/tags/search', () =>
+          HttpResponse.json([{ id: 7, name: 'HiddenGem', normalizedName: 'hiddengem', usageCount: 3 }])
+        )
+      );
+
+      renderWithProviders(
+        <>
+          <TripsList />
+          <LocationProbe />
+        </>,
+        { route: '/trips', authValue: { authenticated: true } }
+      );
+
+      await screen.findByText('Prague Dawn Walk');
+      const tagInput = screen.getByRole('combobox', { name: 'Tags' });
+      fireEvent.focus(tagInput);
+      fireEvent.change(tagInput, { target: { value: 'hid' } });
+      fireEvent.click(await screen.findByRole('option', { name: /hiddengem/i }));
+
+      await waitFor(() =>
+        expect(currentSearchParams(screen.getByTestId('location-search')).get('tags')).toBe('hiddengem')
+      );
+
+      fireEvent.change(tagInput, { target: { value: 'brand new tag' } });
+      await screen.findByRole('option', { name: /hiddengem/i }).catch(() => undefined);
+      expect(screen.queryByRole('option', { name: /create/i })).not.toBeInTheDocument();
     });
   });
 });

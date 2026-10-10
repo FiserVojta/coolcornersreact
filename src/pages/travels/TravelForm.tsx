@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { createTravel, fetchTravel, updateTravel } from '../../api/travels';
 import { fetchCategories } from '../../api/categories';
-import { fetchTags } from '../../api/tags';
 import { uploadFile } from '../../api/files';
 import { searchMapyPlaces, type MapySearchResult } from '../../api/mapy';
 import {
@@ -17,6 +16,8 @@ import {
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { UploadDropzone } from '../../components/UploadDropzone';
+import { TagInput } from '../../components/TagInput';
+import type { Tag } from '../../types/place';
 import exifr from 'exifr';
 import { toIsoDate } from '../../lib/travelFormat';
 import { CircleMarker, MapContainer, Marker, Tooltip, useMapEvents } from 'react-leaflet';
@@ -115,7 +116,7 @@ export const TravelForm = () => {
   const [mapView, setMapView] = useState<{ lat: number; lng: number } | null>(null);
   // Index of the place row currently being dragged (null when no drag is in progress).
   const [draggedPlaceIndex, setDraggedPlaceIndex] = useState<number | null>(null);
-  const [selectedTags, setSelectedTags] = useState<number[]>([]);
+  const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   // Leg routes already known (loaded with the travel or fetched on an earlier save attempt), so
   // saving only calls the routing API for legs that are new or changed.
   const routeCache = useRef(cachedRoutesOf([], null));
@@ -135,11 +136,6 @@ export const TravelForm = () => {
   const categoriesQuery = useQuery({
     queryKey: ['categories', 'TRAVEL'],
     queryFn: () => fetchCategories('TRAVEL')
-  });
-
-  const tagsQuery = useQuery({
-    queryKey: ['tags'],
-    queryFn: fetchTags
   });
 
   const {
@@ -174,7 +170,7 @@ export const TravelForm = () => {
         categoryId: t.category?.id != null ? String(t.category.id) : '',
         transportMode: t.transportMode ?? ''
       });
-      setSelectedTags(t.tags?.map((tag) => tag.id) ?? []);
+      setSelectedTags(t.tags ?? []);
       if (t.coverImage && Number.isFinite(t.coverImage.id)) {
         setCoverImage({ fileId: t.coverImage.id, url: t.coverImage.url ?? undefined });
       }
@@ -219,7 +215,7 @@ export const TravelForm = () => {
       categoryId: source.category?.id != null ? String(source.category.id) : '',
       transportMode: source.transportMode ?? ''
     });
-    setSelectedTags(source.tags?.map((tag) => tag.id) ?? []);
+    setSelectedTags(source.tags ?? []);
     setPlaces(source.places ?? []);
     routeCache.current = cachedRoutesOf(source.places ?? [], source.transportMode);
   }, [isVersion, basedOnQuery.data, reset]);
@@ -352,7 +348,7 @@ export const TravelForm = () => {
       endDate: values.endDate || null,
       visibility: values.visibility,
       categoryId: values.categoryId ? Number(values.categoryId) : null,
-      tags: selectedTags,
+      tags: selectedTags.map((tag) => tag.id),
       coverImageId: coverImage?.fileId ?? null,
       photos: galleryFiles.map((file) => ({
         fileId: file.fileId,
@@ -380,10 +376,6 @@ export const TravelForm = () => {
 
   const removeGalleryFile = (fileId: number) => {
     setGalleryFiles((prev) => prev.filter((file) => file.fileId !== fileId));
-  };
-
-  const toggleTag = (id: number) => {
-    setSelectedTags((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
   };
 
   const addPlace = (place: TravelPlace) => {
@@ -529,26 +521,7 @@ export const TravelForm = () => {
                 </select>
               </label>
               <div className="field">
-                <span className="field-label">
-                  Tags <span className="field-opt">Optional</span>
-                </span>
-                <div className="chips">
-                  {(tagsQuery.data ?? []).map((tag) => {
-                    const on = selectedTags.includes(tag.id);
-                    return (
-                      <button
-                        key={tag.id}
-                        type="button"
-                        className={`chip-toggle${on ? ' on' : ''}`}
-                        onClick={() => toggleTag(tag.id)}
-                      >
-                        <span className="dot">{on ? '✓' : '+'}</span>
-                        {tag.title || tag.name}
-                      </button>
-                    );
-                  })}
-                  {!(tagsQuery.data ?? []).length && <p className="field-hint">No tags available.</p>}
-                </div>
+                <TagInput value={selectedTags} onChange={setSelectedTags} />
                 <p className="field-hint">Pick a few that fit. Tags power filtering on the travels list.</p>
               </div>
               <label className="field">

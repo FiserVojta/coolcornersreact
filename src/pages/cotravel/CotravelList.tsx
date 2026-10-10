@@ -6,12 +6,15 @@ import { ErrorState } from '../../components/ErrorState';
 import { CotravelCard } from '../../components/CotravelCard';
 import { useAuth } from '../../auth/AuthContext';
 import { fetchCategories } from '../../api/categories';
-import { fetchTags } from '../../api/tags';
 import { fetchCurrentUser, fetchUsers } from '../../api/users';
 import { PageContainer } from '../../components/layout/PageContainer';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/ui/Button';
 import { PaginationControls } from '../../components/ui/PaginationControls';
+import { TagInput } from '../../components/TagInput';
+import { useTagFilter } from '../../hooks/useTagFilter';
+import { tagLabel } from '../../lib/tagNames';
+import type { Tag } from '../../types/place';
 import {
   FilterChip,
   FilterShell,
@@ -67,7 +70,7 @@ export const CotravelList = () => {
   const [startsUntil, setStartsUntil] = useState('');
   const [createdBy, setCreatedBy] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
-  const [selectedTags, setSelectedTags] = useState<number[]>([]);
+  const { selectedTags, selectedTagIds, setSelectedTags, isResolving: tagsResolving } = useTagFilter();
   const [sortKey, setSortKey] = useState<SortKey>('soonest');
   const [page, setPage] = useState(0);
   const safePage = Math.max(0, page);
@@ -77,11 +80,6 @@ export const CotravelList = () => {
   const categoriesQuery = useQuery({
     queryKey: ['categories', 'COTRAVEL'],
     queryFn: () => fetchCategories('COTRAVEL')
-  });
-
-  const tagsQuery = useQuery({
-    queryKey: ['tags'],
-    queryFn: fetchTags
   });
 
   const usersQuery = useQuery({
@@ -104,18 +102,20 @@ export const CotravelList = () => {
       startsUntil: toEndOfDay(startsUntil),
       createdBy: Number.isFinite(createdById ?? NaN) ? createdById : undefined,
       categories: selectedCategories,
-      tags: selectedTags,
+      tags: selectedTagIds,
       page: safePage,
       size: PAGE_SIZE,
       sortBy: sortOption.sortBy,
       sortDir: sortOption.sortDir
     };
-  }, [search, startsFrom, startsUntil, createdBy, selectedCategories, selectedTags, safePage, sortOption]);
+  }, [search, startsFrom, startsUntil, createdBy, selectedCategories, selectedTagIds, safePage, sortOption]);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['cotravel', queryFilters],
     queryFn: () => fetchCotravelList(queryFilters),
-    placeholderData: keepPreviousData
+    placeholderData: keepPreviousData,
+    // Wait for ?tags= to resolve so unfiltered results never flash.
+    enabled: !tagsResolving
   });
 
   const plans = data?.data ?? [];
@@ -125,21 +125,19 @@ export const CotravelList = () => {
   const canPrevious = currentPage > 0;
   const canNext = currentPage + 1 < totalPages;
 
-  if (isLoading) return <LoadingState label="Loading co-travel plans..." />;
+  if (isLoading || tagsResolving) return <LoadingState label="Loading co-travel plans..." />;
   if (error) return <ErrorState message="Unable to load co-travel plans right now." />;
 
   const categoryOptions = (categoriesQuery.data ?? []).map((category) => ({
     id: category.id,
     label: category.title || category.name
   }));
-  const tagOptions = (tagsQuery.data ?? []).map((tag) => ({ id: tag.id, label: tag.title || tag.name }));
   const userOptions: SingleSelectOption[] = (usersQuery.data?.data ?? []).map((user) => ({
     value: String(user.id),
     label: getUserLabel(user)
   }));
 
   const selectedCategoryObjs = categoryOptions.filter((category) => selectedCategories.includes(category.id));
-  const selectedTagObjs = tagOptions.filter((tag) => selectedTags.includes(tag.id));
   const selectedUser = userOptions.find((opt) => opt.value === createdBy);
   const hasActiveFilters =
     search.trim().length > 0 ||
@@ -153,18 +151,15 @@ export const CotravelList = () => {
     setPage(0);
     setSelectedCategories((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
   };
-  const toggleTag = (id: number) => {
+  const changeTags = (tags: Tag[]) => {
     setPage(0);
-    setSelectedTags((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
+    setSelectedTags(tags);
   };
   const removeCategory = (id: number) => {
     setPage(0);
     setSelectedCategories((prev) => prev.filter((item) => item !== id));
   };
-  const removeTag = (id: number) => {
-    setPage(0);
-    setSelectedTags((prev) => prev.filter((item) => item !== id));
-  };
+  const removeTag = (id: number) => changeTags(selectedTags.filter((tag) => tag.id !== id));
 
   const clearAll = () => {
     setSearch('');
@@ -218,8 +213,8 @@ export const CotravelList = () => {
           onRemove={() => removeCategory(category.id)}
         />
       ))}
-      {selectedTagObjs.map((tag) => (
-        <FilterChip key={`tag-${tag.id}`} label={tag.label} onRemove={() => removeTag(tag.id)} />
+      {selectedTags.map((tag) => (
+        <FilterChip key={`tag-${tag.id}`} label={tagLabel(tag)} onRemove={() => removeTag(tag.id)} />
       ))}
     </>
   );
@@ -307,15 +302,9 @@ export const CotravelList = () => {
             countNoun={{ singular: 'category', plural: 'categories' }}
             emptyMessage="No categories available."
           />
-          <MultiSelectFilter
-            label="Tags"
-            placeholder="Select tags"
-            options={tagOptions}
-            selectedIds={selectedTags}
-            onToggle={toggleTag}
-            countNoun={{ singular: 'tag', plural: 'tags' }}
-            emptyMessage="No tags available."
-          />
+          <div className="min-w-0">
+            <TagInput label="Tags" allowCreate={false} value={selectedTags} onChange={changeTags} />
+          </div>
         </div>
       </FilterShell>
 

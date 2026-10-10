@@ -52,12 +52,12 @@ describe('CotravelList', () => {
 
     expect((await screen.findAllByText('Weekend riverside wander')).length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: /select categories/i })).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.getByRole('button', { name: /select tags/i })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('combobox', { name: 'Tags' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Created By' })).toBeInTheDocument();
     expect(screen.getByRole('searchbox', { name: 'Search plans' })).toBeInTheDocument();
   });
 
-  it('applies highlighted category and tag selections from overlay dropdowns', async () => {
+  it('applies category, tag and creator selections', async () => {
     server.use(
       http.get('http://localhost:8080/api/public/categories', () =>
         HttpResponse.json([
@@ -133,8 +133,15 @@ describe('CotravelList', () => {
     expect((await screen.findAllByText('Weekend riverside wander')).length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole('button', { name: /select categories/i }));
     fireEvent.click(screen.getByRole('button', { name: 'Hiking' }));
-    fireEvent.click(screen.getByRole('button', { name: /select tags/i }));
-    fireEvent.click(screen.getByRole('button', { name: 'Group' }));
+    server.use(
+      http.get('http://localhost:8080/api/public/tags/search', () =>
+        HttpResponse.json([{ id: 12, name: 'Group', normalizedName: 'group', usageCount: 1 }])
+      )
+    );
+    const tagInput = screen.getByRole('combobox', { name: 'Tags' });
+    fireEvent.focus(tagInput);
+    fireEvent.change(tagInput, { target: { value: 'gro' } });
+    fireEvent.click(await screen.findByRole('option', { name: /group/i }));
     fireEvent.click(screen.getByRole('button', { name: 'Created By' }));
     fireEvent.click(screen.getByRole('option', { name: 'Host Two' }));
 
@@ -144,10 +151,23 @@ describe('CotravelList', () => {
       expect(
         screen.getAllByRole('button', { name: 'Hiking' }).some((button) => button.getAttribute('aria-pressed') === 'true')
       ).toBe(true);
-      expect(
-        screen.getAllByRole('button', { name: 'Group' }).some((button) => button.getAttribute('aria-pressed') === 'true')
-      ).toBe(true);
+      expect(screen.getByRole('button', { name: 'Remove Group' })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Created By' })).toHaveTextContent('Host Two');
     });
+  });
+
+  it('filters plans by the tags in the URL', async () => {
+    const tagParams: string[][] = [];
+    server.use(
+      http.get('http://localhost:8080/api/public/wanders', ({ request }) => {
+        tagParams.push(new URL(request.url).searchParams.getAll('tags'));
+        return HttpResponse.json({ totalItems: 0, data: [] });
+      })
+    );
+
+    renderWithProviders(<CotravelList />, { route: '/cotravel?tags=quiet' });
+
+    expect(await screen.findByRole('button', { name: 'Remove quiet' })).toBeInTheDocument();
+    await waitFor(() => expect(tagParams.at(-1)).toEqual(['11']));
   });
 });

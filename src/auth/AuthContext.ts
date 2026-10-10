@@ -10,6 +10,8 @@ export interface AuthContextValue {
   token: string | undefined;
   refreshToken: (minValidity?: number) => Promise<void>;
   canEdit: (createdBy?: string | null) => boolean;
+  /** True when the token carries the Keycloak realm role ADMIN. */
+  isAdmin: boolean;
   username?: string;
   name?: string;
   email?: string;

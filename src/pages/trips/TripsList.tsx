@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { fetchTrips } from '../../api/trips';
 import { fetchCategories } from '../../api/categories';
-import { fetchTags } from '../../api/tags';
 import { fetchCurrentUser } from '../../api/users';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
@@ -12,6 +11,10 @@ import { PageContainer } from '../../components/layout/PageContainer';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/ui/Button';
 import { PaginationControls } from '../../components/ui/PaginationControls';
+import { TagInput } from '../../components/TagInput';
+import { useTagFilter } from '../../hooks/useTagFilter';
+import { tagLabel } from '../../lib/tagNames';
+import type { Tag } from '../../types/place';
 import {
   FilterChip,
   FilterShell,
@@ -41,7 +44,7 @@ export const TripsList = () => {
   const { authenticated, login } = useAuth();
   const [search, setSearch] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
-  const [selectedTags, setSelectedTags] = useState<number[]>([]);
+  const { selectedTags, selectedTagIds, setSelectedTags, isResolving: tagsResolving } = useTagFilter();
   const [minRating, setMinRating] = useState(0);
   const [sortKey, setSortKey] = useState<SortKey>('recent');
   const [page, setPage] = useState(0);
@@ -54,24 +57,21 @@ export const TripsList = () => {
     queryFn: () => fetchCategories('TRIP')
   });
 
-  const tagsQuery = useQuery({
-    queryKey: ['tags'],
-    queryFn: fetchTags
-  });
-
   const { data, isLoading, error } = useQuery({
-    queryKey: ['trips', selectedCategories, selectedTags, minRating, sortKey, safePage],
+    queryKey: ['trips', selectedCategories, selectedTagIds, minRating, sortKey, safePage],
     queryFn: () =>
       fetchTrips({
         categories: selectedCategories,
-        tags: selectedTags,
+        tags: selectedTagIds,
         minRating,
         page: safePage,
         size: PAGE_SIZE,
         orderBy: sortOption.orderBy,
         order: sortOption.order
       }),
-    placeholderData: keepPreviousData
+    placeholderData: keepPreviousData,
+    // Wait for ?tags= to resolve so unfiltered results never flash.
+    enabled: !tagsResolving
   });
 
   const meQuery = useQuery({
@@ -82,7 +82,6 @@ export const TripsList = () => {
   const currentUserId = meQuery.data?.id;
   const trips = data?.data ?? [];
   const categories = categoriesQuery.data ?? [];
-  const tags = tagsQuery.data ?? [];
   const totalItems = data?.totalItems ?? trips.length;
 
   const filteredTrips = useMemo(() => {
@@ -103,9 +102,7 @@ export const TripsList = () => {
     id: category.id,
     label: category.title || category.name
   }));
-  const tagOptions = tags.map((tag) => ({ id: tag.id, label: tag.title || tag.name }));
   const selectedCategoryObjs = categoryOptions.filter((category) => selectedCategories.includes(category.id));
-  const selectedTagObjs = tagOptions.filter((tag) => selectedTags.includes(tag.id));
   const hasActiveFilters =
     selectedCategories.length > 0 || selectedTags.length > 0 || minRating > 0 || search.trim().length > 0;
 
@@ -114,9 +111,9 @@ export const TripsList = () => {
     setSelectedCategories((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
   };
 
-  const toggleTag = (id: number) => {
+  const changeTags = (tags: Tag[]) => {
     setPage(0);
-    setSelectedTags((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
+    setSelectedTags(tags);
   };
 
   const removeCategory = (id: number) => {
@@ -124,10 +121,7 @@ export const TripsList = () => {
     setSelectedCategories((prev) => prev.filter((item) => item !== id));
   };
 
-  const removeTag = (id: number) => {
-    setPage(0);
-    setSelectedTags((prev) => prev.filter((item) => item !== id));
-  };
+  const removeTag = (id: number) => changeTags(selectedTags.filter((tag) => tag.id !== id));
 
   const handleRatingChange = (value: number) => {
     setPage(0);
@@ -147,7 +141,7 @@ export const TripsList = () => {
     setPage(0);
   };
 
-  if (isLoading) return <LoadingState label="Loading trips..." />;
+  if (isLoading || tagsResolving) return <LoadingState label="Loading trips..." />;
   if (error) return <ErrorState message="Unable to load trips right now." />;
 
   const chips = (
@@ -159,8 +153,8 @@ export const TripsList = () => {
           onRemove={() => removeCategory(category.id)}
         />
       ))}
-      {selectedTagObjs.map((tag) => (
-        <FilterChip key={`tag-${tag.id}`} label={tag.label} onRemove={() => removeTag(tag.id)} />
+      {selectedTags.map((tag) => (
+        <FilterChip key={`tag-${tag.id}`} label={tagLabel(tag)} onRemove={() => removeTag(tag.id)} />
       ))}
       {minRating > 0 && (
         <FilterChip
@@ -220,15 +214,9 @@ export const TripsList = () => {
             countNoun={{ singular: 'category', plural: 'categories' }}
             emptyMessage="No categories available."
           />
-          <MultiSelectFilter
-            label="Tags"
-            placeholder="Select tags"
-            options={tagOptions}
-            selectedIds={selectedTags}
-            onToggle={toggleTag}
-            countNoun={{ singular: 'tag', plural: 'tags' }}
-            emptyMessage="No tags available."
-          />
+          <div className="min-w-[200px] flex-1">
+            <TagInput label="Tags" allowCreate={false} value={selectedTags} onChange={changeTags} />
+          </div>
           <RatingThreshold value={minRating} onChange={handleRatingChange} />
         </div>
       </FilterShell>

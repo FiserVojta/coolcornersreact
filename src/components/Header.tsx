@@ -1,5 +1,6 @@
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
+import { AdminMenu } from './AdminMenu';
 
 // Places and Trips are intentionally hidden from the menu; their routes still work via direct links.
 const navItems = [
@@ -14,7 +15,7 @@ const navClass = ({ isActive }: { isActive: boolean }) =>
   `text-sm font-medium font-label transition-colors underline-offset-4 ${isActive ? 'text-brand-700' : 'text-ink-muted hover:text-ink-strong'}`;
 
 export const Header = () => {
-  const { authenticated, initializing, login, logout, username } = useAuth();
+  const { authenticated, initializing, login, logout, username, isAdmin } = useAuth();
 
   return (
     <header className="sticky top-0 z-30 border-b border-brand-200/45 bg-white/70 backdrop-blur">
@@ -29,6 +30,7 @@ export const Header = () => {
               {item.label}
             </NavLink>
           ))}
+          {isAdmin && <AdminMenu />}
         </nav>
         <div className="flex items-center gap-3">
           {authenticated ? (

@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchAccessibleTravels } from '../../api/travels';
 import { fetchCategories } from '../../api/categories';
-import { fetchTags } from '../../api/tags';
 import { useAuth } from '../../auth/AuthContext';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
@@ -10,6 +9,8 @@ import { TravelCard } from '../../components/TravelCard';
 import { PageContainer } from '../../components/layout/PageContainer';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/ui/Button';
+import { TagInput } from '../../components/TagInput';
+import { useTagFilter } from '../../hooks/useTagFilter';
 import {
   FilterShell,
   MultiSelectFilter,
@@ -61,7 +62,7 @@ export const MyTravelsList = () => {
   const [minRating, setMinRating] = useState(0);
   const [selectedAuthors, setSelectedAuthors] = useState<number[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
-  const [selectedTags, setSelectedTags] = useState<number[]>([]);
+  const { selectedTags, selectedTagIds, setSelectedTags, isResolving: tagsResolving } = useTagFilter();
   const [sortKey, setSortKey] = useState<SortKey>('recent');
   const { data, isLoading, error } = useQuery({
     queryKey: ['travels', 'accessible', email ?? 'anonymous'],
@@ -71,11 +72,6 @@ export const MyTravelsList = () => {
   const categoriesQuery = useQuery({
     queryKey: ['categories', 'TRAVEL'],
     queryFn: () => fetchCategories('TRAVEL')
-  });
-
-  const tagsQuery = useQuery({
-    queryKey: ['tags'],
-    queryFn: fetchTags
   });
 
   const travels = useMemo(() => data ?? [], [data]);
@@ -109,8 +105,8 @@ export const MyTravelsList = () => {
         return false;
       }
       if (
-        selectedTags.length > 0 &&
-        !(travel.tags ?? []).some((tag) => selectedTags.includes(tag.id))
+        selectedTagIds.length > 0 &&
+        !selectedTagIds.every((id) => (travel.tags ?? []).some((tag) => tag.id === id))
       ) {
         return false;
       }
@@ -119,7 +115,7 @@ export const MyTravelsList = () => {
       const haystack = `${travel.title} ${travel.location ?? ''} ${ownerName}`.toLowerCase();
       return haystack.includes(query);
     });
-  }, [travels, search, minRating, selectedAuthors, selectedCategories, selectedTags]);
+  }, [travels, search, minRating, selectedAuthors, selectedCategories, selectedTagIds]);
 
   const sortedTravels = useMemo(() => sortTravels(filteredTravels, sortKey), [filteredTravels, sortKey]);
 
@@ -129,10 +125,6 @@ export const MyTravelsList = () => {
 
   const toggleCategory = (id: number) => {
     setSelectedCategories((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
-  };
-
-  const toggleTag = (id: number) => {
-    setSelectedTags((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
   };
 
   const clearFilters = () => {
@@ -147,9 +139,8 @@ export const MyTravelsList = () => {
     id: category.id,
     label: category.title || category.name
   }));
-  const tagOptions = (tagsQuery.data ?? []).map((tag) => ({ id: tag.id, label: tag.title || tag.name }));
 
-  if (isLoading) return <LoadingState label="Loading travels..." />;
+  if (isLoading || tagsResolving) return <LoadingState label="Loading travels..." />;
   if (error) return <ErrorState message="Unable to load travels right now." />;
 
   return (
@@ -183,15 +174,9 @@ export const MyTravelsList = () => {
             countNoun={{ singular: 'category', plural: 'categories' }}
             emptyMessage="No categories available."
           />
-          <MultiSelectFilter
-            label="Tags"
-            placeholder="Select tags"
-            options={tagOptions}
-            selectedIds={selectedTags}
-            onToggle={toggleTag}
-            countNoun={{ singular: 'tag', plural: 'tags' }}
-            emptyMessage="No tags available."
-          />
+          <div className="min-w-[200px] flex-1">
+            <TagInput label="Tags" allowCreate={false} value={selectedTags} onChange={setSelectedTags} />
+          </div>
           <MultiSelectFilter
             label="Authors"
             placeholder="Select authors"

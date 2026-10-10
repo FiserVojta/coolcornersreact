@@ -1,15 +1,15 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import { createPlace, fetchPlace, updatePlace } from '../../api/places';
 import { fetchCategories } from '../../api/categories';
-import { fetchTags } from '../../api/tags';
-import type { PlaceCreateRequest } from '../../types/place';
+import type { PlaceCreateRequest, Tag } from '../../types/place';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { Button } from '../../components/ui/Button';
 import { FormField, SelectInput, TextArea, TextInput } from '../../components/ui/FormField';
+import { TagInput } from '../../components/TagInput';
 
 export const PlaceForm = () => {
   const { id } = useParams();
@@ -29,15 +29,15 @@ export const PlaceForm = () => {
     queryFn: () => fetchCategories('PLACE')
   });
 
-  const tagsQuery = useQuery({
-    queryKey: ['tags'],
-    queryFn: fetchTags
-  });
+  // Selected tag objects (for display); null until the user edits, so edit mode shows the loaded tags.
+  const [tagsOverride, setTagsOverride] = useState<Tag[] | null>(null);
+  const selectedTags = tagsOverride ?? placeQuery.data?.tags ?? [];
 
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting }
   } = useForm<PlaceCreateRequest>({
     defaultValues: {
@@ -178,21 +178,17 @@ export const PlaceForm = () => {
           </FormField>
         </div>
 
-        <FormField label="Tags">
-          <SelectInput
-            multiple
-            {...register('tags', {
-              setValueAs: (vals) =>
-                Array.isArray(vals) ? vals.map((v) => Number(v)).filter((n) => !Number.isNaN(n)) : []
-            })}
-          >
-            {(tagsQuery.data ?? []).map((tag) => (
-              <option key={tag.id} value={tag.id}>
-                {tag.title || tag.name}
-              </option>
-            ))}
-          </SelectInput>
-        </FormField>
+        <TagInput
+          value={selectedTags}
+          onChange={(next) => {
+            setTagsOverride(next);
+            setValue(
+              'tags',
+              next.map((tag) => tag.id),
+              { shouldDirty: true }
+            );
+          }}
+        />
 
         <div className="flex gap-3">
           <Button

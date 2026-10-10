@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { MyTravelsList } from './MyTravelsList';
@@ -213,8 +213,16 @@ describe('MyTravelsList', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Place' }));
     expect(screen.getByText('Iceland Ring Road')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('Select tags'));
-    fireEvent.click(await screen.findByRole('button', { name: 'Quiet' }));
+    server.use(
+      http.get('http://localhost:8080/api/public/tags/search', () =>
+        HttpResponse.json([{ id: 11, name: 'quiet', normalizedName: 'quiet', usageCount: 1 }])
+      )
+    );
+    const tagInput = screen.getByRole('combobox', { name: 'Tags' });
+    fireEvent.focus(tagInput);
+    fireEvent.change(tagInput, { target: { value: 'qui' } });
+    fireEvent.click(await screen.findByRole('option', { name: /quiet/i }));
+    await waitFor(() => expect(screen.queryByText('Iceland Ring Road')).not.toBeInTheDocument());
 
     expect(screen.getByText('Patagonia 2026')).toBeInTheDocument();
     expect(screen.queryByText('Iceland Ring Road')).not.toBeInTheDocument();
@@ -291,5 +299,48 @@ describe('MyTravelsList', () => {
 
     expect(await screen.findByText('There are no public travels to show yet.')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Create your first travel' })).not.toBeInTheDocument();
+  });
+
+  it('shows only travels that have every tag from the URL', async () => {
+    server.use(
+      http.get('http://localhost:8080/api/public/tags/resolve', () =>
+        HttpResponse.json([
+          { id: 11, name: 'quiet', normalizedName: 'quiet' },
+          { id: 12, name: 'view', normalizedName: 'view' }
+        ])
+      ),
+      http.get('http://localhost:8080/api/public/travels/accessible', () =>
+        HttpResponse.json([
+          {
+            id: 601,
+            title: 'Both Tags Travel',
+            visibility: 'PUBLIC',
+            photoCount: 0,
+            owner: { id: 1, displayName: 'Ada' },
+            tags: [
+              { id: 11, name: 'quiet' },
+              { id: 12, name: 'view' }
+            ]
+          },
+          {
+            id: 602,
+            title: 'Quiet Only Travel',
+            visibility: 'PUBLIC',
+            photoCount: 0,
+            owner: { id: 1, displayName: 'Ada' },
+            tags: [{ id: 11, name: 'quiet' }]
+          }
+        ])
+      )
+    );
+
+    renderWithProviders(<MyTravelsList />, {
+      route: '/travels?tags=quiet,view',
+      authValue: { authenticated: true, email: 'me@example.com' }
+    });
+
+    expect(await screen.findByRole('button', { name: 'Remove view' })).toBeInTheDocument();
+    expect(await screen.findByText('Both Tags Travel')).toBeInTheDocument();
+    expect(screen.queryByText('Quiet Only Travel')).not.toBeInTheDocument();
   });
 });

@@ -133,7 +133,7 @@ export const TripDetail = () => {
             <h2 className="text-xl font-semibold font-display text-ink-strong">Overview</h2>
             <p className="mt-2 text-ink-default font-label leading-relaxed">{data.description}</p>
             <div className="mt-4">
-              <TagList tags={data.tags} />
+              <TagList tags={data.tags} basePath="/trips" />
             </div>
           </SurfaceCard>
 

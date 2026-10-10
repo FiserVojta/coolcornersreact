@@ -13,6 +13,7 @@ const defaultAuthValue: AuthContextValue = {
   token: undefined,
   refreshToken: async () => undefined,
   canEdit: () => false,
+  isAdmin: false,
   username: undefined,
   name: undefined,
   email: undefined

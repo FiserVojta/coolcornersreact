@@ -4,6 +4,7 @@ import { http, HttpResponse } from 'msw';
 import { PlacesList } from './PlacesList';
 import { renderWithProviders } from '../../test/renderWithProviders';
 import { server } from '../../test/msw/server';
+import { waitFor } from '@testing-library/react';
 
 describe('PlacesList', () => {
   it('renders places from the mocked backend API', async () => {
@@ -41,5 +42,20 @@ describe('PlacesList', () => {
     });
 
     expect(await screen.findByText('Unable to load places right now.')).toBeInTheDocument();
+  });
+
+  it('filters places by the tags in the URL', async () => {
+    const tagParams: string[][] = [];
+    server.use(
+      http.get('http://localhost:8080/api/public/places', ({ request }) => {
+        tagParams.push(new URL(request.url).searchParams.getAll('tags'));
+        return HttpResponse.json({ totalItems: 0, data: [] });
+      })
+    );
+
+    renderWithProviders(<PlacesList />, { route: '/places?tags=quiet' });
+
+    expect(await screen.findByRole('button', { name: 'Remove quiet' })).toBeInTheDocument();
+    await waitFor(() => expect(tagParams.at(-1)).toEqual(['11']));
   });
 });

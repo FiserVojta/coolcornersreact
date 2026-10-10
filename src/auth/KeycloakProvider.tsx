@@ -10,6 +10,7 @@ interface CustomToken extends KeycloakTokenParsed {
   preferred_username?: string;
   email?: string;
   name?: string;
+  realm_access?: { roles: string[] };
 }
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -76,6 +77,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     token: keycloak.token,
     refreshToken,
     canEdit,
+    isAdmin: tokenParsed?.realm_access?.roles?.includes('ADMIN') ?? false,
     username: tokenParsed?.preferred_username,
     name: tokenParsed?.name,
     email: tokenParsed?.email

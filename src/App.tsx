@@ -21,6 +21,7 @@ import { TravelDetail } from './pages/travels/TravelDetail';
 import { TravelForm } from './pages/travels/TravelForm';
 import { SharedTravel } from './pages/travels/SharedTravel';
 import { TravelPhotoPage } from './pages/travels/TravelPhotoPage';
+import { AdminTags } from './pages/admin/AdminTags';
 import { ProtectedRoute } from './auth/ProtectedRoute';
 
 function App() {
@@ -130,6 +131,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/tags"
+          element={
+            <ProtectedRoute>
+              <AdminTags />
             </ProtectedRoute>
           }
         />

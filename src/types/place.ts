@@ -18,9 +18,18 @@ export interface City {
 export interface Tag {
   id: number;
   name: string;
-  title: string;
-  value: string;
-  creator: string;
+  normalizedName?: string;
+  title?: string;
+  value?: string;
+  creator?: string;
+}
+
+/** Result row of `GET /public/tags/search`. */
+export interface TagSuggestion {
+  id: number;
+  name: string;
+  normalizedName: string;
+  usageCount: number;
 }
 
 export interface Geometry {

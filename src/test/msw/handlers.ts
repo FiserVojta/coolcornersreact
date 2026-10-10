@@ -13,6 +13,12 @@ export const handlers = [
   http.get(`${apiUrl}/public/tags`, () =>
     HttpResponse.json([{ id: 11, name: 'quiet', title: 'Quiet', value: 'quiet', creator: 'test' }])
   ),
+  http.get(`${apiUrl}/public/tags/search`, () => HttpResponse.json([])),
+  http.get(`${apiUrl}/public/tags/resolve`, ({ request }) => {
+    const names = new URL(request.url).searchParams.getAll('names').flatMap((value) => value.split(','));
+    const known = [{ id: 11, name: 'quiet', normalizedName: 'quiet', title: 'Quiet', value: 'quiet', creator: 'test' }];
+    return HttpResponse.json(known.filter((tag) => names.includes(tag.normalizedName)));
+  }),
   http.get(`${apiUrl}/public/places`, () =>
     HttpResponse.json({
       totalItems: 1,
