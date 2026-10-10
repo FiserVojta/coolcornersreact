@@ -32,7 +32,7 @@ export interface CotravelCreateRequest {
   startTime: string;
   wanderers: number[];
   tags: number[];
-  category: number;
+  category: number | null;
   wanderParts: CotravelPartCreateRequest[];
   googlePlaces?: GooglePlaceInput[] | null | undefined;
   backgroundImage?: TripFileLinkRequest | null | undefined;

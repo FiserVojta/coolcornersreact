@@ -13,7 +13,7 @@ import { Button } from '../../components/ui/Button';
 import { TravelView } from '../../components/TravelView';
 import { RatingBadge } from '../../components/RatingBadge';
 import { useAuth } from '../../auth/AuthContext';
-import { buildCotravelRequest } from '../../lib/cotravelFromTravel';
+import { buildCotravelRequest, pickCotravelCategoryId } from '../../lib/cotravelFromTravel';
 import { buildTravelVersionRequest } from '../../lib/travelVersionFromTravel';
 import { formatTravelDates } from '../../lib/travelFormat';
 
@@ -103,10 +103,11 @@ export const TravelDetail = () => {
 
   // Create a co-travel plan seeded from this travel (title, dates, tags, visited places), then
   // jump straight to the new plan — no intermediate form.
-  const cotravelCategoryId = cotravelCategoriesQuery.data?.[0]?.id;
+  const cotravelCategoriesLoaded = cotravelCategoriesQuery.data != null;
   const handleCreateCotravel = () => {
-    if (cotravelCategoryId == null) return;
-    createCotravelMut.mutate(buildCotravelRequest(travel, cotravelCategoryId));
+    if (!cotravelCategoriesLoaded) return;
+    const categoryId = pickCotravelCategoryId(travel.category, cotravelCategoriesQuery.data ?? []);
+    createCotravelMut.mutate(buildCotravelRequest(travel, categoryId));
   };
 
   const actions =
@@ -135,7 +136,7 @@ export const TravelDetail = () => {
               variant="secondary"
               size="sm"
               onClick={handleCreateCotravel}
-              disabled={createCotravelMut.isPending || cotravelCategoryId == null}
+              disabled={createCotravelMut.isPending || !cotravelCategoriesLoaded}
             >
               {createCotravelMut.isPending ? 'Creating…' : 'Plan a co-travel'}
             </Button>

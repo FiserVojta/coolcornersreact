@@ -1,4 +1,5 @@
 import type { CotravelCreateRequest } from '../types/cotravel';
+import type { Category } from '../types/place';
 import type { GooglePlaceInput } from '../types/trip';
 import type { TravelDetail } from '../types/travel';
 
@@ -17,7 +18,19 @@ const todayAtNine = (): string => {
  * the first segment so the itinerary is preserved. Capacity defaults to 4; `categoryId` should
  * be a real COTRAVEL category id (the creator can refine everything afterwards).
  */
-export const buildCotravelRequest = (travel: TravelDetail, categoryId: number): CotravelCreateRequest => {
+/**
+ * Travel and co-travel share one category list (same internal names), so a plan seeded from a
+ * travel gets the matching co-travel category. No travel category or no match means no category.
+ */
+export const pickCotravelCategoryId = (
+  travelCategory: Category | null | undefined,
+  cotravelCategories: Category[]
+): number | null => {
+  if (!travelCategory) return null;
+  return cotravelCategories.find((category) => category.name === travelCategory.name)?.id ?? null;
+};
+
+export const buildCotravelRequest = (travel: TravelDetail, categoryId: number | null): CotravelCreateRequest => {
   const googlePlaces: GooglePlaceInput[] = (travel.places ?? [])
     .filter((place) => Number.isFinite(place.latitude) && Number.isFinite(place.longitude))
     .map((place, index) => ({
