@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
+import { useDismiss } from '../../hooks/useDismiss';
 
 export type MultiSelectOption = {
   id: number;
@@ -25,16 +26,42 @@ export const MultiSelectFilter = ({
   emptyMessage = 'No options available.'
 }: MultiSelectFilterProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const close = useCallback(() => setIsOpen(false), []);
+  useDismiss({ open: isOpen, onDismiss: close, containerRef, triggerRef });
   const selectedCount = selectedIds.length;
+  const selectedOptions = options.filter((option) => selectedIds.includes(option.id));
   const triggerLabel =
     selectedCount === 0
       ? placeholder
       : `${selectedCount} ${selectedCount === 1 ? countNoun.singular : countNoun.plural} selected`;
 
   return (
-    <div className="relative min-w-[200px] flex-1">
+    <div ref={containerRef} className="relative min-w-[200px] flex-1">
       <p className="mb-1.5 text-[10.5px] font-bold uppercase tracking-[0.2em] text-ink-subtle">{label}</p>
+      {selectedOptions.length ? (
+        <ul className="mb-2 flex flex-wrap gap-2" aria-label={`Selected ${label.toLowerCase()}`}>
+          {selectedOptions.map((option) => (
+            <li
+              key={option.id}
+              className="inline-flex max-w-full items-center gap-1 rounded-full border border-brand-700 bg-brand-700 py-1 pl-3 pr-1 text-[13px] font-semibold text-white"
+            >
+              <span className="truncate">{option.label}</span>
+              <button
+                type="button"
+                onClick={() => onToggle(option.id)}
+                aria-label={`Remove ${option.label}`}
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-base leading-none text-brand-100 transition hover:bg-white/15 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-200"
+              >
+                <span aria-hidden="true">×</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
       <button
+        ref={triggerRef}
         type="button"
         aria-expanded={isOpen}
         onClick={() => setIsOpen((prev) => !prev)}

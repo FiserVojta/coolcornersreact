@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
+import { useDismiss } from '../../hooks/useDismiss';
 
 export type SortOption = {
   value: string;
@@ -14,13 +15,18 @@ type SortSelectProps = {
 
 export const SortSelect = ({ value, options, onChange, ariaLabel = 'Sort by' }: SortSelectProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const close = useCallback(() => setIsOpen(false), []);
+  useDismiss({ open: isOpen, onDismiss: close, containerRef, triggerRef });
   const selected = options.find((opt) => opt.value === value) ?? options[0];
 
   return (
-    <div className="relative">
+    <div ref={containerRef} className="relative">
       <label className="flex items-center gap-2">
         <span className="text-xs font-medium text-ink-muted">Sort:</span>
         <button
+          ref={triggerRef}
           type="button"
           aria-label={ariaLabel}
           aria-expanded={isOpen}

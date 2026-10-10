@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
+import { useDismiss } from '../../hooks/useDismiss';
 
 export type SingleSelectOption = {
   value: string;
@@ -25,13 +26,18 @@ export const SingleSelectFilter = ({
   emptyMessage = 'No options available.'
 }: SingleSelectFilterProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const close = useCallback(() => setIsOpen(false), []);
+  useDismiss({ open: isOpen, onDismiss: close, containerRef, triggerRef });
   const selected = options.find((option) => option.value === value);
   const triggerLabel = selected ? selected.label : placeholder;
 
   return (
-    <div className="relative min-w-[200px] flex-1">
+    <div ref={containerRef} className="relative min-w-[200px] flex-1">
       <p className="mb-1.5 text-[10.5px] font-bold uppercase tracking-[0.2em] text-ink-subtle">{label}</p>
       <button
+        ref={triggerRef}
         type="button"
         aria-label={ariaLabel ?? label}
         aria-expanded={isOpen}
